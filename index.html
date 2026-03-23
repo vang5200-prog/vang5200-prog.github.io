@@ -1,124 +1,91 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>關係判斷分析</title>
+<title>讀心分析</title>
 
 <style>
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
-  background: linear-gradient(135deg, #f3e9df, #e7d8c9);
-  color: #3a2f2a;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", sans-serif;
+  background: #F5EDE3;
+  color: #3A2E2A;
 }
 
 .container {
-  max-width: 480px;
+  max-width: 420px;
   margin: auto;
-  padding: 28px 22px;
+  padding: 24px;
 }
 
-/* 主標 */
 h1 {
   font-size: 26px;
-  line-height: 1.6;
-  font-weight: 600;
+  line-height: 1.4;
 }
 
-/* 文字 */
 p {
-  color: #5a4a42;
-  line-height: 1.7;
+  line-height: 1.6;
 }
 
-/* ===== 按鈕 ===== */
 .btn {
   display: block;
-  width: 100%;
   margin-top: 20px;
-  text-decoration: none;
-}
-
-.btn-inner {
-  display: block;
-  background: linear-gradient(135deg, #e6c200, #d4af37);
-  color: #2a211c;
+  background: linear-gradient(135deg, #FFD700, #FFC700);
+  color: #000;
   text-align: center;
   padding: 16px;
-  border-radius: 14px;
-  font-weight: 600;
-  border: 1px solid rgba(212,175,55,0.5);
-  box-shadow: 0 8px 20px rgba(212,175,55,0.25);
-  transition: all 0.3s ease;
-
-  animation: pulse 2.6s infinite;
+  border-radius: 12px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  animation: pulse 2s infinite;
 }
 
-/* hover（浮起） */
-.btn:hover .btn-inner {
-  transform: translateY(-8px);
-  box-shadow: 0 18px 40px rgba(212,175,55,0.4);
-  animation: none;
+.btn:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.25);
 }
 
-/* 點擊 */
-.btn:active .btn-inner {
-  transform: translateY(0px) scale(0.96);
+.btn:active {
+  transform: scale(0.97);
 }
 
-/* 高級呼吸動畫 */
 @keyframes pulse {
   0% { transform: scale(1); }
-  50% { transform: scale(1.035); }
+  50% { transform: scale(1.03); }
   100% { transform: scale(1); }
 }
 
-/* ===== 卡片 ===== */
 .box {
-  margin-top: 22px;
-  padding: 20px;
+  margin-top: 20px;
+  padding: 18px;
   border-radius: 16px;
-  background: #fffaf5;
-  border: 1px solid #e5d5c3;
-  transition: all 0.3s ease;
-  cursor: pointer;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(0,0,0,0.08);
+  transition: all 0.25s ease;
 }
 
 .box:hover {
   transform: translateY(-6px);
-  box-shadow: 0 14px 30px rgba(0,0,0,0.08);
-  border-color: #d4af37;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
 }
 
-h2 {
-  margin-top: 34px;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-/* 信任 */
-.trust {
-  font-size: 13px;
-  opacity: 0.8;
-  margin-top: 10px;
-}
-
-/* 提示 */
 .notice {
-  color: #b89b5e;
-  font-weight: 500;
-  margin-top: 10px;
-}
-
-/* 安全 */
-.safe {
-  font-size: 12px;
-  opacity: 0.6;
+  color: #6F5C4D;
+  font-size: 14px;
   margin-top: 12px;
 }
+
+.small {
+  font-size: 13px;
+  opacity: 0.7;
+  margin-top: 8px;
+}
 </style>
+
 </head>
 
 <body>
@@ -131,60 +98,55 @@ h2 {
 </h1>
 
 <p>
-很多訊號其實早就出現了，  
-只是妳還沒有一個「可以確定的答案」。
+很多訊號其實早就出現了，只是妳還沒有一個「可以確定的答案」。
 </p>
 
 <a class="btn" href="https://lin.ee/5VQ5gbz">
-  <span class="btn-inner">先看看他的真實想法</span>
+先看看他的真實想法
 </a>
 
-<p class="trust">
+<p class="small">
 ✔️ 一對一讀心分析｜✔️ 無模板回覆｜✔️ 可提問
 </p>
 
 <p class="notice">
-目前採預約制，近期時段較滿
+目前採預約制，近期可安排時段有限
 </p>
 
-<h2>妳可能正在經歷</h2>
+<h2 style="margin-top:30px;">妳可能正在經歷</h2>
 
 <p>他回覆變慢，妳開始焦慮</p>
 <p>他忽冷忽熱，妳一直幫他找理由</p>
 <p>妳很累，但卻停不下來</p>
 
-<h2>我會幫妳釐清</h2>
+<h2 style="margin-top:30px;">我會幫妳釐清</h2>
 
 <div class="box">
-<p>✔️ 他現在對妳的真實想法</p>
-<p>✔️ 為什麼變成這樣</p>
-<p>✔️ 妳在他心中的位置</p>
+✔️ 他現在對妳的真實想法<br>
+✔️ 為什麼變成這樣<br>
+✔️ 妳在他心中的位置
 </div>
 
-<h2>服務方案</h2>
+<h2 style="margin-top:30px;">服務方案</h2>
 
-<a href="https://lin.ee/5VQ5gbz" style="text-decoration:none; color:inherit;">
 <div class="box">
-<strong>讀心解析 30分鐘｜NT$1299</strong><br><br>
+<strong>讀心解析 30分鐘｜NT$1299</strong><br>
 對方心理狀態分析<br>
 關係定位（曖昧 / 冷淡 / 替代）<br>
 下一步建議
 </div>
-</a>
 
-<a href="https://lin.ee/5VQ5gbz" style="text-decoration:none; color:inherit;">
 <div class="box">
-<strong>加購深入分析 15分鐘｜NT$699</strong><br><br>
+<strong>加購深入分析 15分鐘｜NT$699</strong><br>
 第三者 / 未來發展補充解析
 </div>
-</a>
 
 <a class="btn" href="https://lin.ee/5VQ5gbz">
-  <span class="btn-inner">開始讀心解析</span>
+開始讀心解析
 </a>
 
-<p class="safe">
-點擊後會進入LINE，請先簡單說明妳的狀況，不強制付款
+<p class="small">
+點擊後會進入LINE，請先簡單說明妳的狀況，無強制付款
 </p>
 
 </div>
