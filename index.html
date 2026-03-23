@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>關係分析服務</title>
+<title>關係判斷分析</title>
 
 <style>
 body {
@@ -15,21 +15,25 @@ body {
 }
 
 .container {
-  max-width: 420px;
+  max-width: 480px;
   margin: auto;
   padding: 24px;
 }
 
+/* 主標 */
 h1 {
   font-size: 26px;
   line-height: 1.4;
+  margin-bottom: 12px;
 }
 
+/* 文字 */
 p {
   color: #ccc;
+  line-height: 1.6;
 }
 
-/* ===== 按鈕（高轉單＋金邊） ===== */
+/* CTA 按鈕 */
 .btn {
   display: block;
   width: 100%;
@@ -44,59 +48,77 @@ p {
   border: 1px solid rgba(255,215,0,0.6);
   box-shadow: 0 8px 20px rgba(255,215,0,0.25);
   transition: all 0.2s ease;
+  animation: pulse 2.2s infinite;
 }
 
-/* 滑過（浮起＋發光） */
+/* hover */
 .btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 12px 30px rgba(255,215,0,0.45);
 }
 
-/* 點擊（按壓） */
+/* 點擊 */
 .btn:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
-/* 信任文字 */
-.trust {
-  font-size: 13px;
-  opacity: 0.7;
-  margin-top: 10px;
+/* 呼吸動畫（吸引注意） */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 8px 20px rgba(255,215,0,0.25);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 12px 30px rgba(255,215,0,0.5);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 20px rgba(255,215,0,0.25);
+  }
 }
 
-/* ===== 卡片（產品感） ===== */
+/* 卡片 */
 .box {
-  margin-top: 18px;
+  margin-top: 20px;
   padding: 18px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.03);
   border: 1px solid #2a2a2a;
+  border-radius: 14px;
   transition: all 0.25s ease;
+  background: rgba(255,255,255,0.02);
   cursor: pointer;
 }
 
 /* 卡片浮起 */
 .box:hover {
   transform: translateY(-6px);
-  box-shadow: 0 12px 25px rgba(0,0,0,0.4);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.3);
   border-color: #ffd700;
 }
 
+/* 小標 */
 h2 {
-  margin-top: 28px;
+  margin-top: 32px;
 }
 
-/* 溫和限時 */
-.notice {
-  margin-top: 14px;
-  font-size: 14px;
-  color: #ffd700;
-}
-
-/* 安全感 */
-.soft {
+/* trust 區 */
+.trust {
   font-size: 13px;
+  opacity: 0.7;
+  margin-top: 8px;
+}
+
+/* 強化提示 */
+.notice {
+  color: #ffd700;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+/* 安心提示 */
+.safe {
+  font-size: 12px;
   opacity: 0.6;
+  margin-top: 10px;
 }
 </style>
 </head>
@@ -105,17 +127,15 @@ h2 {
 
 <div class="container">
 
-<h1>
-他不是沒看到<br>
-只是現在還沒準備好回應你
-</h1>
+<h1>他不是沒看到<br>只是現在還沒準備好回應你</h1>
 
 <p>
-很多訊號其實已經存在，只是你還沒有一個明確的解讀。
+很多訊號其實已經存在，  
+只是你還沒有一個「確定的解讀」。
 </p>
 
-<a class="btn" href="https://lin.ee/5VQ5gbz" onclick="trackClick()">
-先看看他的想法
+<a class="btn" href="https://lin.ee/5VQ5gbz">
+先確認他的真實想法
 </a>
 
 <p class="trust">
@@ -132,50 +152,41 @@ h2 {
 <p>他忽冷忽熱，你一直幫他找理由</p>
 <p>你很累，但停不下來</p>
 
-<h2>我可以幫你釐清</h2>
+<h2>我會幫你釐清</h2>
 
 <div class="box">
-✔️ 他現在對你的真實想法<br>
-✔️ 為什麼變成這樣<br>
-✔️ 你在他心中的位置
+<p>✔️ 他現在對你的真實想法</p>
+<p>✔️ 為什麼變成這樣</p>
+<p>✔️ 你在他心中的位置</p>
 </div>
 
 <h2>服務方案</h2>
 
-<a href="https://lin.ee/5VQ5gbz" onclick="trackClick()" style="text-decoration:none; color:inherit;">
+<a href="https://lin.ee/5VQ5gbz" style="text-decoration:none; color:inherit;">
 <div class="box">
-<strong>關係解析 30分鐘｜NT$1299</strong><br>
+<strong>關係解析 30分鐘｜NT$1299</strong><br><br>
 對方心理狀態分析<br>
 關係定位（曖昧 / 冷淡 / 替代）<br>
 下一步建議
 </div>
 </a>
 
-<a href="https://lin.ee/5VQ5gbz" onclick="trackClick()" style="text-decoration:none; color:inherit;">
+<a href="https://lin.ee/5VQ5gbz" style="text-decoration:none; color:inherit;">
 <div class="box">
-<strong>加購深入分析 15分鐘｜NT$699</strong><br>
+<strong>加購深入分析 15分鐘｜NT$699</strong><br><br>
 第三者 / 未來發展補充解析
 </div>
 </a>
 
-<a class="btn" href="https://lin.ee/5VQ5gbz" onclick="trackClick()">
+<a class="btn" href="https://lin.ee/5VQ5gbz">
 預約看看適不適合你
 </a>
 
-<p class="soft">
-點擊後會進入LINE，沒有強制付款
+<p class="safe">
+點擊後會進入LINE，會先了解你的狀況，不會強制付款
 </p>
 
 </div>
-
-<script>
-function trackClick() {
-  let count = localStorage.getItem("clickCount") || 0;
-  count++;
-  localStorage.setItem("clickCount", count);
-  console.log("點擊次數:", count);
-}
-</script>
 
 </body>
 </html>
