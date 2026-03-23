@@ -22,8 +22,7 @@ body {
 
 h1 {
   font-size: 26px;
-  line-height: 1.4;
-  margin-bottom: 12px;
+  line-height: 1.5;
 }
 
 p {
@@ -31,47 +30,51 @@ p {
   line-height: 1.6;
 }
 
-/* ===== 按鈕 ===== */
+/* ===== 按鈕外層 ===== */
 .btn {
   display: block;
   width: 100%;
   margin-top: 18px;
+  text-decoration: none;
+}
+
+/* ===== 按鈕內層（高級版） ===== */
+.btn-inner {
+  display: block;
   background: linear-gradient(135deg, #ffd700, #ffcc00);
   color: #000;
   text-align: center;
   padding: 16px;
   border-radius: 12px;
   font-weight: bold;
-  text-decoration: none;
-  border: 1px solid rgba(255,215,0,0.6);
-  box-shadow: 0 8px 20px rgba(255,215,0,0.25);
-  transition: all 0.2s ease;
+  border: 1px solid rgba(255,215,0,0.5);
+  box-shadow: 0 8px 20px rgba(255,215,0,0.2);
+  transition: all 0.25s ease;
 
-  /* 呼吸光（不動位移） */
-  animation: glow 2.2s infinite;
+  animation: pulse 2s infinite;
 }
 
-/* hover：浮起 */
-.btn:hover {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 14px 35px rgba(255,215,0,0.45);
+/* hover（浮起） */
+.btn:hover .btn-inner {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(255,215,0,0.35);
 }
 
 /* 點擊 */
-.btn:active {
-  transform: scale(0.96);
+.btn:active .btn-inner {
+  transform: translateY(0px) scale(0.96);
 }
 
-/* 呼吸動畫（只動光，不動位置） */
-@keyframes glow {
+/* 呼吸動畫（高級感版本） */
+@keyframes pulse {
   0% {
-    box-shadow: 0 8px 20px rgba(255,215,0,0.25);
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 14px 35px rgba(255,215,0,0.45);
+    transform: scale(1.04);
   }
   100% {
-    box-shadow: 0 8px 20px rgba(255,215,0,0.25);
+    transform: scale(1);
   }
 }
 
@@ -87,8 +90,8 @@ p {
 }
 
 .box:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 25px rgba(0,0,0,0.3);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.35);
   border-color: #ffd700;
 }
 
@@ -98,13 +101,13 @@ h2 {
 
 .trust {
   font-size: 13px;
-  opacity: 0.7;
+  opacity: 0.75;
   margin-top: 8px;
 }
 
 .notice {
   color: #ffd700;
-  font-weight: bold;
+  font-weight: 500;
   margin-top: 10px;
 }
 
@@ -131,7 +134,7 @@ h2 {
 </p>
 
 <a class="btn" href="https://lin.ee/5VQ5gbz">
-先看看他的真實想法
+  <span class="btn-inner">先看看他的真實想法</span>
 </a>
 
 <p class="trust">
@@ -175,7 +178,7 @@ h2 {
 </a>
 
 <a class="btn" href="https://lin.ee/5VQ5gbz">
-開始讀心解析
+  <span class="btn-inner">開始讀心解析</span>
 </a>
 
 <p class="safe">
