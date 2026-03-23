@@ -29,41 +29,46 @@ p {
   line-height: 1.6;
 }
 
+/* 🔥 金色高級按鈕 */
 .btn {
   display: block;
   margin-top: 20px;
-  background: linear-gradient(135deg, #FFD700, #FFC700);
-  color: #000;
+  background: linear-gradient(135deg, #C6A55C, #E5C97B, #B8964A);
+  color: #2B1E14;
   text-align: center;
   padding: 16px;
   border-radius: 12px;
   font-weight: bold;
   text-decoration: none;
   transition: all 0.25s ease;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
   animation: pulse 2s infinite;
 }
 
+/* 滑過浮起 + 發光 */
 .btn:hover {
-  transform: translateY(-4px) scale(1.03);
-  box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+  transform: translateY(-5px) scale(1.03);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.25);
 }
 
+/* 點擊按壓 */
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
+/* 呼吸跳動 */
 @keyframes pulse {
   0% { transform: scale(1); }
-  50% { transform: scale(1.03); }
+  50% { transform: scale(1.04); }
   100% { transform: scale(1); }
 }
 
+/* 卡片 */
 .box {
   margin-top: 20px;
   padding: 18px;
   border-radius: 16px;
-  background: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.55);
   border: 1px solid rgba(0,0,0,0.08);
   transition: all 0.25s ease;
 }
@@ -73,16 +78,19 @@ p {
   box-shadow: 0 12px 30px rgba(0,0,0,0.12);
 }
 
-.notice {
-  color: #6F5C4D;
-  font-size: 14px;
-  margin-top: 12px;
-}
-
+/* 小字 */
 .small {
   font-size: 13px;
   opacity: 0.7;
   margin-top: 8px;
+}
+
+/* 🔥 預約提示（已強化） */
+.notice {
+  color: #7A5C2E;
+  font-size: 14px;
+  margin-top: 12px;
+  font-weight: 500;
 }
 </style>
 
@@ -94,15 +102,15 @@ p {
 
 <h1>
 他不是沒看到<br>
-只是現在還沒準備好回應妳
+是選擇不回妳
 </h1>
 
 <p>
-很多訊號其實早就出現了，只是妳還沒有一個「可以確定的答案」。
+妳不是沒有感覺，而是一直不敢確認。
 </p>
 
 <a class="btn" href="https://lin.ee/5VQ5gbz">
-先看看他的真實想法
+我要看他現在怎麼想
 </a>
 
 <p class="small">
@@ -146,7 +154,7 @@ p {
 </a>
 
 <p class="small">
-點擊後會進入LINE，請先簡單說明妳的狀況，無強制付款
+點擊後會進入LINE，請先簡單說明妳的狀況，不強制付款
 </p>
 
 </div>
