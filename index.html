@@ -76,17 +76,28 @@
 .btn:hover {
   transform: scale(1.03);
 }
-   .box {
+  .box {
   margin-top: 20px;
   padding: 16px;
   border: 1px solid #333;
   border-radius: 10px;
   transition: all 0.25s ease;
+  background: rgba(255,255,255,0.02);
+  cursor: pointer;
 }
-    .box:hover {
+
+/* 👉 滑上去（浮起＋微亮） */
+.box:hover {
   transform: translateY(-6px);
   box-shadow: 0 12px 25px rgba(0,0,0,0.3);
   border-color: #ffd700;
+  background: rgba(255,215,0,0.08);
+}
+
+/* 👉 點下去（按壓感） */
+.box:active {
+  transform: scale(0.96);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
   </style>
   
