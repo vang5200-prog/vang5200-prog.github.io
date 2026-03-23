@@ -29,10 +29,17 @@ p {
   line-height: 1.6;
 }
 
-/* ===== 按鈕（高級金色 + 跳動 + 浮起） ===== */
+/* ===== 金色按鈕（最終版） ===== */
 .btn {
   display: block;
-  background: linear-gradient(135deg, #D4AF37, #F7E7A0);
+  background: linear-gradient(
+    135deg,
+    #C6A85A 0%,
+    #E5C97A 30%,
+    #FFF1B0 50%,
+    #E5C97A 70%,
+    #C6A85A 100%
+  );
   color: #2C2C2C;
   text-align: center;
   padding: 16px;
@@ -40,30 +47,42 @@ p {
   font-weight: bold;
   text-decoration: none;
   margin-top: 20px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+
+  box-shadow:
+    0 10px 25px rgba(0,0,0,0.25),
+    inset 0 2px 6px rgba(255,255,255,0.6);
+
   transition: all 0.25s ease;
   animation: pulse 2s infinite;
 }
 
 .btn:hover {
   transform: translateY(-10px) scale(1.06);
+
+  background: linear-gradient(
+    135deg,
+    #D4AF37,
+    #FFF3C4,
+    #D4AF37
+  );
+
   box-shadow:
     0 30px 60px rgba(0,0,0,0.35),
     inset 0 4px 12px rgba(255,255,255,0.9);
 }
 
 .btn:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
-/* 跳動動畫 */
+/* 跳動 */
 @keyframes pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.04); }
   100% { transform: scale(1); }
 }
 
-/* ===== 卡片 ===== */
+/* ===== 卡片（金邊） ===== */
 .box {
   margin-top: 20px;
   padding: 18px;
@@ -84,17 +103,18 @@ p {
   font-weight: bold;
 }
 
-/* ===== 預約提示（加強版） ===== */
+/* ===== 預約提示（放大＋清楚） ===== */
 .notice {
-  margin-top: 12px;
-  font-size: 16px;
+  margin-top: 14px;
+  font-size: 17px;
   font-weight: 700;
   color: #A67C2E;
 }
 
+/* 小字 */
 .sub {
   font-size: 13px;
-  opacity: 0.8;
+  opacity: 0.85;
   margin-top: 6px;
 }
 
@@ -159,7 +179,7 @@ p {
 </a>
 
 <p class="sub">
-點擊後會進入LINE，請先簡單說明情況，無強制付款
+點擊後會進入LINE，請先簡單說明狀況，無強制付款
 </p>
 
 </div>
