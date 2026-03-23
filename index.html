@@ -30,7 +30,7 @@ p {
   line-height: 1.7;
 }
 
-/* 🔥 金屬按鈕 */
+/* 🔥 金屬按鈕（真浮起） */
 .btn {
   display: block;
   margin-top: 20px;
@@ -43,49 +43,54 @@ p {
   text-decoration: none;
   transition: all 0.25s ease;
   box-shadow: 
-    0 12px 30px rgba(0,0,0,0.18),
+    0 10px 25px rgba(0,0,0,0.18),
     inset 0 2px 6px rgba(255,255,255,0.7);
   animation: pulse 1.8s infinite;
 }
 
+/* 🔥 真浮起來 */
 .btn:hover {
-  transform: translateY(-6px) scale(1.05);
+  transform: translateY(-8px) scale(1.05);
   box-shadow: 
-    0 22px 45px rgba(0,0,0,0.25),
-    inset 0 3px 8px rgba(255,255,255,0.9);
+    0 25px 50px rgba(0,0,0,0.28),
+    inset 0 3px 10px rgba(255,255,255,0.9);
 }
 
+/* 按壓 */
 .btn:active {
-  transform: scale(0.95);
+  transform: translateY(0px) scale(0.95);
 }
 
+/* 呼吸 */
 @keyframes pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.06); }
   100% { transform: scale(1); }
 }
 
-/* 卡片 */
+/* 🔥 卡片（強金邊） */
 .box {
   margin-top: 20px;
   padding: 20px;
   border-radius: 18px;
-  background: rgba(255,255,255,0.6);
-  border: 1px solid rgba(198,165,92,0.45);
-  backdrop-filter: blur(6px);
+  background: rgba(255,255,255,0.65);
+  border: 1.5px solid #D6B96B;
   transition: all 0.25s ease;
 }
 
+/* hover 金邊變亮 */
 .box:hover {
   transform: translateY(-6px);
+  border-color: #B8964A;
   box-shadow: 0 15px 35px rgba(0,0,0,0.12);
 }
 
-/* 強化句 */
-.highlight {
+/* 🔥 預約句（強可讀） */
+.notice {
   margin-top: 14px;
-  color: #5A452E;
+  font-size: 14px;
   font-weight: 600;
+  color: #8A6B2F;
 }
 
 /* 小字 */
@@ -111,7 +116,7 @@ p {
 妳其實早就感覺到了，只是一直不敢確認。
 </p>
 
-<p class="highlight">
+<p style="font-weight:600; margin-top:12px;">
 現在不看清楚，妳只會一直反覆猜、一直內耗。
 </p>
 
@@ -123,7 +128,7 @@ p {
 ✔️ 一對一讀心分析｜✔️ 無模板回覆｜✔️ 可提問
 </p>
 
-<p class="highlight">
+<p class="notice">
 目前採預約制，近期可安排時段有限
 </p>
 
@@ -160,7 +165,7 @@ p {
 </a>
 
 <p class="small">
-點擊後會進入LINE，請先簡單說明妳的狀況，不強制付款
+點擊後會進入LINE，請先簡單說明妳的情況，不強制付款
 </p>
 
 </div>
