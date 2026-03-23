@@ -50,14 +50,15 @@ p {
   box-shadow: 0 8px 20px rgba(255,215,0,0.2);
   transition: all 0.25s ease;
 
-  /* 👉 改成只發光，不動位移 */
-  animation: glow 2.4s infinite;
+  /* 👉 跳動（不影響hover） */
+  animation: pulse 2.4s infinite;
 }
 
-/* 👉 hover：真正浮起（現在會有感） */
+/* 👉 hover（浮起優先） */
 .btn:hover .btn-inner {
   transform: translateY(-10px);
   box-shadow: 0 20px 45px rgba(255,215,0,0.5);
+  animation: none; /* 👉 滑上去時暫停跳動（關鍵） */
 }
 
 /* 點擊 */
@@ -65,16 +66,16 @@ p {
   transform: translateY(0px) scale(0.96);
 }
 
-/* 👉 發光動畫（不影響transform） */
-@keyframes glow {
+/* 👉 跳動動畫（縮小幅度，避免衝突） */
+@keyframes pulse {
   0% {
-    box-shadow: 0 8px 20px rgba(255,215,0,0.2);
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 14px 35px rgba(255,215,0,0.4);
+    transform: scale(1.03);
   }
   100% {
-    box-shadow: 0 8px 20px rgba(255,215,0,0.2);
+    transform: scale(1);
   }
 }
 
