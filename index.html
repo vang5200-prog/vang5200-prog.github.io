@@ -9,56 +9,58 @@
 <style>
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
-  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
+  background: linear-gradient(135deg, #f3e9df, #e7d8c9);
+  color: #3a2f2a;
 }
 
 .container {
   max-width: 480px;
   margin: auto;
-  padding: 24px;
+  padding: 28px 22px;
 }
 
+/* 主標 */
 h1 {
   font-size: 26px;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-weight: 600;
 }
 
+/* 文字 */
 p {
-  color: #ccc;
-  line-height: 1.6;
+  color: #5a4a42;
+  line-height: 1.7;
 }
 
 /* ===== 按鈕 ===== */
 .btn {
   display: block;
   width: 100%;
-  margin-top: 18px;
+  margin-top: 20px;
   text-decoration: none;
 }
 
 .btn-inner {
   display: block;
-  background: linear-gradient(135deg, #ffd700, #ffcc00);
-  color: #000;
+  background: linear-gradient(135deg, #e6c200, #d4af37);
+  color: #2a211c;
   text-align: center;
   padding: 16px;
-  border-radius: 12px;
-  font-weight: bold;
-  border: 1px solid rgba(255,215,0,0.5);
-  box-shadow: 0 8px 20px rgba(255,215,0,0.2);
-  transition: all 0.25s ease;
+  border-radius: 14px;
+  font-weight: 600;
+  border: 1px solid rgba(212,175,55,0.5);
+  box-shadow: 0 8px 20px rgba(212,175,55,0.25);
+  transition: all 0.3s ease;
 
-  /* 👉 跳動（不影響hover） */
-  animation: pulse 2.4s infinite;
+  animation: pulse 2.6s infinite;
 }
 
-/* 👉 hover（浮起優先） */
+/* hover（浮起） */
 .btn:hover .btn-inner {
-  transform: translateY(-10px);
-  box-shadow: 0 20px 45px rgba(255,215,0,0.5);
-  animation: none; /* 👉 滑上去時暫停跳動（關鍵） */
+  transform: translateY(-8px);
+  box-shadow: 0 18px 40px rgba(212,175,55,0.4);
+  animation: none;
 }
 
 /* 點擊 */
@@ -66,56 +68,55 @@ p {
   transform: translateY(0px) scale(0.96);
 }
 
-/* 👉 跳動動畫（縮小幅度，避免衝突） */
+/* 高級呼吸動畫 */
 @keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.03);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+  100% { transform: scale(1); }
 }
 
 /* ===== 卡片 ===== */
 .box {
-  margin-top: 20px;
-  padding: 18px;
-  border: 1px solid #2a2a2a;
-  border-radius: 14px;
-  transition: all 0.25s ease;
-  background: rgba(255,255,255,0.02);
+  margin-top: 22px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #fffaf5;
+  border: 1px solid #e5d5c3;
+  transition: all 0.3s ease;
   cursor: pointer;
 }
 
 .box:hover {
   transform: translateY(-6px);
-  box-shadow: 0 12px 25px rgba(0,0,0,0.3);
-  border-color: #ffd700;
+  box-shadow: 0 14px 30px rgba(0,0,0,0.08);
+  border-color: #d4af37;
 }
 
 h2 {
-  margin-top: 32px;
+  margin-top: 34px;
+  font-size: 18px;
+  font-weight: 600;
 }
 
+/* 信任 */
 .trust {
   font-size: 13px;
-  opacity: 0.75;
-  margin-top: 8px;
+  opacity: 0.8;
+  margin-top: 10px;
 }
 
+/* 提示 */
 .notice {
-  color: #ffd700;
+  color: #b89b5e;
   font-weight: 500;
   margin-top: 10px;
 }
 
+/* 安全 */
 .safe {
   font-size: 12px;
   opacity: 0.6;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 </style>
 </head>
@@ -130,8 +131,8 @@ h2 {
 </h1>
 
 <p>
-很多訊號其實已經存在，  
-只是妳還沒有一個「確定的解讀」。
+很多訊號其實早就出現了，  
+只是妳還沒有一個「可以確定的答案」。
 </p>
 
 <a class="btn" href="https://lin.ee/5VQ5gbz">
@@ -150,7 +151,7 @@ h2 {
 
 <p>他回覆變慢，妳開始焦慮</p>
 <p>他忽冷忽熱，妳一直幫他找理由</p>
-<p>妳很累，但停不下來</p>
+<p>妳很累，但卻停不下來</p>
 
 <h2>我會幫妳釐清</h2>
 
