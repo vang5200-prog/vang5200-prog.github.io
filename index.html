@@ -10,7 +10,7 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", sans-serif;
-  background: #F5EDE3;
+  background: linear-gradient(180deg, #F5EDE3 0%, #EFE3D3 100%);
   color: #3A2E2A;
 }
 
@@ -21,76 +21,78 @@ body {
 }
 
 h1 {
-  font-size: 26px;
+  font-size: 28px;
   line-height: 1.4;
+  font-weight: 700;
 }
 
 p {
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
-/* 🔥 金色高級按鈕 */
+/* 🔥 金屬按鈕 */
 .btn {
   display: block;
   margin-top: 20px;
-  background: linear-gradient(135deg, #C6A55C, #E5C97B, #B8964A);
+  background: linear-gradient(120deg, #B8964A, #F2E2A2, #C6A55C);
   color: #2B1E14;
   text-align: center;
-  padding: 16px;
-  border-radius: 12px;
+  padding: 18px;
+  border-radius: 14px;
   font-weight: bold;
   text-decoration: none;
   transition: all 0.25s ease;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-  animation: pulse 2s infinite;
+  box-shadow: 
+    0 12px 30px rgba(0,0,0,0.18),
+    inset 0 2px 6px rgba(255,255,255,0.7);
+  animation: pulse 1.8s infinite;
 }
 
-/* 滑過浮起 + 發光 */
 .btn:hover {
-  transform: translateY(-5px) scale(1.03);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.25);
+  transform: translateY(-6px) scale(1.05);
+  box-shadow: 
+    0 22px 45px rgba(0,0,0,0.25),
+    inset 0 3px 8px rgba(255,255,255,0.9);
 }
 
-/* 點擊按壓 */
 .btn:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
-/* 呼吸跳動 */
 @keyframes pulse {
   0% { transform: scale(1); }
-  50% { transform: scale(1.04); }
+  50% { transform: scale(1.06); }
   100% { transform: scale(1); }
 }
 
 /* 卡片 */
 .box {
   margin-top: 20px;
-  padding: 18px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.55);
-  border: 1px solid rgba(0,0,0,0.08);
+  padding: 20px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(198,165,92,0.45);
+  backdrop-filter: blur(6px);
   transition: all 0.25s ease;
 }
 
 .box:hover {
   transform: translateY(-6px);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+}
+
+/* 強化句 */
+.highlight {
+  margin-top: 14px;
+  color: #5A452E;
+  font-weight: 600;
 }
 
 /* 小字 */
 .small {
   font-size: 13px;
-  opacity: 0.7;
+  color: #6B5A4F;
   margin-top: 8px;
-}
-
-/* 🔥 預約提示（已強化） */
-.notice {
-  color: #7A5C2E;
-  font-size: 14px;
-  margin-top: 12px;
-  font-weight: 500;
 }
 </style>
 
@@ -106,47 +108,51 @@ p {
 </h1>
 
 <p>
-妳不是沒有感覺，而是一直不敢確認。
+妳其實早就感覺到了，只是一直不敢確認。
+</p>
+
+<p class="highlight">
+現在不看清楚，妳只會一直反覆猜、一直內耗。
 </p>
 
 <a class="btn" href="https://lin.ee/5VQ5gbz">
-我要看他現在怎麼想
+想確認他的想法
 </a>
 
 <p class="small">
 ✔️ 一對一讀心分析｜✔️ 無模板回覆｜✔️ 可提問
 </p>
 
-<p class="notice">
+<p class="highlight">
 目前採預約制，近期可安排時段有限
 </p>
 
-<h2 style="margin-top:30px;">妳可能正在經歷</h2>
+<h2 style="margin-top:34px;">妳現在的狀態</h2>
 
 <p>他回覆變慢，妳開始焦慮</p>
 <p>他忽冷忽熱，妳一直幫他找理由</p>
 <p>妳很累，但卻停不下來</p>
 
-<h2 style="margin-top:30px;">我會幫妳釐清</h2>
+<h2 style="margin-top:30px;">我會幫妳直接看清</h2>
 
 <div class="box">
 ✔️ 他現在對妳的真實想法<br>
-✔️ 為什麼變成這樣<br>
-✔️ 妳在他心中的位置
+✔️ 為什麼會變成現在這樣<br>
+✔️ 妳在他心中的真實位置
 </div>
 
 <h2 style="margin-top:30px;">服務方案</h2>
 
 <div class="box">
 <strong>讀心解析 30分鐘｜NT$1299</strong><br>
-對方心理狀態分析<br>
+對方心理狀態拆解<br>
 關係定位（曖昧 / 冷淡 / 替代）<br>
-下一步建議
+下一步怎麼做最不吃虧
 </div>
 
 <div class="box">
 <strong>加購深入分析 15分鐘｜NT$699</strong><br>
-第三者 / 未來發展補充解析
+第三者 / 未來走向補充
 </div>
 
 <a class="btn" href="https://lin.ee/5VQ5gbz">
