@@ -20,20 +20,18 @@ body {
   padding: 24px;
 }
 
-/* 主標 */
 h1 {
   font-size: 26px;
   line-height: 1.4;
   margin-bottom: 12px;
 }
 
-/* 文字 */
 p {
   color: #ccc;
   line-height: 1.6;
 }
 
-/* CTA 按鈕 */
+/* ===== 按鈕 ===== */
 .btn {
   display: block;
   width: 100%;
@@ -48,36 +46,36 @@ p {
   border: 1px solid rgba(255,215,0,0.6);
   box-shadow: 0 8px 20px rgba(255,215,0,0.25);
   transition: all 0.2s ease;
-  animation: pulse 2.2s infinite;
+
+  /* 呼吸光（不動位移） */
+  animation: glow 2.2s infinite;
 }
 
-/* hover */
+/* hover：浮起 */
 .btn:hover {
-  transform: scale(1.05);
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 14px 35px rgba(255,215,0,0.45);
 }
 
 /* 點擊 */
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
-/* 呼吸動畫（吸引注意） */
-@keyframes pulse {
+/* 呼吸動畫（只動光，不動位置） */
+@keyframes glow {
   0% {
-    transform: scale(1);
     box-shadow: 0 8px 20px rgba(255,215,0,0.25);
   }
   50% {
-    transform: scale(1.04);
-    box-shadow: 0 12px 30px rgba(255,215,0,0.5);
+    box-shadow: 0 14px 35px rgba(255,215,0,0.45);
   }
   100% {
-    transform: scale(1);
     box-shadow: 0 8px 20px rgba(255,215,0,0.25);
   }
 }
 
-/* 卡片 */
+/* ===== 卡片 ===== */
 .box {
   margin-top: 20px;
   padding: 18px;
@@ -88,33 +86,28 @@ p {
   cursor: pointer;
 }
 
-/* 卡片浮起 */
 .box:hover {
   transform: translateY(-6px);
   box-shadow: 0 12px 25px rgba(0,0,0,0.3);
   border-color: #ffd700;
 }
 
-/* 小標 */
 h2 {
   margin-top: 32px;
 }
 
-/* trust 區 */
 .trust {
   font-size: 13px;
   opacity: 0.7;
   margin-top: 8px;
 }
 
-/* 強化提示 */
 .notice {
   color: #ffd700;
   font-weight: bold;
   margin-top: 10px;
 }
 
-/* 安心提示 */
 .safe {
   font-size: 12px;
   opacity: 0.6;
@@ -127,7 +120,10 @@ h2 {
 
 <div class="container">
 
-<h1>他不是沒看到<br>只是現在還沒準備好回應妳</h1>
+<h1>
+他不是沒看到<br>
+只是現在還沒準備好回應妳
+</h1>
 
 <p>
 很多訊號其實已經存在，  
@@ -164,7 +160,7 @@ h2 {
 
 <a href="https://lin.ee/5VQ5gbz" style="text-decoration:none; color:inherit;">
 <div class="box">
-<strong>關係解析 30分鐘｜NT$1299</strong><br><br>
+<strong>讀心解析 30分鐘｜NT$1299</strong><br><br>
 對方心理狀態分析<br>
 關係定位（曖昧 / 冷淡 / 替代）<br>
 下一步建議
