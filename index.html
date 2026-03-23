@@ -76,12 +76,13 @@
 .btn:hover {
   transform: scale(1.03);
 }
-    .box {
-      margin-top: 20px;
-      padding: 16px;
-      border: 1px solid #333;
-      border-radius: 10px;
-    }
+   .box {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #333;
+  border-radius: 10px;
+  transition: all 0.25s ease;
+}
  .floating-btn {
   position: fixed;
   bottom: 20px;
@@ -101,6 +102,11 @@
   animation: pulse 1.5s infinite;
 }
   </style>
+  .box:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.3);
+  border-color: #ffd700;
+}
 </head>
 
 <body>
