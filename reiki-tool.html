@@ -170,7 +170,7 @@ function home(){
  </div>
  <div class="card" style="margin-top:15px">
   <h3>完整資料匯出／匯入</h3>
-  <p class="muted">所有資料會保存在目前瀏覽器。建議定期匯出備份。</p>
+  <p class="muted">所有資料會保存在目前瀏覽器。建議定期匯出備份。</p><p id="lastBackup" class="muted" style="margin:8px 0 0;font-weight:700">${getLastBackupText()}</p>
   <div class="row"><button class="ghost" id="exportHome">匯出備份</button><button class="ghost" id="importHome">匯入備份</button><input id="importFile" type="file" accept="application/json" class="hidden"></div>
  </div>`;
  document.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>{page=b.dataset.module;if(['chakras','crystals','symbols'].includes(page))search='';render()});
@@ -447,8 +447,23 @@ function customEdit(){
 }
 
 
+function getLastBackupText(){
+ const raw=localStorage.getItem('xiaoxiao_magicbook_last_backup');
+ if(!raw)return '尚未備份';
+ const d=new Date(raw);
+ if(Number.isNaN(d.getTime()))return '尚未備份';
+ const pad=n=>String(n).padStart(2,'0');
+ return `最後備份：${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function exportData(){
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(store,null,2)],{type:'application/json'}));a.download='笑笑的魔法書-完整備份.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob([JSON.stringify(store,null,2)],{type:'application/json'}));
+ a.download='笑笑的魔法書-完整備份.json';
+ a.click();
+ localStorage.setItem('xiaoxiao_magicbook_last_backup', new Date().toISOString());
+ setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+ if(page==='home') render();
 }
 function importData(e){
  const file=e.target.files[0];if(!file)return;
