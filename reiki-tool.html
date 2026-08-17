@@ -42,7 +42,7 @@ textarea{min-height:86px;resize:vertical}
 .form{margin-bottom:12px}.section{margin:14px 0}.section-title{font-weight:700;margin-bottom:8px}
 .step-list{display:grid;gap:9px}.step{border:1px dashed #cfc6bb;border-radius:13px;background:#fff;padding:10px}
 .step.dragging{opacity:.45}.step-head{display:flex;align-items:center;gap:8px;margin-bottom:9px}.handle{font-size:20px;color:var(--gray);cursor:grab;touch-action:none}.step-head strong{flex:1}
-.symbols{display:flex;gap:10px;overflow-x:auto;padding:4px 0 7px}.symbol-box{min-width:145px;width:145px;border:1px solid var(--line);border-radius:11px;padding:9px;background:#fcfaf8}
+.symbols{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;padding:4px 0 7px;align-items:start}.symbol-box{min-width:0;width:auto;border:1px solid var(--line);border-radius:11px;padding:9px;background:#fcfaf8}
 .symbol-box img{width:100%;height:95px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid var(--line);margin-bottom:7px}
 .symbol-box .field{margin-bottom:7px}.symbol-box input{font-size:13px;padding:8px}
 .addbar{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.addbar button{background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:13px}
@@ -124,6 +124,7 @@ function normalizeStore(raw){
  const src=raw.data||raw||{};
  const arr=(...keys)=>{for(const k of keys)if(Array.isArray(src[k]))return src[k];return[]};
  return{
+  ...src,
   version:3,
   reiki:arr('reiki','靈氣','reikiRecords').map(normalizeReiki),
   chakras:arr('chakras','七大脈輪','chakra').map(x=>({...x,id:x.id||uid(),name:x.name||x.title||'',images:Array.isArray(x.images)?x.images:((x.image||x.img)?[x.image||x.img]:[])})),
@@ -135,6 +136,7 @@ function normalizeStore(raw){
 function normalizeCustomCategory(c){return{id:c.id||uid(),name:c.name||'未命名分類',items:Array.isArray(c.items)?c.items:[]}}
 function normalizeReiki(r){
  return{
+  ...r,
   id:r.id||uid(),title:r.title||r.name||'未命名靈氣法',
   opening:r.opening||r.openingDeclaration||'我現在使用靈氣來為＿＿＿做靈氣療癒',
   hands:r.hands||r.handsRaised||'我就是光、光就是我',
@@ -147,11 +149,16 @@ function normalizeReiki(r){
 function normalizeStep(s){
  const type=s.type==='symbol'?'symbols':(s.type||'other');
  return{
+  ...s,
   id:s.id||uid(),type,
   sutra:s.sutra||s.text||'',method:s.method||s.technique||'',
   handPlacement:s.handPlacement||s.hands||'',
   purify:s.purify||s.answer||'否',
-  symbols:(s.symbols||s.items||[]).map(x=>({id:x.id||uid(),name:x.name||x.title||'',image:x.image||x.img||'',imageRef:x.imageRef||'',activation:x.activation||x.method||'',count:Number(x.count||x.times||1)})),
+  symbols:(s.symbols||s.items||[]).map(x=>({
+   ...x,
+   id:x.id||uid(),name:x.name||x.title||'',image:x.image||x.img||'',imageRef:x.imageRef||'',
+   activation:x.activation||x.method||'',count:Number(x.count||x.times||1),countUnit:x.countUnit||'點'
+  })),
   note:s.note||''
  }
 }
@@ -252,7 +259,7 @@ function home(){
  <div class="card" style="margin-top:15px">
   <h3>完整資料匯出／匯入</h3>
   <p class="muted">所有資料會保存在目前瀏覽器。建議定期匯出備份。</p><p id="lastBackup" class="muted" style="margin:8px 0 0;font-weight:700">${getLastBackupText()}</p>
-  <div class="row"><button class="ghost" id="exportHome">匯出備份</button><button class="ghost" id="importHome">匯入備份</button><input id="importFile" type="file" accept="application/json" class="hidden"></div>
+  <div class="row"><button class="ghost" id="exportHome">匯出備份</button><button class="ghost" id="importHome">匯入備份</button><span class="muted">可用舊版 JSON 備份安全升級</span><input id="importFile" type="file" accept="application/json" class="hidden"></div>
  </div>`;
  document.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>{page=b.dataset.module;if(['chakras','crystals','symbols'].includes(page))search='';render()});
  document.getElementById('exportHome').onclick=exportData;
