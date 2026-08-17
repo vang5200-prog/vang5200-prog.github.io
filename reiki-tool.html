@@ -486,7 +486,25 @@ function knowledgeList(type){
  <div class="row between"><h2>${k.title}</h2><span class="muted">${arr.length} 筆</span></div>
  <div class="list">${arr.map(x=>`<button class="card-btn" data-kid="${x.id}"><h3>${esc(x.name)}</h3><div class="muted">點開查看完整資料</div></button>`).join('')||'<div class="card muted">目前沒有資料</div>'}</div>`;
  document.getElementById('back').onclick=goHome;document.getElementById('new').onclick=()=>{currentType=type;draft=blankKnowledge(type);page='knowledgeEdit';render()};
- document.getElementById('ksearch').oninput=e=>{search=e.target.value;knowledgeList(type);document.getElementById('ksearch').focus()};
+ const ksearchInput=document.getElementById('ksearch');
+ let ksearchComposing=false;
+ ksearchInput.addEventListener('compositionstart',()=>{ksearchComposing=true});
+ ksearchInput.addEventListener('compositionend',e=>{
+   ksearchComposing=false;
+   search=e.target.value;
+   knowledgeList(type);
+   const next=document.getElementById('ksearch');
+   next.focus();
+   try{next.setSelectionRange(next.value.length,next.value.length)}catch(_){}
+ });
+ ksearchInput.addEventListener('input',e=>{
+   search=e.target.value;
+   if(ksearchComposing)return;
+   knowledgeList(type);
+   const next=document.getElementById('ksearch');
+   next.focus();
+   try{next.setSelectionRange(next.value.length,next.value.length)}catch(_){}
+ });
  document.querySelectorAll('[data-kid]').forEach(b=>b.onclick=()=>{currentId=b.dataset.kid;currentType=type;page='knowledgeDetail';render()});
 }
 function blankKnowledge(type){const k=KNOW[type],x={id:uid(),name:'',images:[]};k.fields.forEach(f=>x[f[0]]='');return x}
