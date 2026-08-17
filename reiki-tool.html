@@ -102,7 +102,91 @@ let store=load(), page='home', currentType='', currentId='', draft=null, search=
 const app=document.getElementById('app');
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function save(){localStorage.setItem(KEY,JSON.stringify(store))}
+const MEDIA_DB='xiaoxiao-magicbook-media-v1';
+const MEDIA_STORE='media';
+const mediaCache=new Map();
+
+function openMediaDB(){
+ return new Promise((resolve,reject)=>{
+  if(!window.indexedDB)return reject(new Error('此瀏覽器不支援 IndexedDB'));
+  const req=indexedDB.open(MEDIA_DB,1);
+  req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(MEDIA_STORE))db.createObjectStore(MEDIA_STORE)};
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error||new Error('無法開啟圖片資料庫'));
+ });
+}
+function mediaPutAll(items){
+ if(!items.length)return Promise.resolve();
+ return openMediaDB().then(db=>new Promise((resolve,reject)=>{
+  const tx=db.transaction(MEDIA_STORE,'readwrite'), os=tx.objectStore(MEDIA_STORE);
+  for(const [id,data] of items)os.put(data,id);
+  tx.oncomplete=()=>{db.close();resolve()};
+  tx.onerror=()=>{db.close();reject(tx.error||new Error('圖片儲存失敗'))};
+  tx.onabort=()=>{db.close();reject(tx.error||new Error('圖片儲存失敗'))};
+ }));
+}
+function mediaGetAll(ids){
+ if(!ids.length)return Promise.resolve({});
+ return openMediaDB().then(db=>new Promise((resolve,reject)=>{
+  const tx=db.transaction(MEDIA_STORE,'readonly'), os=tx.objectStore(MEDIA_STORE), out={};
+  let left=ids.length;
+  for(const id of ids){
+   const req=os.get(id);
+   req.onsuccess=()=>{if(req.result)out[id]=req.result;if(--left===0){db.close();resolve(out)}};
+   req.onerror=()=>{db.close();reject(req.error||new Error('圖片讀取失敗'))};
+  }
+ }));
+}
+function mediaId(){return 'm_'+uid()}
+function externalizeMedia(value, media){
+ if(typeof value==='string'){
+  if(value.startsWith('data:image/')){
+   const cached=mediaCache.get(value);
+   if(cached)return `__MEDIA__${cached}`;
+   const id=mediaId();
+   mediaCache.set(value,id);
+   media.push([id,value]);
+   return `__MEDIA__${id}`;
+  }
+  return value;
+ }
+ if(Array.isArray(value))return value.map(x=>externalizeMedia(x,media));
+ if(value&&typeof value==='object'){
+  const out={};
+  for(const [k,v] of Object.entries(value))out[k]=externalizeMedia(v,media);
+  return out;
+ }
+ return value;
+}
+function collectMediaRefs(value, ids){
+ if(typeof value==='string'&&value.startsWith('__MEDIA__')){ids.push(value.slice(9));return}
+ if(Array.isArray(value)){value.forEach(x=>collectMediaRefs(x,ids));return}
+ if(value&&typeof value==='object')Object.values(value).forEach(x=>collectMediaRefs(x,ids));
+}
+function hydrateMedia(value, media){
+ if(typeof value==='string'&&value.startsWith('__MEDIA__'))return media[value.slice(9)]||value;
+ if(Array.isArray(value))return value.map(x=>hydrateMedia(x,media));
+ if(value&&typeof value==='object'){
+  for(const k of Object.keys(value))value[k]=hydrateMedia(value[k],media);
+ }
+ return value;
+}
+async function hydrateStoreMedia(){
+ const ids=[];collectMediaRefs(store,ids);
+ if(!ids.length)return;
+ const unique=[...new Set(ids)];
+ const media=await mediaGetAll(unique);
+ for(const id of unique)if(media[id])mediaCache.set(media[id],id);
+ hydrateMedia(store,media);
+}
+function save(){
+ const media=[];
+ const stripped=externalizeMedia(store,media);
+ // Metadata remains in localStorage; potentially large Base64 images no longer consume
+ // the single localStorage quota.
+ localStorage.setItem(KEY,JSON.stringify(stripped));
+ return mediaPutAll(media);
+}
 function normalizeSymbolSteps(store){
  (store.reiki||[]).forEach(r=>(r.steps||[]).forEach(st=>{
    if(st.type!=='symbols')return;
@@ -133,7 +217,19 @@ function normalizeStore(raw){
   customCategories:Array.isArray(src.customCategories)?src.customCategories.map(normalizeCustomCategory):[]
  }
 }
-function normalizeCustomCategory(c){return{id:c.id||uid(),name:c.name||'未命名分類',items:Array.isArray(c.items)?c.items:[]}}
+function normalizeCustomCategory(c){
+ return{
+  id:c.id||uid(),
+  name:c.name||'未命名分類',
+  items:(Array.isArray(c.items)?c.items:[]).map(x=>({
+   ...x,
+   id:x.id||uid(),
+   name:x.name||'未命名資料',
+   fields:Array.isArray(x.fields)?x.fields.map(f=>({name:String(f?.name??''),value:String(f?.value??'')})):[],
+   images:Array.isArray(x.images)?x.images:[]
+  }))
+ }
+}
 function normalizeReiki(r){
  return{
   ...r,
@@ -267,6 +363,14 @@ function home(){
  document.getElementById('importFile').onchange=importData;
 }
 
+function blankReiki(){
+ return {
+  id:uid(),title:'',
+  opening:'我現在使用靈氣來為＿＿＿做靈氣療癒',
+  hands:'我就是光、光就是我',
+  closing:'感恩宇宙能量',note:'',images:[],steps:[]
+ };
+}
 function reikiList(){
  page='reikiList';
  let sortMode=false;
@@ -510,7 +614,7 @@ function syncReiki(){
 async function saveReiki(){
  syncReiki();
  if(!draft.title.trim()){alert('請輸入靈氣法名稱');return}
- const files=document.getElementById('noteImages').files;
+ const files=document.getElementById('noteImages')?.files||[];
  if(files.length){for(const f of files)draft.images.push(await imageData(f))}
  const compact=compactReikiDraft(draft);
  for(const step of (compact.steps||[])){
@@ -522,15 +626,16 @@ async function saveReiki(){
  const next=JSON.parse(JSON.stringify(compact));
  const previous=store.reiki;
  const i=previous.findIndex(x=>x.id===next.id);
+ const oldValue=i>=0?JSON.parse(JSON.stringify(previous[i])):null;
  if(i>=0)previous[i]=next;else previous.push(next);
  try{
-  save();
-  currentId=draft.id;page='reikiDetail';render();
+  await save();
+  currentId=next.id;draft=null;page='reikiDetail';render();
  }catch(err){
-  if(i>=0)previous[i]=JSON.parse(JSON.stringify(draft));
+  if(i>=0)previous[i]=oldValue;
   else previous.pop();
   console.error(err);
-  alert('儲存失敗：瀏覽器儲存空間可能已接近上限。請先使用「完整資料匯出」備份，再告訴我，我會繼續處理，不會刪除你現有資料。');
+  alert('儲存失敗：請先確認瀏覽器儲存權限與空間，再使用「完整資料匯出」備份。');
  }
 }
 function enableDrag(){
@@ -858,6 +963,50 @@ function customList(){
  });
 }
 
+
+function syncCustom(){
+ if(!draft)return;
+ const name=document.getElementById('cn');
+ if(name)draft.name=name.value;
+ const fields=[];
+ document.querySelectorAll('[data-fn]').forEach(inp=>{
+   const i=Number(inp.dataset.fn);
+   fields[i]=fields[i]||{name:'',value:''};
+   fields[i].name=inp.value;
+ });
+ document.querySelectorAll('[data-fv]').forEach(inp=>{
+   const i=Number(inp.dataset.fv);
+   fields[i]=fields[i]||{name:'',value:''};
+   fields[i].value=inp.value;
+ });
+ draft.fields=fields.filter(Boolean);
+}
+
+async function saveCustom(){
+ try{
+  syncCustom();
+  if(!draft.name.trim()){alert('請輸入自訂資料名稱');return}
+  const files=[...(document.getElementById('cfiles')?.files||[])];
+  for(const f of files)draft.images.push(await imageData(f));
+
+  const target=store.customCategories.find(x=>x.id===currentId);
+  if(!target){alert('找不到目前的分類，請返回後重新操作。');return}
+
+  const next=JSON.parse(JSON.stringify(draft));
+  const i=target.items.findIndex(x=>x.id===next.id);
+  if(i>=0)target.items[i]=next;
+  else target.items.push(next);
+
+  await save();
+  page='customList';
+  draft=null;
+  render();
+ }catch(err){
+  console.error(err);
+  alert('儲存失敗：請先使用「完整資料匯出」備份後再告訴我。');
+ }
+}
+
 function customEdit(){
  const c=store.customCategories.find(x=>x.id===currentId);
  if(!c){page='customCategories';currentId='';draft=null;render();return}
@@ -866,17 +1015,53 @@ function customEdit(){
  <div class="form">
  <div class="field"><label>自訂資料名稱</label><input id="cn" value="${esc(draft.name)}"></div>
  <div><label>任意新增欄位</label>
-  <div id="fields">${draft.fields.map((f,i)=>`<div class="custom-row">
-   <div class="row"><input data-fn="${i}" placeholder="欄位名稱" value="${esc(f.name)}"></div>
+  <div id="fields">${draft.fields.map((f,i)=>`<div class="custom-row" data-custom-field="${i}">
+   <div class="row">
+    <input data-fn="${i}" placeholder="欄位名稱" value="${esc(f.name)}">
+    <button type="button" class="danger" data-delete-field="${i}">刪除</button>
+   </div>
    <textarea data-fv="${i}" placeholder="內容">${esc(f.value)}</textarea>
   </div>`).join('')}</div>
   <button type="button" class="ghost" id="addField">＋新增欄位</button>
  </div>
- <div class="field"><label>圖片（可多張）</label><input id="cfiles" type="file" accept="image/*" multiple>${gallery(draft.images||[])}</div>
+ <div class="field"><label>圖片（可多張）</label>
+   <input id="cfiles" type="file" accept="image/*" multiple>
+   <div id="customImages" class="image-edit-grid">
+    ${(draft.images||[]).map((img,i)=>`<div class="image-edit-item" data-custom-img="${i}">
+      <img src="${esc(img)}" alt="">
+      <button type="button" class="danger image-delete" data-custom-img-delete="${i}">刪除圖片</button>
+    </div>`).join('')||'<div id="noCustomImages" class="muted">尚未上傳圖片</div>'}
+   </div>
+ </div>
  <div class="row" style="justify-content:flex-end"><button type="button" class="primary" id="save">儲存</button></div>
  </div>`;
  document.getElementById('backCustom').onclick=()=>{page='customList';render()};
- document.getElementById('addField').onclick=()=>{syncCustom();draft.fields.push({name:'',value:''});render()};
+ document.getElementById('addField').onclick=()=>{
+   syncCustom();
+   draft.fields.push({name:'',value:''});
+   render();
+ };
+ document.querySelectorAll('[data-delete-field]').forEach(btn=>btn.onclick=()=>{
+   syncCustom();
+   const i=Number(btn.dataset.deleteField);
+   if(!Number.isInteger(i)||i<0||i>=draft.fields.length)return;
+   draft.fields.splice(i,1);
+   render();
+ });
+ document.querySelectorAll('[data-custom-img-delete]').forEach(btn=>btn.onclick=()=>{
+   syncCustom();
+   const i=Number(btn.dataset.customImgDelete);
+   if(!Number.isInteger(i)||i<0||i>=draft.images.length)return;
+   draft.images.splice(i,1);
+   render();
+ });
+ document.getElementById('cfiles').onchange=async e=>{
+   const fs=[...e.target.files];
+   if(!fs.length)return;
+   syncCustom();
+   for(const f of fs)draft.images.push(await imageData(f));
+   render();
+ };
  document.getElementById('save').onclick=saveCustom;
 }
 
@@ -901,7 +1086,14 @@ function exportData(){
 }
 function importData(e){
  const file=e.target.files[0];if(!file)return;
- file.text().then(txt=>{try{const incoming=normalizeStore(JSON.parse(txt));if(confirm('匯入會取代目前瀏覽器中的資料，確定嗎？')){store=incoming;save();goHome()}}catch(err){alert('匯入失敗，請確認備份檔案格式。')}e.target.value=''})
+ file.text().then(async txt=>{try{
+  const incoming=normalizeStore(JSON.parse(txt));
+  if(confirm('匯入會取代目前瀏覽器中的資料，確定嗎？')){
+   store=incoming;
+   await save();
+   goHome();
+  }
+ }catch(err){console.error(err);alert('匯入失敗，請確認備份檔案格式。')}e.target.value=''})
 }
 
 window.__backToCategories=function(){
@@ -922,6 +1114,7 @@ document.addEventListener('click',e=>{
  const edit=e.target.closest('[data-edit]');if(edit){currentType=edit.dataset.edit;draft=JSON.parse(JSON.stringify(store[currentType].find(x=>x.id===currentId)));page='knowledgeEdit';render()}
 });
 render();
+hydrateStoreMedia().then(()=>render()).catch(err=>console.error('圖片資料載入失敗',err));
 })();
 </script>
 </body>
