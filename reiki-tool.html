@@ -78,6 +78,16 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
 .image-edit-item{width:110px}
 .image-edit-item img{width:110px;height:110px;object-fit:cover;border-radius:10px;display:block;margin-bottom:6px}
 .image-delete{width:100%;padding:7px 8px;font-size:.85rem}
+
+[data-delete-symbol-image]{margin:6px 0 10px}
+.symbol-box .row select{flex:0 0 82px}
+.symbol-box .row input{flex:1}
+
+.reiki-list-item{display:flex;align-items:stretch;gap:8px}
+.reiki-list-card{flex:1;text-align:left}
+.reiki-list-handle{width:42px;display:grid;place-items:center;font-size:22px;color:var(--gray);border:1px dashed var(--line);border-radius:10px;touch-action:none;user-select:none}
+.reiki-list-item.dragging{opacity:.55}
+.reiki-sort-mode .reiki-list-card{pointer-events:none}
 </style>
 </head>
 <body>
@@ -93,10 +103,20 @@ const app=document.getElementById('app');
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function save(){localStorage.setItem(KEY,JSON.stringify(store))}
+function normalizeSymbolSteps(store){
+ (store.reiki||[]).forEach(r=>(r.steps||[]).forEach(st=>{
+   if(st.type!=='symbols')return;
+   (st.symbols||[]).forEach(sym=>{
+     if(!sym.countUnit)sym.countUnit='點';
+     if(sym.imageRef===undefined)sym.imageRef='';
+   });
+ }));
+ return store;
+}
 function load(){
  try{
   const raw=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem('spirit-toolbox-v2')||'{}');
-  return normalizeStore(raw);
+  return normalizeSymbolSteps(normalizeStore(raw));
  }catch(e){return emptyStore()}
 }
 function emptyStore(){return{version:3,reiki:[],chakras:[],crystals:[],symbols:[],customCategories:[]}}
@@ -131,7 +151,7 @@ function normalizeStep(s){
   sutra:s.sutra||s.text||'',method:s.method||s.technique||'',
   handPlacement:s.handPlacement||s.hands||'',
   purify:s.purify||s.answer||'否',
-  symbols:(s.symbols||s.items||[]).map(x=>({id:x.id||uid(),name:x.name||x.title||'',image:x.image||x.img||'',activation:x.activation||x.method||'',count:Number(x.count||x.times||1)})),
+  symbols:(s.symbols||s.items||[]).map(x=>({id:x.id||uid(),name:x.name||x.title||'',image:x.image||x.img||'',imageRef:x.imageRef||'',activation:x.activation||x.method||'',count:Number(x.count||x.times||1)})),
   note:s.note||''
  }
 }
@@ -151,6 +171,47 @@ function imageData(file,max=1100){
    im.onerror=reject;im.src=r.result;
   };
   r.readAsDataURL(file);
+ });
+}
+function normalizeName(v){return String(v??'').trim().toLowerCase()}
+function symbolLibraryImage(x){
+ const ref=String(x?.imageRef||'');
+ if(ref){
+  const lib=store.symbols.find(z=>z.id===ref);
+  if(lib&&lib.images?.[0])return lib.images[0];
+ }
+ return x?.image||'';
+}
+function compactReikiDraft(input){
+ const out=JSON.parse(JSON.stringify(input));
+ for(const step of (out.steps||[])){
+  if(step.type!=='symbols')continue;
+  for(const sym of (step.symbols||[])){
+   const lib=store.symbols.find(z=>normalizeName(z.name)===normalizeName(sym.name)&&z.images?.[0]);
+   if(lib && sym.image && sym.image===lib.images[0]){
+    sym.image='';
+    sym.imageRef=lib.id;
+   }
+  }
+ }
+ return out;
+}
+function compactDataUrl(src,max=700,quality=.68){
+ return new Promise(resolve=>{
+  if(!src||!String(src).startsWith('data:image/'))return resolve(src);
+  try{
+   const im=new Image();
+   im.onload=()=>{
+    if((im.naturalWidth||im.width)<=max&&(im.naturalHeight||im.height)<=max&&src.length<140000)return resolve(src);
+    const scale=Math.min(1,max/Math.max(im.width,im.height));
+    const c=document.createElement('canvas');
+    c.width=Math.max(1,Math.round(im.width*scale));c.height=Math.max(1,Math.round(im.height*scale));
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    resolve(c.toDataURL('image/jpeg',quality));
+   };
+   im.onerror=()=>resolve(src);
+   im.src=src;
+  }catch(_){resolve(src)}
  });
 }
 function openImage(src){document.getElementById('modalImg').src=src;document.getElementById('modal').classList.add('open')}
@@ -200,35 +261,124 @@ function home(){
 }
 
 function reikiList(){
- page='reikiList';app.innerHTML=top()+`
- <div class="toolbar"><button class="ghost" id="back">← 回首頁</button><button class="primary" id="new">＋ 新增靈氣法</button></div>
- <div class="search"><span>⌕</span><input id="search" placeholder="快速搜尋靈氣法名稱" value="${esc(search)}"></div>
- <div class="row between"><h2>所有靈氣法</h2><span class="muted">${store.reiki.length} 筆</span></div>
- <div class="list">${store.reiki.filter(r=>r.title.toLowerCase().includes(search.toLowerCase())).map(r=>`
- <button class="card-btn" data-id="${r.id}"><h3>${esc(r.title)}</h3><div class="muted">${r.steps.length} 個中間步驟</div></button>`).join('')||'<div class="card muted">目前沒有靈氣法</div>'}</div>`;
- document.getElementById('back').onclick=goHome;document.getElementById('new').onclick=()=>{draft=blankReiki();page='reikiEdit';render()};
- const searchInput=document.getElementById('search');
- let composing=false;
- searchInput.addEventListener('compositionstart',()=>{composing=true});
- searchInput.addEventListener('compositionend',e=>{
-   composing=false;
-   search=e.target.value;
-   reikiList();
-   const next=document.getElementById('search');
-   next.focus();
-   try{next.setSelectionRange(next.value.length,next.value.length)}catch(_){}
- });
- searchInput.addEventListener('input',e=>{
-   search=e.target.value;
-   if(composing)return;
-   reikiList();
-   const next=document.getElementById('search');
-   next.focus();
-   try{next.setSelectionRange(next.value.length,next.value.length)}catch(_){}
- });
- document.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{currentId=b.dataset.id;page='reikiDetail';render()});
+ page='reikiList';
+ let sortMode=false;
+ let orderDraft=store.reiki.map(x=>x.id);
+
+ const visibleIds=()=>store.reiki.filter(r=>r.title.toLowerCase().includes(search.toLowerCase())).map(r=>r.id);
+
+ const renderList=()=>{
+  const visible=store.reiki.filter(r=>r.title.toLowerCase().includes(search.toLowerCase()));
+  app.innerHTML=top()+`
+  <div class="toolbar"><button class="ghost" id="back">← 回首頁</button><button class="primary" id="new">＋ 新增靈氣法</button></div>
+  <div class="search"><span>⌕</span><input id="search" placeholder="快速搜尋靈氣法名稱" value="${esc(search)}"></div>
+  <div class="row between"><h2>所有靈氣法</h2><div class="row"><span class="muted">${store.reiki.length} 筆</span>${sortMode?`<button class="primary" id="saveReikiOrder">儲存排序</button><button class="ghost" id="cancelReikiOrder">取消</button>`:`<button class="ghost" id="startReikiOrder">調整順序</button>`}</div></div>
+  ${sortMode?`<div class="muted" style="margin:8px 0 12px">調整模式已開啟，拖曳左側「⋮⋮」整理靈氣法順序；完成後請按「儲存排序」。</div>`:''}
+  <div class="list" id="reikiListItems">${visible.map(r=>`
+   <div class="reiki-list-item ${sortMode?'reiki-sort-mode':''}" draggable="${sortMode?'true':'false'}" data-reiki-list-item="${r.id}">
+    ${sortMode?`<div class="reiki-list-handle" aria-label="拖曳排序">⋮⋮</div>`:''}
+    <button class="card-btn reiki-list-card" data-id="${r.id}"><div><h3>${esc(r.title)}</h3><div class="muted">${r.steps.length} 個中間步驟</div></div></button>
+   </div>`).join('')||'<div class="card muted">目前沒有靈氣法</div>'}</div>`;
+  document.getElementById('back').onclick=goHome;
+  document.getElementById('new').onclick=()=>{draft=blankReiki();page='reikiEdit';render()};
+  const searchInput=document.getElementById('search');
+  let composing=false;
+  searchInput.addEventListener('compositionstart',()=>{composing=true});
+  searchInput.addEventListener('compositionend',e=>{
+    composing=false;search=e.target.value;renderList();
+    const next=document.getElementById('search');next.focus();
+    try{next.setSelectionRange(next.value.length,next.value.length)}catch(_){}
+  });
+  searchInput.addEventListener('input',e=>{
+    search=e.target.value;if(composing)return;renderList();
+    const next=document.getElementById('search');next.focus();
+    try{next.setSelectionRange(next.value.length,next.value.length)}catch(_){}
+  });
+  document.querySelectorAll('.reiki-list-card').forEach(b=>b.onclick=()=>{currentId=b.dataset.id;page='reikiDetail';render()});
+  if(sortMode)enableReikiListDrag();
+  if(sortMode){
+    document.getElementById('cancelReikiOrder').onclick=()=>{orderDraft=store.reiki.map(x=>x.id);sortMode=false;renderList()};
+    document.getElementById('saveReikiOrder').onclick=()=>{
+      const ids=orderDraft.filter(id=>store.reiki.some(x=>x.id===id));
+      const reordered=ids.map(id=>store.reiki.find(x=>x.id===id)).filter(Boolean);
+      if(reordered.length===store.reiki.length){
+        store.reiki=reordered;
+        save();
+        orderDraft=store.reiki.map(x=>x.id);
+      }
+      sortMode=false;renderList();
+    };
+  }else{
+    document.getElementById('startReikiOrder').onclick=()=>{orderDraft=store.reiki.map(x=>x.id);sortMode=true;renderList()};
+  }
+ };
+
+ function enableReikiListDrag(){
+  const list=document.getElementById('reikiListItems');if(!list)return;
+  let dragId=null,dragEl=null;
+  const syncOrder=()=>{
+    const visible=[...list.querySelectorAll('[data-reiki-list-item]')].map(x=>x.dataset.reikiListItem);
+    const visibleSet=new Set(visible);
+    const hidden=store.reiki.filter(x=>!visibleSet.has(x.id)).map(x=>x.id);
+    // Keep filtered-out items in their existing relative positions, while the
+    // visible items take the positions occupied by visible items. This makes
+    // drag ordering safe even when a search term is active.
+    const base=store.reiki.map(x=>x.id);
+    const next=[];
+    let vi=0;
+    for(const id of base){
+      if(visibleSet.has(id))next.push(visible[vi++]);
+      else next.push(id);
+    }
+    orderDraft=next;
+  };
+  list.querySelectorAll('[data-reiki-list-item]').forEach(el=>{
+    el.addEventListener('dragstart',e=>{
+      dragId=el.dataset.reikiListItem;dragEl=el;el.classList.add('dragging');
+      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragId)}catch(_){}
+    });
+    el.addEventListener('dragover',e=>e.preventDefault());
+    el.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(!dragId||dragId===el.dataset.reikiListItem)return;
+      const from=orderDraft.indexOf(dragId),to=orderDraft.indexOf(el.dataset.reikiListItem);
+      if(from<0||to<0)return;
+      orderDraft.splice(to,1,orderDraft.splice(from,1)[0]);
+      renderList();
+    });
+    el.addEventListener('dragend',()=>{el.classList.remove('dragging');dragId=null;dragEl=null});
+    const handle=el.querySelector('.reiki-list-handle');if(!handle)return;
+    handle.style.touchAction='none';
+    handle.addEventListener('touchstart',e=>{
+      if(e.touches.length!==1)return;
+      dragId=el.dataset.reikiListItem;dragEl=el;el.classList.add('dragging');e.preventDefault();
+    },{passive:false});
+    handle.addEventListener('touchmove',e=>{
+      if(!dragEl||e.touches.length!==1)return;
+      e.preventDefault();
+      const t=e.touches[0];
+      const target=[...list.querySelectorAll('[data-reiki-list-item]')].find(x=>{
+        if(x===dragEl)return false;
+        const q=x.getBoundingClientRect();
+        return t.clientY>=q.top&&t.clientY<=q.bottom;
+      });
+      if(!target)return;
+      const q=target.getBoundingClientRect();
+      if(t.clientY<q.top+q.height/2)list.insertBefore(dragEl,target);
+      else list.insertBefore(dragEl,target.nextSibling);
+    },{passive:false});
+    handle.addEventListener('touchend',()=>{
+      if(!dragEl)return;
+      syncOrder();dragEl.classList.remove('dragging');dragId=null;dragEl=null;renderList();
+    },{passive:false});
+    handle.addEventListener('touchcancel',()=>{
+      dragEl?.classList.remove('dragging');dragId=null;dragEl=null;renderList();
+    },{passive:false});
+  });
+ }
+ renderList();
 }
-function blankReiki(){return{id:uid(),title:'',opening:'我現在使用靈氣來為＿＿＿做靈氣療癒',hands:'我就是光、光就是我',closing:'感恩宇宙能量',note:'',images:[],steps:[]}}
+
 function reikiDetail(){
  const r=store.reiki.find(x=>x.id===currentId);if(!r){reikiList();return}
  let orderDraft=JSON.parse(JSON.stringify(r.steps||[])),sortMode=false;
@@ -284,10 +434,10 @@ function reikiDetail(){
 
 function readStep(s,n){
  const name={sutra:'念達法',symbols:'符號',purification:'淨化',technique:'手法',other:'其他'}[s.type]||'其他';
- const repeat=s.type==='sutra'?'　<span class="repeat">唸 3 次</span>':'';
+ const repeat=s.type==='sutra'||s.type==='symbols'?'　<span class="repeat">唸 3 次</span>':'';
  if(s.type==='purification'&&s.purify==='否')return '';
  let body='';
- if(s.type==='symbols')body=`<div class="symbols">${s.symbols.map(x=>`<div class="symbol-box"><b>${esc(x.name)}</b>${x.image?`<img src="${esc(x.image)}" data-zoom="${esc(x.image)}">`:''}<div class="muted">啟動方式：${esc(x.activation)}</div><div class="muted">次數：${Number(x.count)||1} 次</div></div>`).join('')}</div>`;
+ if(s.type==='symbols')body=`<div class="symbols">${s.symbols.map(x=>`<div class="symbol-box"><b>${esc(x.name)}</b>${symbolLibraryImage(x)?`<img src="${esc(symbolLibraryImage(x))}" data-zoom="${esc(symbolLibraryImage(x))}">`:''}<div class="muted">啟動方式：${esc(x.activation)}</div><div class="muted">${esc(x.countUnit||'點')}：${Number(x.count)||1}次</div></div>`).join('')}</div>`;
  else if(s.type==='purification')body=`<div class="content">${esc(s.method)}</div>`;
  else if(s.type==='sutra')body=`<div class="content">${esc(s.sutra)}</div><div class="muted" style="margin-top:6px"><b>雙手擺放部位：</b>${esc(s.handPlacement||'未設定')}</div>`;
  else body=`<div class="content">${esc(s.method||s.note)}</div>`;
@@ -314,17 +464,18 @@ function reikiEdit(){
  document.getElementById('saveReiki').onclick=saveReiki;
  document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{syncReiki();draft.steps.push({id:uid(),type:b.dataset.add,sutra:'',method:'',handPlacement:'',purify:'否',symbols:[],note:''});reikiEdit()});
  document.querySelectorAll('[data-remove-step]').forEach(b=>b.onclick=()=>{syncReiki();draft.steps=draft.steps.filter(s=>s.id!==b.dataset.removeStep);reikiEdit()});
- document.querySelectorAll('[data-add-symbol]').forEach(b=>b.onclick=()=>{syncReiki();const s=draft.steps.find(x=>x.id===b.dataset.addSymbol);s.symbols.push({id:uid(),name:'',image:'',activation:'',count:1});reikiEdit()});
+ document.querySelectorAll('[data-add-symbol]').forEach(b=>b.onclick=()=>{syncReiki();const s=draft.steps.find(x=>x.id===b.dataset.addSymbol);s.symbols.push({id:uid(),name:'',image:'',imageRef:'',activation:'',count:1,countUnit:'點'});reikiEdit()});
  document.querySelectorAll('[data-remove-symbol]').forEach(b=>b.onclick=()=>{syncReiki();const s=draft.steps.find(x=>x.id===b.dataset.removeSymbol);s.symbols.splice(Number(b.dataset.index),1);reikiEdit()});
  document.querySelectorAll('[data-purify]').forEach(b=>b.onchange=()=>{syncReiki();const s=draft.steps.find(x=>x.id===b.dataset.purify);s.purify=b.value;reikiEdit()});
- document.querySelectorAll('[data-symbol-file]').forEach(inp=>inp.onchange=async()=>{const f=inp.files[0];if(!f)return;syncReiki();const s=draft.steps.find(x=>x.id===inp.dataset.symbolFile);s.symbols[Number(inp.dataset.index)].image=await imageData(f);reikiEdit()});
+ document.querySelectorAll('[data-symbol-file]').forEach(inp=>inp.onchange=async()=>{const f=inp.files[0];if(!f)return;syncReiki();const s=draft.steps.find(x=>x.id===inp.dataset.symbolFile);s.symbols[Number(inp.dataset.index)].image=await imageData(f);s.symbols[Number(inp.dataset.index)].imageRef='';reikiEdit()});
+ document.querySelectorAll('[data-delete-symbol-image]').forEach(btn=>btn.onclick=()=>{syncReiki();const s=draft.steps.find(x=>x.id===btn.dataset.deleteSymbolImage);if(!s)return;const sym=s.symbols[Number(btn.dataset.index)];if(sym){sym.image='';sym.imageRef=''}reikiEdit()});
  document.querySelectorAll('[data-zoom]').forEach(x=>x.onclick=()=>openImage(x.dataset.zoom));
  enableDrag();
 }
 function editStep(s){
  const title={sutra:'念達法',symbols:'符號',purification:'淨化',technique:'手法',other:'其他'}[s.type]||'其他';
  let body='';
- if(s.type==='symbols')body=`<div class="symbols">${s.symbols.map((x,i)=>`<div class="symbol-box"><div class="field"><label>符號名稱</label><input data-sn="${s.id}" data-i="${i}" value="${esc(x.name)}"></div>${x.image?`<img src="${esc(x.image)}">`:`<div style="height:95px;border:1px dashed var(--line);border-radius:8px;display:grid;place-items:center;color:var(--gray);margin-bottom:7px">尚未上傳</div>`}<label>圖片<input type="file" accept="image/*" data-symbol-file="${s.id}" data-index="${i}"></label><div class="field"><label>啟動方式</label><input data-sa="${s.id}" data-i="${i}" value="${esc(x.activation)}"></div><div class="field"><label>次數</label><input type="number" min="1" data-sr="${s.id}" data-i="${i}" value="${x.count||1}"></div><button class="danger" data-remove-symbol="${s.id}" data-index="${i}">刪除符號</button></div>`).join('')}</div><button class="ghost" data-add-symbol="${s.id}">＋新增符號</button>`;
+ if(s.type==='symbols')body=`<div class="symbols">${s.symbols.map((x,i)=>`<div class="symbol-box"><div class="field"><label>符號名稱</label><input data-sn="${s.id}" data-i="${i}" value="${esc(x.name)}"></div>${symbolLibraryImage(x)?`<img src="${esc(symbolLibraryImage(x))}">`:`<div style="height:95px;border:1px dashed var(--line);border-radius:8px;display:grid;place-items:center;color:var(--gray);margin-bottom:7px">尚未上傳</div>`}<label>圖片<input type="file" accept="image/*" data-symbol-file="${s.id}" data-index="${i}"></label>${symbolLibraryImage(x)?`<button type="button" class="danger" data-delete-symbol-image="${s.id}" data-index="${i}">刪除圖片</button>`:''}<div class="field"><label>啟動方式</label><input data-sa="${s.id}" data-i="${i}" value="${esc(x.activation)}"></div><div class="field"><div class="row" style="gap:8px"><select data-su="${s.id}" data-i="${i}"><option value="拍" ${(x.countUnit||'點')==='拍'?'selected':''}>拍</option><option value="點" ${(x.countUnit||'點')==='點'?'selected':''}>點</option><option value="唱" ${(x.countUnit||'點')==='唱'?'selected':''}>唱</option></select><input type="number" min="1" data-sr="${s.id}" data-i="${i}" value="${x.count||1}"><span class="muted">次</span></div></div><button class="danger" data-remove-symbol="${s.id}" data-index="${i}">刪除符號</button></div>`).join('')}</div><button class="ghost" data-add-symbol="${s.id}">＋新增符號</button>`;
  else if(s.type==='purification')body=`<div class="field"><label>是否需要淨化</label><select data-purify="${s.id}"><option value="否" ${s.purify==='否'?'selected':''}>否</option><option value="是" ${s.purify==='是'?'selected':''}>是</option></select></div>${s.purify==='是'?`<div class="field"><label>淨化方式</label><textarea data-method="${s.id}">${esc(s.method)}</textarea></div>`:''}`;
  else if(s.type==='sutra')body=`
  <div class="field"><label>內容 <span class="repeat">唸 3 次</span></label>
@@ -347,14 +498,33 @@ function syncReiki(){
  document.querySelectorAll('[data-sn]').forEach(e=>{const s=draft.steps.find(x=>x.id===e.dataset.sn);if(s)s.symbols[Number(e.dataset.i)].name=e.value});
  document.querySelectorAll('[data-sa]').forEach(e=>{const s=draft.steps.find(x=>x.id===e.dataset.sa);if(s)s.symbols[Number(e.dataset.i)].activation=e.value});
  document.querySelectorAll('[data-sr]').forEach(e=>{const s=draft.steps.find(x=>x.id===e.dataset.sr);if(s)s.symbols[Number(e.dataset.i)].count=Math.max(1,Number(e.value)||1)});
+ document.querySelectorAll('[data-su]').forEach(e=>{const s=draft.steps.find(x=>x.id===e.dataset.su);if(s)s.symbols[Number(e.dataset.i)].countUnit=e.value});
 }
 async function saveReiki(){
  syncReiki();
  if(!draft.title.trim()){alert('請輸入靈氣法名稱');return}
  const files=document.getElementById('noteImages').files;
  if(files.length){for(const f of files)draft.images.push(await imageData(f))}
- const i=store.reiki.findIndex(x=>x.id===draft.id);if(i>=0)store.reiki[i]=JSON.parse(JSON.stringify(draft));else store.reiki.push(JSON.parse(JSON.stringify(draft)));
- save();currentId=draft.id;page='reikiDetail';render();
+ const compact=compactReikiDraft(draft);
+ for(const step of (compact.steps||[])){
+  if(step.type!=='symbols')continue;
+  for(const sym of (step.symbols||[])){
+   if(sym.image)sym.image=await compactDataUrl(sym.image);
+  }
+ }
+ const next=JSON.parse(JSON.stringify(compact));
+ const previous=store.reiki;
+ const i=previous.findIndex(x=>x.id===next.id);
+ if(i>=0)previous[i]=next;else previous.push(next);
+ try{
+  save();
+  currentId=draft.id;page='reikiDetail';render();
+ }catch(err){
+  if(i>=0)previous[i]=JSON.parse(JSON.stringify(draft));
+  else previous.pop();
+  console.error(err);
+  alert('儲存失敗：瀏覽器儲存空間可能已接近上限。請先使用「完整資料匯出」備份，再告訴我，我會繼續處理，不會刪除你現有資料。');
+ }
 }
 function enableDrag(){
  const list=document.getElementById('steps');if(!list)return;
