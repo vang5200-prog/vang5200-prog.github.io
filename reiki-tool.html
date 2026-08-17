@@ -70,6 +70,14 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
 .detail-sort-item .use-step{margin-bottom:0}
 .detail-sort-handle{display:flex;align-items:center;justify-content:center;width:34px;height:30px;margin:0 auto -4px;border-radius:8px;background:var(--light-pink);color:var(--pink);font-weight:700;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
 .detail-sort-item.dragging{opacity:.5}
+
+.knowledge-list-item{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.knowledge-list-main{min-width:0;flex:1;text-align:left}
+.knowledge-thumb{width:64px;height:64px;object-fit:cover;border-radius:10px;flex:0 0 64px}
+.image-edit-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.image-edit-item{width:110px}
+.image-edit-item img{width:110px;height:110px;object-fit:cover;border-radius:10px;display:block;margin-bottom:6px}
+.image-delete{width:100%;padding:7px 8px;font-size:.85rem}
 </style>
 </head>
 <body>
@@ -484,7 +492,10 @@ function knowledgeList(type){
  app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 回首頁</button><button class="primary" id="new">＋ 新增</button></div>
  <div class="search"><span>⌕</span><input id="ksearch" placeholder="搜尋${k.title}" value="${esc(search)}"></div>
  <div class="row between"><h2>${k.title}</h2><span class="muted">${arr.length} 筆</span></div>
- <div class="list">${arr.map(x=>`<button class="card-btn" data-kid="${x.id}"><h3>${esc(x.name)}</h3><div class="muted">點開查看完整資料</div></button>`).join('')||'<div class="card muted">目前沒有資料</div>'}</div>`;
+ <div class="list">${arr.map(x=>`<button class="card-btn knowledge-list-item" data-kid="${x.id}">
+   <div class="knowledge-list-main"><h3>${esc(x.name)}</h3><div class="muted">點開查看完整資料</div></div>
+   ${x.images?.[0]?`<img class="knowledge-thumb" src="${esc(x.images[0])}" alt="">`:''}
+ </button>`).join('')||'<div class="card muted">目前沒有資料</div>'}</div>`;
  document.getElementById('back').onclick=goHome;document.getElementById('new').onclick=()=>{currentType=type;draft=blankKnowledge(type);page='knowledgeEdit';render()};
  const ksearchInput=document.getElementById('ksearch');
  let ksearchComposing=false;
@@ -520,9 +531,60 @@ function knowledgeEdit(){
  const type=currentType,draftType=draft;const k=KNOW[type];
  app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 返回</button><b>${store[k.arr].some(x=>x.id===draftType.id)?'編輯':'新增'}${k.title}</b></div><div class="form">
  ${k.fields.map(f=>`<div class="field"><label>${f[1]}</label>${f[0]==='aura'?`<input id="f_${f[0]}" type="text" value="${esc(draftType[f[0]])}" placeholder="例如：綠色">`:`<textarea id="f_${f[0]}">${esc(draftType[f[0]])}</textarea>`}</div>`).join('')}
- <div class="field"><label>圖片（可多張）</label><input id="files" type="file" accept="image/*" multiple>${gallery(draftType.images||[])}</div>
- <div class="row" style="justify-content:flex-end"><button class="primary" id="save">儲存</button></div></div>`;
- document.getElementById('back').onclick=()=>{page=type;render()};document.getElementById('save').onclick=async()=>{k.fields.forEach(f=>draftType[f[0]]=document.getElementById('f_'+f[0]).value);const fs=document.getElementById('files').files;for(const f of fs)draftType.images.push(await imageData(f));const i=store[k.arr].findIndex(x=>x.id===draftType.id);if(i>=0)store[k.arr][i]=draftType;else store[k.arr].push(draftType);save();currentId=draftType.id;page='knowledgeDetail';render()};
+ <div class="field"><label>圖片（可多張）</label>
+   <input id="files" type="file" accept="image/*" multiple>
+   <div id="editImages" class="image-edit-grid">
+    ${(draftType.images||[]).map((img,i)=>`<div class="image-edit-item" data-img-item="${i}">
+      <img src="${esc(img)}" alt="">
+      <button type="button" class="danger image-delete" data-img-index="${i}">刪除圖片</button>
+    </div>`).join('')||'<div id="noImages" class="muted">尚未上傳圖片</div>'}
+   </div>
+ </div>
+ <div class="row" style="justify-content:flex-end"><button type="button" class="primary" id="save">儲存</button></div></div>`;
+
+ document.getElementById('back').onclick=()=>{page=type;render()};
+
+ const bindImageDeleteButtons=()=>{
+   document.querySelectorAll('.image-delete').forEach(btn=>{
+     btn.onclick=()=>{
+       const i=Number(btn.dataset.imgIndex);
+       if(!Number.isInteger(i)||i<0||i>=draftType.images.length)return;
+       draftType.images.splice(i,1);
+       const item=btn.closest('.image-edit-item');
+       item?.remove();
+       document.querySelectorAll('.image-delete').forEach((b,idx)=>b.dataset.imgIndex=String(idx));
+       if(!draftType.images.length){
+         const wrap=document.getElementById('editImages');
+         if(wrap&&!wrap.querySelector('#noImages'))wrap.insertAdjacentHTML('beforeend','<div id="noImages" class="muted">尚未上傳圖片</div>');
+       }
+     };
+   });
+ };
+ bindImageDeleteButtons();
+
+ document.getElementById('files').onchange=async e=>{
+   const fs=[...e.target.files];
+   if(!fs.length)return;
+   const wrap=document.getElementById('editImages');
+   document.getElementById('noImages')?.remove();
+   for(const f of fs){
+     const img=await imageData(f);
+     const idx=draftType.images.push(img)-1;
+     wrap.insertAdjacentHTML('beforeend',`<div class="image-edit-item" data-img-item="${idx}">
+       <img src="${esc(img)}" alt="">
+       <button type="button" class="danger image-delete" data-img-index="${idx}">刪除圖片</button>
+     </div>`);
+   }
+   bindImageDeleteButtons();
+   e.target.value='';
+ };
+
+ document.getElementById('save').onclick=async()=>{
+   k.fields.forEach(f=>draftType[f[0]]=document.getElementById('f_'+f[0]).value);
+   const i=store[k.arr].findIndex(x=>x.id===draftType.id);
+   if(i>=0)store[k.arr][i]=draftType;else store[k.arr].push(draftType);
+   save();currentId=draftType.id;page='knowledgeDetail';render();
+ };
 }
 
 function customCategories(){
