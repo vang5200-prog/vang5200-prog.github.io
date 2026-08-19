@@ -88,6 +88,20 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
 .reiki-list-handle{width:42px;display:grid;place-items:center;font-size:22px;color:var(--gray);border:1px dashed var(--line);border-radius:10px;touch-action:none;user-select:none}
 .reiki-list-item.dragging{opacity:.55}
 .reiki-sort-mode .reiki-list-card{pointer-events:none}
+
+.yao-row{display:grid;grid-template-columns:34px 44px 18px 1fr 46px auto;align-items:center;column-gap:4px;padding:6px 0;font-size:16px;color:var(--dark)}
+.yao-row+.yao-row{border-top:1px solid var(--line)}
+.yao-symbol{display:flex;align-items:center;justify-content:center}
+.yao-bar{display:inline-flex;gap:4px}
+.yao-bar .seg{display:inline-block;height:7px;background:var(--dark);border-radius:2px}
+.yao-yang .seg{width:26px}
+.yao-yin .seg{width:11px}
+.yao-pos{white-space:nowrap}
+.yao-dash{color:var(--gray);text-align:center}
+.yao-branch{white-space:nowrap}
+.yao-marker{font-weight:700;color:#c0392b;white-space:nowrap}
+.yao-rel{white-space:nowrap}
+.yao-rel .rel-wealth{color:#b8860b;font-weight:700}
 </style>
 </head>
 <body>
@@ -98,7 +112,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
 (function(){
 'use strict';
 const KEY='spirit-toolbox-final-v1';
-let store=load(), page='home', currentType='', currentId='', draft=null, search='';
+let store=load(), page='home', currentType='', currentId='', draft=null, search='', customScope='customCategories';
 const app=document.getElementById('app');
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -203,7 +217,7 @@ function load(){
   return normalizeSymbolSteps(normalizeStore(raw));
  }catch(e){return emptyStore()}
 }
-function emptyStore(){return{version:3,reiki:[],chakras:[],crystals:[],symbols:[],customCategories:[]}}
+function emptyStore(){return{version:3,reiki:[],chakras:[],crystals:[],symbols:[],customCategories:[],ichingCustomCategories:[]}}
 function normalizeStore(raw){
  const src=raw.data||raw||{};
  const arr=(...keys)=>{for(const k of keys)if(Array.isArray(src[k]))return src[k];return[]};
@@ -214,7 +228,8 @@ function normalizeStore(raw){
   chakras:arr('chakras','七大脈輪','chakra').map(x=>({...x,id:x.id||uid(),name:x.name||x.title||'',images:Array.isArray(x.images)?x.images:((x.image||x.img)?[x.image||x.img]:[])})),
   crystals:arr('crystals','水晶').map(x=>({...x,id:x.id||uid(),name:x.name||x.title||'',images:Array.isArray(x.images)?x.images:((x.image||x.img)?[x.image||x.img]:[])})),
   symbols:arr('symbols','符號').map(x=>({...x,id:x.id||uid(),name:x.name||x.title||'',images:Array.isArray(x.images)?x.images:((x.image||x.img)?[x.image||x.img]:[])})),
-  customCategories:Array.isArray(src.customCategories)?src.customCategories.map(normalizeCustomCategory):[]
+  customCategories:Array.isArray(src.customCategories)?src.customCategories.map(normalizeCustomCategory):[],
+  ichingCustomCategories:Array.isArray(src.ichingCustomCategories)?src.ichingCustomCategories.map(normalizeCustomCategory):[]
  }
 }
 function normalizeCustomCategory(c){
@@ -330,7 +345,9 @@ function render(){
  else if(page==='reikiList')reikiList();
  else if(page==='reikiDetail')reikiDetail();
  else if(page==='reikiEdit')reikiEdit();
+ else if(page==='ichingMenu')ichingMenu();
  else if(page==='iching')iching();
+ else if(page==='ichingLines')ichingLines();
  else if(['chakras','crystals','symbols'].includes(page))knowledgeList(page);
  else if(page==='knowledgeDetail')knowledgeDetail();
  else if(page==='knowledgeEdit')knowledgeEdit();
@@ -346,7 +363,7 @@ function home(){
  <h1>首頁</h1>
  <div class="grid">
   <button class="module" data-module="reikiList"><b>🌿 靈氣</b><small>靈氣法與使用步驟</small></button>
-  <button class="module" data-module="iching"><b>☯️ 易經</b><small>卦爻計算器</small></button>
+  <button class="module" data-module="ichingMenu"><b>☯️ 易經</b><small>卦爻計算器</small></button>
   <button class="module" data-module="chakras"><b>🌀 七大脈輪</b><small>脈輪資料</small></button>
   <button class="module" data-module="crystals"><b>💎 水晶</b><small>水晶資料</small></button>
   <button class="module" data-module="symbols"><b>🔯 符號</b><small>符號資料</small></button>
@@ -357,7 +374,7 @@ function home(){
   <p class="muted">所有資料會保存在目前瀏覽器。建議定期匯出備份。</p><p id="lastBackup" class="muted" style="margin:8px 0 0;font-weight:700">${getLastBackupText()}</p>
   <div class="row"><button class="ghost" id="exportHome">匯出備份</button><button class="ghost" id="importHome">匯入備份</button><span class="muted">可用舊版 JSON 備份安全升級</span><input id="importFile" type="file" accept="application/json" class="hidden"></div>
  </div>`;
- document.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>{page=b.dataset.module;if(['chakras','crystals','symbols'].includes(page))search='';render()});
+ document.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>{page=b.dataset.module;if(page==='customCategories')customScope='customCategories';if(['chakras','crystals','symbols'].includes(page))search='';render()});
  document.getElementById('exportHome').onclick=exportData;
  document.getElementById('importHome').onclick=()=>document.getElementById('importFile').click();
  document.getElementById('importFile').onchange=importData;
@@ -719,8 +736,26 @@ function enableDrag(){
    handle.addEventListener('touchcancel',finish,{passive:false});
  });
 }
+function ichingMenu(){
+ page='ichingMenu';app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 回首頁</button></div><h1>☯️ 易經</h1>
+<div class="grid">
+ <button class="module" data-iching-nav="iching"><b>🔢 卦爻計算器</b><small>輸入上卦、下卦、時辰計算</small></button>
+ <button class="module" data-iching-nav="ichingLines"><b>📋 六爻對應</b><small>身體部位／地位階級／空間場所／家族親屬／行政單位</small></button>
+ <button class="module" data-iching-nav="ichingCustom"><b>＋新增其他</b><small>易經專用自訂資料</small></button>
+</div>`;
+ document.getElementById('back').onclick=goHome;
+ document.querySelectorAll('[data-iching-nav]').forEach(b=>b.onclick=()=>{
+   const target=b.dataset.ichingNav;
+   if(target==='ichingCustom'){customScope='ichingCustomCategories';page='customCategories';render();return}
+   page=target;render();
+ });
+}
+function ichingLines(){
+ page='ichingLines';app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 返回易經</button></div><h1>☯️ 六爻對應</h1>${lineCorrespondTable()}`;
+ document.getElementById('back').onclick=()=>{page='ichingMenu';render()};
+}
 function iching(){
- page='iching';app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 回首頁</button></div><h1>☯️ 易經</h1><div class="card" style="margin-bottom:14px">
+ page='iching';app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 返回易經</button></div><h1>☯️ 卦爻計算器</h1><div class="card" style="margin-bottom:14px">
  <h2>六十四卦查詢</h2>
  <div class="field"><label>輸入卦號（1–64）</label><input id="hexNumber" type="number" min="1" max="64" inputmode="numeric" placeholder="例如：34"></div>
  <div id="hexLookupResult" class="muted">輸入卦號即可查詢卦名</div>
@@ -730,7 +765,7 @@ function iching(){
  <div class="field"><label>下卦</label><select id="down"><option value="">請選擇</option>${guaOptions()}</select></div>
  <div class="field"><label>當下時辰</label><select id="hour"><option value="">請選擇</option>${hourOptions()}</select></div>
  <button class="primary" id="calculate">開始計算</button></div><div id="result"></div>`;
- document.getElementById('back').onclick=goHome;
+ document.getElementById('back').onclick=()=>{page='ichingMenu';render()};
  document.getElementById('calculate').onclick=calc;
  const hexInput=document.getElementById('hexNumber');
  const hexResult=document.getElementById('hexLookupResult');
@@ -753,16 +788,135 @@ function hourOptions(){
  return hours.map((x,i)=>`<option value="${i+1}">${x[0]}時｜${x[1]}｜${i+1}</option>`).join('');
 }
 const HEXAGRAMS=[['乾為天', '乾', '乾'], ['坤為地', '坤', '坤'], ['水雷屯', '坎', '震'], ['山水蒙', '艮', '坎'], ['水天需', '坎', '乾'], ['天水訟', '乾', '坎'], ['地水師', '坤', '坎'], ['水地比', '坎', '坤'], ['風天小畜', '巽', '乾'], ['天澤履', '乾', '兌'], ['地天泰', '坤', '乾'], ['天地否', '乾', '坤'], ['天火同人', '乾', '離'], ['火天大有', '離', '乾'], ['地山謙', '坤', '艮'], ['雷地豫', '震', '坤'], ['澤雷隨', '兌', '震'], ['山風蠱', '艮', '巽'], ['地澤臨', '坤', '兌'], ['風地觀', '巽', '坤'], ['火雷噬嗑', '離', '震'], ['山火賁', '艮', '離'], ['山地剝', '艮', '坤'], ['地雷復', '坤', '震'], ['天雷無妄', '乾', '震'], ['山天大畜', '艮', '乾'], ['山雷頤', '艮', '震'], ['澤風大過', '兌', '巽'], ['坎為水', '坎', '坎'], ['離為火', '離', '離'], ['澤山咸', '兌', '艮'], ['雷風恆', '震', '巽'], ['天山遯', '乾', '艮'], ['雷天大壯', '震', '乾'], ['火地晉', '離', '坤'], ['地火明夷', '坤', '離'], ['風火家人', '巽', '離'], ['火澤睽', '離', '兌'], ['水山蹇', '坎', '艮'], ['雷水解', '震', '坎'], ['山澤損', '艮', '兌'], ['風雷益', '巽', '震'], ['澤天夬', '兌', '乾'], ['天風姤', '乾', '巽'], ['澤地萃', '兌', '坤'], ['地風升', '坤', '巽'], ['澤水困', '兌', '坎'], ['水風井', '坎', '巽'], ['澤火革', '兌', '離'], ['火風鼎', '離', '巽'], ['震為雷', '震', '震'], ['艮為山', '艮', '艮'], ['風山漸', '巽', '艮'], ['雷澤歸妹', '震', '兌'], ['雷火豐', '震', '離'], ['火山旅', '離', '艮'], ['巽為風', '巽', '巽'], ['兌為澤', '兌', '兌'], ['風水渙', '巽', '坎'], ['水澤節', '坎', '兌'], ['風澤中孚', '巽', '兌'], ['雷山小過', '震', '艮'], ['水火既濟', '坎', '離'], ['火水未濟', '離', '坎']];
+const TRIGRAM_LINES={'乾':[1,1,1],'兌':[1,1,0],'離':[1,0,1],'震':[1,0,0],'巽':[0,1,1],'坎':[0,1,0],'艮':[0,0,1],'坤':[0,0,0]};
+function linesToTrigram(lines){for(const name in TRIGRAM_LINES){if(TRIGRAM_LINES[name].join('')===lines.join(''))return name}return null}
+function bianGua(upper,lower,rem){
+ const upLines=TRIGRAM_LINES[upper],downLines=TRIGRAM_LINES[lower];
+ if(!upLines||!downLines)return null;
+ const lines=[...downLines,...upLines];
+ const pos=rem===0?6:rem,idx=pos-1;
+ const oldVal=lines[idx];
+ const newLines=lines.slice();
+ newLines[idx]=oldVal?0:1;
+ const newLower=linesToTrigram(newLines.slice(0,3)),newUpper=linesToTrigram(newLines.slice(3,6));
+ if(!newLower||!newUpper)return null;
+ const found=HEXAGRAMS.find(x=>x[1]===newUpper&&x[2]===newLower);
+ const hexNo=found?HEXAGRAMS.indexOf(found)+1:'';
+ const hexName=found?found[0]:'未找到對應卦名';
+ const posNames=['初爻','二爻','三爻','四爻','五爻','上爻'];
+ const oldTrigram=pos<=3?lower:upper,newTrigram=pos<=3?newLower:newUpper;
+ const desc=`第${posNames[idx]}原是${oldVal?'陽':'陰'}爻，變成${oldVal?'陰':'陽'}爻，${oldTrigram}就變成${newTrigram}`;
+ return{hexNo,hexName,upper:newUpper,lower:newLower,desc};
+}
+const BRANCH_ELEMENT={'子':'水','丑':'土','寅':'木','卯':'木','辰':'土','巳':'火','午':'火','未':'土','申':'金','酉':'金','戌':'土','亥':'水'};
+const NAJIA_BRANCHES={
+ '乾':{inner:['子','寅','辰'],outer:['午','申','戌']},
+ '坎':{inner:['寅','辰','午'],outer:['申','戌','子']},
+ '艮':{inner:['辰','午','申'],outer:['戌','子','寅']},
+ '震':{inner:['子','寅','辰'],outer:['午','申','戌']},
+ '巽':{inner:['丑','亥','酉'],outer:['未','巳','卯']},
+ '離':{inner:['卯','丑','亥'],outer:['酉','未','巳']},
+ '坤':{inner:['未','巳','卯'],outer:['丑','亥','酉']},
+ '兌':{inner:['巳','卯','丑'],outer:['亥','酉','未']}
+};
+const SHI_STAGES=[{world:6,toggle:[]},{world:1,toggle:[0]},{world:2,toggle:[0,1]},{world:3,toggle:[0,1,2]},{world:4,toggle:[0,1,2,3]},{world:5,toggle:[0,1,2,3,4]},{world:4,toggle:[0,1,2,4]},{world:3,toggle:[4]}];
+function hexShiWorld(upper,lower){
+ const target=[...TRIGRAM_LINES[lower],...TRIGRAM_LINES[upper]];
+ for(const pName in TRIGRAM_LINES){
+  const pure=[...TRIGRAM_LINES[pName],...TRIGRAM_LINES[pName]];
+  for(const st of SHI_STAGES){
+   const bits=pure.slice();
+   st.toggle.forEach(i=>{bits[i]=bits[i]?0:1});
+   if(bits.join('')===target.join(''))return st.world;
+  }
+ }
+ return null;
+}
+const TRIGRAM_ELEMENT={'乾':'金','兌':'金','離':'火','震':'木','巽':'木','坎':'水','艮':'土','坤':'土'};
+function hexPalace(upper,lower){
+ const target=[...TRIGRAM_LINES[lower],...TRIGRAM_LINES[upper]];
+ for(const pName in TRIGRAM_LINES){
+  const pure=[...TRIGRAM_LINES[pName],...TRIGRAM_LINES[pName]];
+  for(const st of SHI_STAGES){
+   const bits=pure.slice();
+   st.toggle.forEach(i=>{bits[i]=bits[i]?0:1});
+   if(bits.join('')===target.join(''))return{palace:pName,world:st.world};
+  }
+ }
+ return null;
+}
+function hexPalaceHtml(upper,lower){
+ const info=hexPalace(upper,lower);
+ if(!info)return'';
+ return `<div class="muted" style="margin-top:5px">所屬：${info.palace}宮　核心：${TRIGRAM_ELEMENT[info.palace]||''}</div>`;
+}
+const WUXING_GENERATE={'木':'火','火':'土','土':'金','金':'水','水':'木'};
+const WUXING_OVERCOME={'木':'土','土':'水','水':'火','火':'金','金':'木'};
+function sixRelative(palaceElement,lineElement){
+ if(!palaceElement||!lineElement)return'';
+ if(lineElement===palaceElement)return'兄弟';
+ if(WUXING_GENERATE[lineElement]===palaceElement)return'父母';
+ if(WUXING_GENERATE[palaceElement]===lineElement)return'子孫';
+ if(WUXING_OVERCOME[lineElement]===palaceElement)return'官鬼';
+ if(WUXING_OVERCOME[palaceElement]===lineElement)return'妻財';
+ return'';
+}
+function hexLineDetails(upper,lower){
+ const lowerB=NAJIA_BRANCHES[lower]?.inner,upperB=NAJIA_BRANCHES[upper]?.outer;
+ if(!lowerB||!upperB)return[];
+ const branches=[...lowerB,...upperB];
+ const bits=[...TRIGRAM_LINES[lower],...TRIGRAM_LINES[upper]];
+ const shi=hexShiWorld(upper,lower);
+ const ying=shi?(shi<=3?shi+3:shi-3):null;
+ const palaceInfo=hexPalace(upper,lower);
+ const palaceElement=palaceInfo?TRIGRAM_ELEMENT[palaceInfo.palace]:'';
+ const posNames=['初爻','二爻','三爻','四爻','五爻','上爻'];
+ const rows=[];
+ for(let i=5;i>=0;i--){
+  const branch=branches[i],element=BRANCH_ELEMENT[branch]||'';
+  rows.push({pos:posNames[i],yy:bits[i]?'⚊':'⚋',isYang:!!bits[i],branch,element,isShi:shi===i+1,isYing:ying===i+1,relative:sixRelative(palaceElement,element)});
+ }
+ return rows;
+}
+function wuxingCycleHtml(){
+ return `<div class="card" style="margin-top:10px"><h2 style="margin:0 0 8px">五行規律</h2><div>木 ➔ 火 ➔ 土 ➔ 金 ➔ 水</div><div class="muted" style="margin-top:6px">五行相生－順時針（代表：愛、付出、幫助、滋養）</div><div class="muted" style="margin-top:4px">五行相剋－隔位跳（代表：壓力、管束、制約、衝突）</div></div>`;
+}
+function hexLinesHtml(upper,lower){
+ const rows=hexLineDetails(upper,lower);
+ if(!rows.length)return'';
+ const lines=rows.map(r=>{
+  const bar=r.isYang?'<span class="yao-bar yao-yang"><span class="seg"></span></span>':'<span class="yao-bar yao-yin"><span class="seg"></span><span class="seg"></span></span>';
+  const marker=r.isShi?'<span class="yao-marker">⬅️【世】</span>':r.isYing?'<span class="yao-marker">⬅️【應】</span>':'';
+  const relText=r.relative==='妻財'?'<span class="rel-wealth">妻財</span>':(r.relative||'');
+  const rel=r.relative?`<span class="yao-rel">（身分：${relText}）</span>`:'<span class="yao-rel"></span>';
+  return `<div class="yao-row"><span class="yao-symbol">${bar}</span><span class="yao-pos">(${r.pos})</span><span class="yao-dash">──</span><span class="yao-branch">${r.branch}${r.element}</span>${marker||'<span></span>'}${rel}</div>`;
+ }).join('');
+ return `<div style="margin-top:10px">${lines}</div>`;
+}
+const LINE_CORRESPOND=[
+ {line:'上爻',body:'頭部、頭髮、大腦',status:'退休元老、顧問、太上皇（有地位但不管事）',space:'遠方、外地、屋外、屋頂、鄰居',family:'祖父母、家族長輩、過世的先人',admin:'國外、邊疆、宇宙'},
+ {line:'五爻',body:'五官（面部）、咽喉、肩膀',status:'董事長、總經理、天子（實權決策者）',space:'道路、走廊、客廳',family:'父親、家長、丈夫',admin:'首都、中央政府、最高機關'},
+ {line:'四爻',body:'胸部、心、肺、上腹部',status:'副總經理、秘書長、近臣（核心幕僚）',space:'大門、門口、窗戶',family:'母親、妻子',admin:'省、直轄市、核心經濟圈'},
+ {line:'三爻',body:'下腹部、腰部、胃、臀部',status:'部門主管、中階幹部、地方官',space:'內門、床榻、臥室',family:'兄弟姊妹、堂表親',admin:'地級市、外省交界'},
+ {line:'二爻',body:'大腿、膝蓋、腿部',status:'基層小主管、優秀員工、在野賢人',space:'廚房、灶台、屋內、家裡',family:'媳婦、子孫、晚輩',admin:'縣城、鄉鎮、自己的家鄉'},
+ {line:'初爻',body:'腳掌、腳趾',status:'新進員工、普通百姓、底層群眾',space:'地基、地下室、鄰近的地面',family:'小孩子、曾孫、寵物',admin:'鄉村、偏遠基層'}
+];
+function lineCorrespondTable(){
+ const rows=LINE_CORRESPOND.map(x=>`<tr><td>${x.line}</td><td>${x.body}</td><td>${x.status}</td><td>${x.space}</td><td>${x.family}</td><td>${x.admin}</td></tr>`).join('');
+ return `<div class="card" style="margin-top:14px"><h2>六爻對應</h2><div class="muted" style="margin-bottom:8px">依動爻位置查詢對應意義（表格較寬，可左右滑動）</div><div style="overflow-x:auto"><table style="min-width:920px"><tr><th>爻位</th><th>身體部位<br><span class="muted">(問健康、疾病)</span></th><th>地位階級<br><span class="muted">(問身分、人際關係)</span></th><th>空間場所<br><span class="muted">(失物、看風水)</span></th><th>家族親屬<br><span class="muted">(家庭關係)</span></th><th>行政單位<br><span class="muted">(出差、遷徙)</span></th></tr>${rows}</table></div></div>`;
+}
 function calc(){
  const u=Number(document.getElementById('up').value),d=Number(document.getElementById('down').value),h=Number(document.getElementById('hour').value);
  if(!u||!d||!h){alert('請選擇上卦、下卦與時辰');return}
- const total=u+d+h,rem=total%6,names=['上卦','初卦','二卦','三卦','四卦','五卦'];
+ const total=u+d+h,rem=total%6,names=['上爻（衰退期）','初爻（潛伏期）','二爻（成長期）','三爻（危機期）','四爻（進取期）','五爻（全盛期）'];
  const guaName={1:'乾',2:'兌',3:'離',4:'震',5:'巽',6:'坎',7:'艮',8:'坤'};
  const upper=guaName[u],lower=guaName[d];
  const found=HEXAGRAMS.find(x=>x[1]===upper&&x[2]===lower);
  const hexNo=found?HEXAGRAMS.indexOf(found)+1:'';
  const hexName=found?found[0]:'未找到對應卦名';
- document.getElementById('result').innerHTML=`<div class="gua-result"><div>${u} ＋ ${d} ＋ ${h} ＝ <b>${total}</b></div><div>${total} ÷ 6 → 餘 <b>${rem}</b></div><div class="big">${names[rem]}</div><div style="margin-top:12px;font-size:1.15rem"><b>第 ${hexNo} 卦｜${hexName}</b></div><div class="muted" style="margin-top:5px">上卦：${upper}　下卦：${lower}</div></div><div class="card" style="margin-top:10px"><table><tr><th>餘數</th><th>結果</th><th>代表意義</th></tr><tr><td>1</td><td>初卦</td><td>Very bad</td></tr><tr><td>2</td><td>二卦</td><td>可發展</td></tr><tr><td>3</td><td>三卦</td><td>Bad</td></tr><tr><td>4</td><td>四卦</td><td>等待</td></tr><tr><td>5</td><td>五卦</td><td>Good</td></tr><tr><td>0</td><td>上卦</td><td>物極必反</td></tr></table></div>`;
+ const change=bianGua(upper,lower,rem);
+ const bianHtml=change?`<div class="card" style="margin-top:10px"><h2 style="margin:0 0 8px">變卦</h2><div style="font-size:1.15rem"><b>第 ${change.hexNo} 卦｜${change.hexName}</b></div><div class="muted" style="margin-top:5px">上卦：${change.upper}　下卦：${change.lower}</div><div class="muted" style="margin-top:8px">（${change.desc}）</div></div>`:'';
+ document.getElementById('result').innerHTML=`<div class="gua-result"><div>${u} ＋ ${d} ＋ ${h} ＝ <b>${total}</b></div><div>${total} ÷ 6 → 餘 <b>${rem}</b></div><div class="big">${names[rem]}</div><div style="margin-top:12px;font-size:1.15rem"><b>第 ${hexNo} 卦｜${hexName}</b></div><div class="muted" style="margin-top:5px">上卦：${upper}　下卦：${lower}</div>${hexPalaceHtml(upper,lower)}${hexLinesHtml(upper,lower)}</div>${bianHtml}${wuxingCycleHtml()}<div class="card" style="margin-top:10px"><table><tr><th>餘數</th><th>結果</th><th>代表意義</th></tr><tr><td>1</td><td>初爻（潛伏期）</td><td>不宜輕舉妄動</td></tr><tr><td>2</td><td>二爻（成長期）</td><td>可發展，多有吉利</td></tr><tr><td>3</td><td>三爻（危機期）</td><td>格外謹慎</td></tr><tr><td>4</td><td>四爻（進取期）</td><td>等待、配合</td></tr><tr><td>5</td><td>五爻（全盛期）</td><td>「九五之尊」、完美</td></tr><tr><td>0</td><td>上爻（衰退期）</td><td>物極必反、易自滿而走下坡</td></tr></table></div>`;
 }
 const KNOW={
  chakras:{title:'七大脈輪',arr:'chakras',fields:[['name','脈輪'],['organs','器官'],['thoughts','相關思想與情感事件'],['disorders','生理機能障礙'],['lesson','課題'],['aura','氣場顏色']]},
@@ -871,13 +1025,14 @@ function knowledgeEdit(){
 
 function customCategories(){
  page='customCategories'; currentId=''; draft=null;
+ const isIching=customScope==='ichingCustomCategories';
  app.innerHTML=top()+`<div class="toolbar">
- <button type="button" class="ghost" id="customHome">← 回首頁</button>
+ <button type="button" class="ghost" id="customHome">${isIching?'← 返回易經':'← 回首頁'}</button>
  <button type="button" class="primary" id="newCategory">＋ 新增分類</button>
  </div>
- <h1>＋新增其他</h1>
- <p class="muted">自訂分類、自訂資料名稱、任意新增欄位、圖片。</p>
- <div class="list">${store.customCategories.map(c=>`
+ <h1>${isIching?'☯️ 易經．新增其他':'＋新增其他'}</h1>
+ <p class="muted">${isIching?'易經專用自訂分類，資料獨立於首頁「新增其他」。可自訂分類、自訂資料名稱、任意新增欄位、圖片。':'自訂分類、自訂資料名稱、任意新增欄位、圖片。'}</p>
+ <div class="list">${store[customScope].map(c=>`
    <div class="card">
     <div class="row between">
       <button type="button" class="card-btn" style="flex:1" data-cat="${c.id}">
@@ -887,7 +1042,7 @@ function customCategories(){
     </div>
    </div>`).join('')||'<div class="card muted">尚未建立分類</div>'}</div>`;
 
- document.getElementById('customHome').onclick=()=>goHome();
+ document.getElementById('customHome').onclick=()=>{if(isIching){page='ichingMenu';render()}else{goHome()}};
  document.getElementById('newCategory').onclick=()=>{
    draft={id:uid(),name:'',items:[]};
    currentId=draft.id;
@@ -902,17 +1057,17 @@ function customCategories(){
  });
  document.querySelectorAll('[data-delete-cat]').forEach(b=>b.onclick=()=>{
    const id=b.dataset.deleteCat;
-   const c=store.customCategories.find(x=>x.id===id);
+   const c=store[customScope].find(x=>x.id===id);
    if(!c)return;
    if(confirm(`確定刪除分類「${c.name}」及其中所有資料嗎？`)){
-     store.customCategories=store.customCategories.filter(x=>x.id!==id);
+     store[customScope]=store[customScope].filter(x=>x.id!==id);
      save(); render();
    }
  });
 }
 
 function customList(){
- let c=store.customCategories.find(x=>x.id===currentId);
+ let c=store[customScope].find(x=>x.id===currentId);
  const isNew=!c && draft && draft.id===currentId;
  if(!c && !isNew){page='customCategories';currentId='';draft=null;render();return}
  if(isNew)c=draft;
@@ -947,7 +1102,7 @@ function customList(){
  document.getElementById('saveCat')?.addEventListener('click',()=>{
    const n=document.getElementById('catName').value.trim();
    if(!n){alert('請輸入自訂分類名稱');return}
-   store.customCategories.push({id:currentId,name:n,items:[]});
+   store[customScope].push({id:currentId,name:n,items:[]});
    save();draft=null;page='customList';render();
  });
  document.querySelectorAll('[data-item]').forEach(b=>b.onclick=()=>{
@@ -957,7 +1112,7 @@ function customList(){
  document.querySelectorAll('[data-delete-item]').forEach(b=>b.onclick=()=>{
    const id=b.dataset.deleteItem;
    if(confirm('確定刪除這筆資料嗎？')){
-     const target=store.customCategories.find(x=>x.id===currentId);
+     const target=store[customScope].find(x=>x.id===currentId);
      if(target){target.items=target.items.filter(x=>x.id!==id);save();render();}
    }
  });
@@ -989,7 +1144,7 @@ async function saveCustom(){
   const files=[...(document.getElementById('cfiles')?.files||[])];
   for(const f of files)draft.images.push(await imageData(f));
 
-  const target=store.customCategories.find(x=>x.id===currentId);
+  const target=store[customScope].find(x=>x.id===currentId);
   if(!target){alert('找不到目前的分類，請返回後重新操作。');return}
 
   const next=JSON.parse(JSON.stringify(draft));
@@ -1008,7 +1163,7 @@ async function saveCustom(){
 }
 
 function customEdit(){
- const c=store.customCategories.find(x=>x.id===currentId);
+ const c=store[customScope].find(x=>x.id===currentId);
  if(!c){page='customCategories';currentId='';draft=null;render();return}
  app.innerHTML=top()+`<div class="toolbar">
  <button type="button" class="ghost" id="backCustom">← 返回</button><b>自訂資料</b></div>
