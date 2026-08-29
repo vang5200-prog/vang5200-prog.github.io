@@ -493,6 +493,18 @@ body.admin-mode #adminView{ display:block; }
   </div>
 </div>
 
+<!-- 編輯服務項目/加購選項 Modal -->
+<div class="modal-overlay" id="svcModalOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="svcModalTitle">編輯服務項目</h3><button class="modal-close" onclick="closeSvcModal()">✕</button></div>
+    <div class="admin-field-grid" id="svcModalFields"></div>
+    <div style="display:flex; gap:10px; margin-top:18px;">
+      <button class="btn btn-outline" style="flex:1; margin:0;" onclick="closeSvcModal()">取消</button>
+      <button class="btn" style="flex:1; margin:0;" onclick="saveSvcModal()">儲存</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -834,12 +846,22 @@ function renderSettings(){
 }
 function renderServiceSettings(){
   document.getElementById('serviceSettingsList').innerHTML = services.map(s=>`
-    <div class="settings-item"><div><b>${esc(s.name)}</b><div class="d">NT$${Number(s.price).toLocaleString()} · ${esc(s.desc||'')}</div></div><button onclick="removeService('${s.id}')">刪除</button></div>
+    <div class="settings-item"><div><b>${esc(s.name)}</b><div class="d">NT$${Number(s.price).toLocaleString()} · ${esc(s.desc||'')}</div></div>
+      <div style="display:flex; gap:6px;">
+        <button style="color:var(--gold-text); border-color:var(--gold-border);" onclick="openServiceEdit('${s.id}')">編輯</button>
+        <button onclick="removeService('${s.id}')">刪除</button>
+      </div>
+    </div>
   `).join('') || `<p style="font-size:12px; color:#999;">尚未新增服務項目</p>`;
 }
 function renderAddonSettings(){
   document.getElementById('addonSettingsList').innerHTML = addons.map(a=>`
-    <div class="settings-item"><div><b>${esc(a.name)}</b><div class="d">NT$${Number(a.price).toLocaleString()}</div></div><button onclick="removeAddon('${a.id}')">刪除</button></div>
+    <div class="settings-item"><div><b>${esc(a.name)}</b><div class="d">NT$${Number(a.price).toLocaleString()}</div></div>
+      <div style="display:flex; gap:6px;">
+        <button style="color:var(--gold-text); border-color:var(--gold-border);" onclick="openAddonEdit('${a.id}')">編輯</button>
+        <button onclick="removeAddon('${a.id}')">刪除</button>
+      </div>
+    </div>
   `).join('') || `<p style="font-size:12px; color:#999;">尚未新增加購選項</p>`;
 }
 function addService(){
@@ -861,6 +883,49 @@ function addAddon(){
   renderAddonSettings(); renderServiceCards(); toast('已新增加購選項');
 }
 function removeAddon(id){ if(!confirm('確定刪除這個加購選項？')) return; addons=addons.filter(a=>a.id!==id); saveAddons(addons); renderAddonSettings(); renderServiceCards(); toast('已刪除'); }
+
+/* ---------- 編輯服務項目／加購選項 Modal ---------- */
+let svcEditMode = null; // 'service' | 'addon'
+let svcEditId = null;
+function openServiceEdit(id){
+  svcEditMode='service'; svcEditId=id;
+  const s = services.find(x=>x.id===id); if(!s) return;
+  document.getElementById('svcModalTitle').textContent = '編輯服務項目';
+  document.getElementById('svcModalFields').innerHTML = `
+    <div class="field full"><label>服務名稱（含時長）</label><input id="svc_name" value="${esc(s.name)}"></div>
+    <div class="field"><label>價格 (NT$)</label><input id="svc_price" type="number" value="${s.price}"></div>
+    <div class="field full"><label>說明</label><input id="svc_desc" value="${esc(s.desc||'')}"></div>
+  `;
+  document.getElementById('svcModalOverlay').classList.add('open');
+}
+function openAddonEdit(id){
+  svcEditMode='addon'; svcEditId=id;
+  const a = addons.find(x=>x.id===id); if(!a) return;
+  document.getElementById('svcModalTitle').textContent = '編輯加購選項';
+  document.getElementById('svcModalFields').innerHTML = `
+    <div class="field full"><label>加購名稱</label><input id="svc_name" value="${esc(a.name)}"></div>
+    <div class="field"><label>價格 (NT$)</label><input id="svc_price" type="number" value="${a.price}"></div>
+  `;
+  document.getElementById('svcModalOverlay').classList.add('open');
+}
+function closeSvcModal(){ document.getElementById('svcModalOverlay').classList.remove('open'); svcEditMode=null; svcEditId=null; }
+function saveSvcModal(){
+  const name = document.getElementById('svc_name').value.trim();
+  const price = Number(document.getElementById('svc_price').value)||0;
+  if(!name){ toast('請輸入名稱'); return; }
+  if(svcEditMode==='service'){
+    const s = services.find(x=>x.id===svcEditId); if(!s) return;
+    s.name = name; s.price = price; s.desc = document.getElementById('svc_desc').value.trim();
+    saveServices(services); renderServiceSettings();
+  } else if(svcEditMode==='addon'){
+    const a = addons.find(x=>x.id===svcEditId); if(!a) return;
+    a.name = name; a.price = price;
+    saveAddons(addons); renderAddonSettings();
+  }
+  renderServiceCards();
+  closeSvcModal();
+  toast('已更新');
+}
 
 /* ============================================================
    匯出／匯入
