@@ -756,9 +756,9 @@ function ichingLines(){
 }
 function iching(){
  page='iching';app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 返回易經</button></div><h1>☯️ 卦爻計算器</h1><div class="card" style="margin-bottom:14px">
- <h2>六十四卦查詢</h2>
- <div class="field"><label>輸入卦號（1–64）</label><input id="hexNumber" type="number" min="1" max="64" inputmode="numeric" placeholder="例如：34"></div>
- <div id="hexLookupResult" class="muted">輸入卦號即可查詢卦名</div>
+ <h2>輸入卦號</h2>
+ <div class="field"><label>卦號（1–64）</label><input id="hexNumber" type="number" min="1" max="64" inputmode="numeric" placeholder="例如：34"></div>
+ <div id="hexLookupResult" class="muted">輸入卦號後，將自動帶入下方的上卦、下卦</div>
 </div>
 <div class="form">
  <div class="field"><label>上卦</label><select id="up"><option value="">請選擇</option>${guaOptions()}</select></div>
@@ -769,16 +769,22 @@ function iching(){
  document.getElementById('calculate').onclick=calc;
  const hexInput=document.getElementById('hexNumber');
  const hexResult=document.getElementById('hexLookupResult');
+ const upSel=document.getElementById('up');
+ const downSel=document.getElementById('down');
  const updateHexLookup=()=>{
    const n=Number(hexInput.value);
-   if(!hexInput.value){hexResult.textContent='輸入卦號即可查詢卦名';return}
+   if(!hexInput.value){hexResult.textContent='輸入卦號後，將自動帶入下方的上卦、下卦';return}
    if(!Number.isInteger(n)||n<1||n>64){hexResult.textContent='請輸入 1–64 的整數';return}
    const x=HEXAGRAMS[n-1];
-   hexResult.innerHTML=`<b>第 ${n} 卦｜${x[0]}</b><br><span class="muted">上卦：${x[1]}　下卦：${x[2]}</span>`;
+   const upNum=TRIGRAM_TO_NUM[x[1]],downNum=TRIGRAM_TO_NUM[x[2]];
+   if(upNum)upSel.value=String(upNum);
+   if(downNum)downSel.value=String(downNum);
+   hexResult.innerHTML=`<b>第 ${n} 卦｜${x[0]}</b><br><span class="muted">已自動帶入 上卦：${x[1]}　下卦：${x[2]}</span>`;
  };
  hexInput.addEventListener('input',updateHexLookup);
 }
 function guaOptions(){return[['乾','☰',1],['兌','☱',2],['離','☲',3],['震','☳',4],['巽','☴',5],['坎','☵',6],['艮','☶',7],['坤','☷',8]].map(x=>`<option value="${x[2]}">${x[0]} ${x[1]}｜${x[2]}</option>`).join('')}
+const TRIGRAM_TO_NUM={'乾':1,'兌':2,'離':3,'震':4,'巽':5,'坎':6,'艮':7,'坤':8};
 function hourOptions(){
  const hours=[
   ['子','23:00–01:00'],['丑','01:00–03:00'],['寅','03:00–05:00'],['卯','05:00–07:00'],
@@ -881,6 +887,40 @@ function hexLineDetails(upper,lower){
 function wuxingCycleHtml(){
  return `<div class="card" style="margin-top:10px"><h2 style="margin:0 0 8px">五行規律</h2><div>木 ➔ 火 ➔ 土 ➔ 金 ➔ 水</div><div class="muted" style="margin-top:6px">五行相生－順時針（代表：愛、付出、幫助、滋養）</div><div class="muted" style="margin-top:4px">五行相剋－隔位跳（代表：壓力、管束、制約、衝突）</div></div>`;
 }
+const CHAKRA_ELEMENT={'木':'眉心輪','金':'喉輪','火':'心輪','土':'太陽神經叢輪','水':'海底輪'};
+const CHAKRA_ANATOMICAL_ORDER=['頂輪','眉心輪','喉輪','心輪','太陽神經叢輪','臍輪','海底輪'];
+const HOUR_BRANCHES=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+function shiStrength(shiElement,hourElement){
+ if(!shiElement||!hourElement)return null;
+ if(shiElement===hourElement)return'旺';
+ if(WUXING_GENERATE[hourElement]===shiElement)return'相';
+ if(WUXING_GENERATE[shiElement]===hourElement)return'休';
+ if(WUXING_OVERCOME[hourElement]===shiElement)return'囚';
+ if(WUXING_OVERCOME[shiElement]===hourElement)return'死';
+ return null;
+}
+function hexChakraHtml(upper,lower,hour){
+ const rows=hexLineDetails(upper,lower);
+ if(!rows.length)return'';
+ const problems=[];
+ const guiRow=rows.find(r=>r.relative==='官鬼');
+ if(guiRow){
+  if(guiRow.element==='水')problems.push('臍輪','海底輪');
+  else if(CHAKRA_ELEMENT[guiRow.element])problems.push(CHAKRA_ELEMENT[guiRow.element]);
+ }
+ const shiRow=rows.find(r=>r.isShi);
+ const hourBranch=HOUR_BRANCHES[hour-1];
+ const hourElement=BRANCH_ELEMENT[hourBranch];
+ if(shiRow&&hourElement){
+  const state=shiStrength(shiRow.element,hourElement);
+  if(state==='囚'||state==='死')problems.push('頂輪');
+ }
+ if(!problems.length){
+  return `<div class="card" style="margin-top:10px"><h2 style="margin:0 0 8px">脈輪對照</h2><div class="muted">本卦脈輪能量相對平穩，暫無特別需要留意的脈輪</div></div>`;
+ }
+ const sorted=CHAKRA_ANATOMICAL_ORDER.filter(c=>problems.includes(c));
+ return `<div class="card" style="margin-top:10px"><h2 style="margin:0 0 8px">脈輪對照</h2><div style="font-size:1.15rem"><b>${sorted.join('、')}</b></div></div>`;
+}
 function hexLinesHtml(upper,lower){
  const rows=hexLineDetails(upper,lower);
  if(!rows.length)return'';
@@ -916,7 +956,7 @@ function calc(){
  const hexName=found?found[0]:'未找到對應卦名';
  const change=bianGua(upper,lower,rem);
  const bianHtml=change?`<div class="card" style="margin-top:10px"><h2 style="margin:0 0 8px">變卦</h2><div style="font-size:1.15rem"><b>第 ${change.hexNo} 卦｜${change.hexName}</b></div><div class="muted" style="margin-top:5px">上卦：${change.upper}　下卦：${change.lower}</div><div class="muted" style="margin-top:8px">（${change.desc}）</div></div>`:'';
- document.getElementById('result').innerHTML=`<div class="gua-result"><div>${u} ＋ ${d} ＋ ${h} ＝ <b>${total}</b></div><div>${total} ÷ 6 → 餘 <b>${rem}</b></div><div class="big">${names[rem]}</div><div style="margin-top:12px;font-size:1.15rem"><b>第 ${hexNo} 卦｜${hexName}</b></div><div class="muted" style="margin-top:5px">上卦：${upper}　下卦：${lower}</div>${hexPalaceHtml(upper,lower)}${hexLinesHtml(upper,lower)}</div>${bianHtml}${wuxingCycleHtml()}<div class="card" style="margin-top:10px"><table><tr><th>餘數</th><th>結果</th><th>代表意義</th></tr><tr><td>1</td><td>初爻（潛伏期）</td><td>不宜輕舉妄動</td></tr><tr><td>2</td><td>二爻（成長期）</td><td>可發展，多有吉利</td></tr><tr><td>3</td><td>三爻（危機期）</td><td>格外謹慎</td></tr><tr><td>4</td><td>四爻（進取期）</td><td>等待、配合</td></tr><tr><td>5</td><td>五爻（全盛期）</td><td>「九五之尊」、完美</td></tr><tr><td>0</td><td>上爻（衰退期）</td><td>物極必反、易自滿而走下坡</td></tr></table></div>`;
+ document.getElementById('result').innerHTML=`<div class="gua-result"><div>${u} ＋ ${d} ＋ ${h} ＝ <b>${total}</b></div><div>${total} ÷ 6 → 餘 <b>${rem}</b></div><div class="big">${names[rem]}</div><div style="margin-top:12px;font-size:1.15rem"><b>第 ${hexNo} 卦｜${hexName}</b></div><div class="muted" style="margin-top:5px">上卦：${upper}　下卦：${lower}</div>${hexPalaceHtml(upper,lower)}${hexLinesHtml(upper,lower)}</div>${bianHtml}${wuxingCycleHtml()}${hexChakraHtml(upper,lower,h)}<div class="card" style="margin-top:10px"><table><tr><th>餘數</th><th>結果</th><th>代表意義</th></tr><tr><td>1</td><td>初爻（潛伏期）</td><td>不宜輕舉妄動</td></tr><tr><td>2</td><td>二爻（成長期）</td><td>可發展，多有吉利</td></tr><tr><td>3</td><td>三爻（危機期）</td><td>格外謹慎</td></tr><tr><td>4</td><td>四爻（進取期）</td><td>等待、配合</td></tr><tr><td>5</td><td>五爻（全盛期）</td><td>「九五之尊」、完美</td></tr><tr><td>0</td><td>上爻（衰退期）</td><td>物極必反、易自滿而走下坡</td></tr></table></div>`;
 }
 const KNOW={
  chakras:{title:'七大脈輪',arr:'chakras',fields:[['name','脈輪'],['organs','器官'],['thoughts','相關思想與情感事件'],['disorders','生理機能障礙'],['lesson','課題'],['aura','氣場顏色']]},
