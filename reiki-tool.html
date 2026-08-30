@@ -348,6 +348,7 @@ function render(){
  else if(page==='ichingMenu')ichingMenu();
  else if(page==='iching')iching();
  else if(page==='ichingLines')ichingLines();
+ else if(page==='ichingAudit')ichingAudit();
  else if(['chakras','crystals','symbols'].includes(page))knowledgeList(page);
  else if(page==='knowledgeDetail')knowledgeDetail();
  else if(page==='knowledgeEdit')knowledgeEdit();
@@ -737,19 +738,54 @@ function enableDrag(){
  });
 }
 function ichingMenu(){
- page='ichingMenu';app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 回首頁</button></div><h1>☯️ 易經</h1>
+ page='ichingMenu';
+ const cats=store.ichingCustomCategories||[];
+ const catCards=cats.map(c=>`
+   <div class="card">
+    <div class="row between">
+      <button type="button" class="card-btn" style="flex:1" data-iching-cat="${c.id}">
+        <h3>${esc(c.name)}</h3><div class="muted">${c.items.length} 筆資料</div>
+      </button>
+      <button type="button" class="danger" data-iching-cat-delete="${c.id}">刪除</button>
+    </div>
+   </div>`).join('');
+ app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 回首頁</button></div><h1>☯️ 易經</h1>
 <div class="grid">
  <button class="module" data-iching-nav="iching"><b>🔢 卦爻計算器</b><small>輸入上卦、下卦、時辰計算</small></button>
  <button class="module" data-iching-nav="ichingLines"><b>📋 六爻對應</b><small>身體部位／地位階級／空間場所／家族親屬／行政單位</small></button>
- <button class="module" data-iching-nav="ichingCustom"><b>＋新增其他</b><small>易經專用自訂資料</small></button>
-</div>`;
+ <button class="module" data-iching-nav="ichingAudit"><b>📖 六十四卦世應納甲六親核對表</b><small>逐卦核對世應位置、納甲地支、六親</small></button>
+</div>
+${cats.length?`<div class="list" style="margin-top:12px">${catCards}</div>`:''}
+<div style="margin-top:12px"><button type="button" class="primary" id="ichingAddOther">＋新增其他</button></div>`;
  document.getElementById('back').onclick=goHome;
  document.querySelectorAll('[data-iching-nav]').forEach(b=>b.onclick=()=>{
-   const target=b.dataset.ichingNav;
-   if(target==='ichingCustom'){customScope='ichingCustomCategories';page='customCategories';render();return}
-   page=target;render();
+   page=b.dataset.ichingNav;render();
+ });
+ document.getElementById('ichingAddOther').onclick=()=>{
+   customScope='ichingCustomCategories';
+   draft={id:uid(),name:'',items:[]};
+   currentId=draft.id;
+   page='customList';
+   render();
+ };
+ document.querySelectorAll('[data-iching-cat]').forEach(b=>b.onclick=()=>{
+   customScope='ichingCustomCategories';
+   currentId=b.dataset.ichingCat;
+   draft=null;
+   page='customList';
+   render();
+ });
+ document.querySelectorAll('[data-iching-cat-delete]').forEach(b=>b.onclick=()=>{
+   const id=b.dataset.ichingCatDelete;
+   const c=store.ichingCustomCategories.find(x=>x.id===id);
+   if(!c)return;
+   if(confirm(`確定刪除分類「${c.name}」及其中所有資料嗎？`)){
+     store.ichingCustomCategories=store.ichingCustomCategories.filter(x=>x.id!==id);
+     save(); render();
+   }
  });
 }
+function customBackPage(){return customScope==='ichingCustomCategories'?'ichingMenu':'customCategories'}
 function ichingLines(){
  page='ichingLines';app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 返回易經</button></div><h1>☯️ 六爻對應</h1>${lineCorrespondTable()}`;
  document.getElementById('back').onclick=()=>{page='ichingMenu';render()};
@@ -945,6 +981,31 @@ function lineCorrespondTable(){
  const rows=LINE_CORRESPOND.map(x=>`<tr><td>${x.line}</td><td>${x.body}</td><td>${x.status}</td><td>${x.space}</td><td>${x.family}</td><td>${x.admin}</td></tr>`).join('');
  return `<div class="card" style="margin-top:14px"><h2>六爻對應</h2><div class="muted" style="margin-bottom:8px">依動爻位置查詢對應意義（表格較寬，可左右滑動）</div><div style="overflow-x:auto"><table style="min-width:920px"><tr><th>爻位</th><th>身體部位<br><span class="muted">(問健康、疾病)</span></th><th>地位階級<br><span class="muted">(問身分、人際關係)</span></th><th>空間場所<br><span class="muted">(失物、看風水)</span></th><th>家族親屬<br><span class="muted">(家庭關係)</span></th><th>行政單位<br><span class="muted">(出差、遷徙)</span></th></tr>${rows}</table></div></div>`;
 }
+function ichingAuditTable(){
+ const posOrder=['上爻','五爻','四爻','三爻','二爻','初爻'];
+ const rowsHtml=HEXAGRAMS.map(([name,upper,lower],i)=>{
+  const palaceInfo=hexPalace(upper,lower);
+  const details=hexLineDetails(upper,lower);
+  const byPos={};
+  details.forEach(r=>{byPos[r.pos]=r});
+  const cells=posOrder.map(p=>{
+   const r=byPos[p];
+   if(!r)return'<td>-</td>';
+   const mark=r.isShi?'【世】':r.isYing?'【應】':'';
+   const style=r.isShi?' style="color:#c0392b;font-weight:700"':r.isYing?' style="color:#1f5fa6;font-weight:700"':'';
+   return `<td${style}>${r.branch}${r.element}（${r.relative}）${mark}</td>`;
+  }).join('');
+  const shiRow=details.find(r=>r.isShi),yingRow=details.find(r=>r.isYing);
+  const palaceName=palaceInfo?palaceInfo.palace+'宮':'';
+  const palaceElement=palaceInfo?(TRIGRAM_ELEMENT[palaceInfo.palace]||''):'';
+  return `<tr><td>${i+1}</td><td>${name}</td><td>${upper}</td><td>${lower}</td><td>${palaceName}</td><td>${palaceElement}</td>${cells}<td>${shiRow?shiRow.pos:''}</td><td>${yingRow?yingRow.pos:''}</td></tr>`;
+ }).join('');
+ return `<div class="card" style="margin-top:14px"><h2>六十四卦世應納甲六親核對表</h2><div class="muted" style="margin-bottom:8px">依標準京房八宮卦逐卦核對世應位置、納甲地支、六親（表格較寬，可左右滑動）</div><div style="overflow-x:auto"><table style="min-width:1200px"><tr><th>卦序</th><th>卦名</th><th>上卦</th><th>下卦</th><th>所屬宮</th><th>宮五行</th><th>上爻</th><th>五爻</th><th>四爻</th><th>三爻</th><th>二爻</th><th>初爻</th><th>世爻</th><th>應爻</th></tr>${rowsHtml}</table></div></div>`;
+}
+function ichingAudit(){
+ page='ichingAudit';app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 返回易經</button></div><h1>☯️ 六十四卦世應納甲六親核對表</h1>${ichingAuditTable()}`;
+ document.getElementById('back').onclick=()=>{page='ichingMenu';render()};
+}
 function calc(){
  const u=Number(document.getElementById('up').value),d=Number(document.getElementById('down').value),h=Number(document.getElementById('hour').value);
  if(!u||!d||!h){alert('請選擇上卦、下卦與時辰');return}
@@ -1109,11 +1170,12 @@ function customCategories(){
 function customList(){
  let c=store[customScope].find(x=>x.id===currentId);
  const isNew=!c && draft && draft.id===currentId;
- if(!c && !isNew){page='customCategories';currentId='';draft=null;render();return}
+ if(!c && !isNew){page=customBackPage();currentId='';draft=null;render();return}
  if(isNew)c=draft;
+ const backLabel=customScope==='ichingCustomCategories'?'← 返回易經':'← 返回分類';
 
  app.innerHTML=top()+`<div class="toolbar">
- <button type="button" class="ghost" id="backToCategories">← 返回分類</button>
+ <button type="button" class="ghost" id="backToCategories">${backLabel}</button>
  <button type="button" class="primary" id="newCustomItem">＋ 新增資料</button>
  </div>
  <h1>${esc(c.name||'新增分類')}</h1>
@@ -1132,7 +1194,7 @@ function customList(){
    </div>`).join('')||'<div class="card muted">目前沒有資料</div>'}</div>`;
 
  document.getElementById('backToCategories').onclick=()=>{
-   currentId='';draft=null;page='customCategories';render();
+   currentId='';draft=null;page=customBackPage();render();
  };
  document.getElementById('newCustomItem').onclick=()=>{
    if(isNew){alert('請先建立分類');return}
@@ -1204,7 +1266,7 @@ async function saveCustom(){
 
 function customEdit(){
  const c=store[customScope].find(x=>x.id===currentId);
- if(!c){page='customCategories';currentId='';draft=null;render();return}
+ if(!c){page=customBackPage();currentId='';draft=null;render();return}
  app.innerHTML=top()+`<div class="toolbar">
  <button type="button" class="ghost" id="backCustom">← 返回</button><b>自訂資料</b></div>
  <div class="form">
@@ -1301,7 +1363,7 @@ document.addEventListener('click',e=>{
  const nav=e.target.closest('#homeBtn');
  if(nav){e.preventDefault();e.stopPropagation();goHome();return}
  const backCat=e.target.closest('#backToCategories');
- if(backCat){e.preventDefault();e.stopPropagation();currentId='';draft=null;page='customCategories';render();return}
+ if(backCat){e.preventDefault();e.stopPropagation();currentId='';draft=null;page=customBackPage();render();return}
  const backCustom=e.target.closest('#backCustom');
  if(backCustom){e.preventDefault();e.stopPropagation();page='customList';render();return}
 
