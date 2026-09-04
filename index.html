@@ -544,7 +544,8 @@ function loadLine(){ return localStorage.getItem(K_LINE) || DEFAULT_LINE; }
 function saveLine(){ const v=document.getElementById('setLine').value.trim()||DEFAULT_LINE; localStorage.setItem(K_LINE, v); lineLink=v; pushRemoteSettings(); toast('LINE 連結已儲存'); }
 
 const K_WEBHOOK='rt_booking_webhook';
-function loadWebhook(){ return localStorage.getItem(K_WEBHOOK) || ''; }
+const DEFAULT_WEBHOOK='https://script.google.com/macros/s/AKfycbz-wrJey2fseIfVFUNtqndW6mQLaduqA8WB__gcKBnafQtX8sotoy68rwcBvRhqzVV2tA/exec';
+function loadWebhook(){ return localStorage.getItem(K_WEBHOOK) || DEFAULT_WEBHOOK; }
 function saveWebhook(){ const v=document.getElementById('setWebhook').value.trim(); localStorage.setItem(K_WEBHOOK, v); webhookUrl=v; toast(v? '通知網址已儲存':'已清空通知網址'); }
 function notifyWebhook(payload){
   const url = webhookUrl;
