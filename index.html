@@ -541,7 +541,7 @@ function saveServices(s){ localStorage.setItem(K_SERVICES, JSON.stringify(s)); }
 function loadAddons(){ const a=loadJSON(K_ADDONS,null); return (a&&a.length)?a:defaultAddons(); }
 function saveAddons(a){ localStorage.setItem(K_ADDONS, JSON.stringify(a)); }
 function loadLine(){ return localStorage.getItem(K_LINE) || DEFAULT_LINE; }
-function saveLine(){ const v=document.getElementById('setLine').value.trim()||DEFAULT_LINE; localStorage.setItem(K_LINE, v); lineLink=v; toast('LINE 連結已儲存'); }
+function saveLine(){ const v=document.getElementById('setLine').value.trim()||DEFAULT_LINE; localStorage.setItem(K_LINE, v); lineLink=v; pushRemoteSettings(); toast('LINE 連結已儲存'); }
 
 const K_WEBHOOK='rt_booking_webhook';
 function loadWebhook(){ return localStorage.getItem(K_WEBHOOK) || ''; }
@@ -565,6 +565,38 @@ function testWebhook(){
     question:'這是從設定頁發送的測試通知', other:''
   });
   toast('測試通知已送出，請確認試算表與LINE');
+}
+
+/* ============================================================
+   雲端設定同步：讓服務項目／加購／LINE連結不再只存在單一裝置
+   （需要先在設定頁貼好、儲存 Google Apps Script 網址）
+============================================================ */
+async function pullRemoteSettings(){
+  if(!webhookUrl) return;
+  try{
+    const sep = webhookUrl.includes('?') ? '&' : '?';
+    const res = await fetch(webhookUrl + sep + 'action=settings');
+    const data = await res.json();
+    let changed = false;
+    if(data && data.services && data.services.length){ services = data.services; saveServices(services); changed = true; }
+    if(data && data.addons){ addons = data.addons; saveAddons(addons); changed = true; }
+    if(data && data.line){ lineLink = data.line; localStorage.setItem(K_LINE, lineLink); changed = true; }
+    if(changed){
+      renderServiceCards();
+      if(!isAdmin) resetPublicForm();
+      if(isAdmin && document.getElementById('tab-settings').classList.contains('active')) renderSettings();
+    }
+  }catch(err){ console.warn('讀取雲端設定失敗，暫時使用本機資料', err); }
+}
+function pushRemoteSettings(){
+  if(!webhookUrl) return;
+  try{
+    fetch(webhookUrl, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'settings', services, addons, line: lineLink })
+    }).catch(err=>console.warn('雲端設定同步失敗', err));
+  }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
 
 let records = loadRecords();
@@ -869,20 +901,20 @@ function addService(){
   const price=Number(document.getElementById('newSvcPrice').value)||0;
   const desc=document.getElementById('newSvcDesc').value.trim();
   if(!name){ toast('請輸入服務名稱'); return; }
-  services.push({id:uid(),name,price,desc}); saveServices(services);
+  services.push({id:uid(),name,price,desc}); saveServices(services); pushRemoteSettings();
   document.getElementById('newSvcName').value=''; document.getElementById('newSvcPrice').value=''; document.getElementById('newSvcDesc').value='';
   renderServiceSettings(); renderServiceCards(); toast('已新增服務項目');
 }
-function removeService(id){ if(!confirm('確定刪除這個服務項目？')) return; services=services.filter(s=>s.id!==id); saveServices(services); renderServiceSettings(); renderServiceCards(); toast('已刪除'); }
+function removeService(id){ if(!confirm('確定刪除這個服務項目？')) return; services=services.filter(s=>s.id!==id); saveServices(services); pushRemoteSettings(); renderServiceSettings(); renderServiceCards(); toast('已刪除'); }
 function addAddon(){
   const name=document.getElementById('newAddonName').value.trim();
   const price=Number(document.getElementById('newAddonPrice').value)||0;
   if(!name){ toast('請輸入加購名稱'); return; }
-  addons.push({id:uid(),name,price}); saveAddons(addons);
+  addons.push({id:uid(),name,price}); saveAddons(addons); pushRemoteSettings();
   document.getElementById('newAddonName').value=''; document.getElementById('newAddonPrice').value='';
   renderAddonSettings(); renderServiceCards(); toast('已新增加購選項');
 }
-function removeAddon(id){ if(!confirm('確定刪除這個加購選項？')) return; addons=addons.filter(a=>a.id!==id); saveAddons(addons); renderAddonSettings(); renderServiceCards(); toast('已刪除'); }
+function removeAddon(id){ if(!confirm('確定刪除這個加購選項？')) return; addons=addons.filter(a=>a.id!==id); saveAddons(addons); pushRemoteSettings(); renderAddonSettings(); renderServiceCards(); toast('已刪除'); }
 
 /* ---------- 編輯服務項目／加購選項 Modal ---------- */
 let svcEditMode = null; // 'service' | 'addon'
@@ -922,6 +954,7 @@ function saveSvcModal(){
     a.name = name; a.price = price;
     saveAddons(addons); renderAddonSettings();
   }
+  pushRemoteSettings();
   renderServiceCards();
   closeSvcModal();
   toast('已更新');
@@ -962,6 +995,7 @@ const isAdmin = new URLSearchParams(location.search).get('admin')==='1';
 document.body.classList.add(isAdmin ? 'admin-mode' : 'client-mode');
 renderServiceCards();
 if(isAdmin){ renderDashboard(); } else { resetPublicForm(); }
+pullRemoteSettings();
 </script>
 </body>
 </html>
