@@ -455,6 +455,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
         <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">這是前台最上面吸引人的標題文案，可以隨著服務方向調整隨時修改。</p>
         <div class="field"><label>大標題（要換行的地方按 Enter）</label><textarea id="setHeroTitle" style="min-height:60px;"></textarea></div>
         <div class="field"><label>副標題文字</label><textarea id="setHeroSubtitle" style="min-height:60px;"></textarea></div>
+        <div class="field"><label>金色按鈕文字（主要行動呼籲）</label><input id="setHeroCta" placeholder="例如：想聽聽真正的答案"></div>
         <div class="field"><label>「妳可能正在經歷」— 每一行是一項</label><textarea id="setPainPoints" style="min-height:80px;"></textarea></div>
         <div class="field"><label>「我會幫妳直接看清」— 每一行是一項</label><textarea id="setBenefits" style="min-height:80px;"></textarea></div>
         <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveHeroContent()">儲存文案</button>
@@ -569,6 +570,7 @@ function defaultHeroContent(){
   return {
     title: '他不是沒看到\n只是現在還沒準備好回應妳',
     subtitle: '很多訊號早就出現了，\n只是妳還沒有一個「確定的答案」。',
+    ctaText: '想聽聽真正的答案',
     painPoints: ['他回覆變慢，妳開始焦慮','他忽冷忽熱，妳一直幫他找理由','妳很累，但卻停不下來'],
     benefits: ['他現在對妳的真實想法','為什麼會變成現在這樣','妳在他心中的真實位置']
   };
@@ -619,6 +621,7 @@ function saveHeroContent(){
   heroContent = {
     title: document.getElementById('setHeroTitle').value.trim() || defaultHeroContent().title,
     subtitle: document.getElementById('setHeroSubtitle').value.trim(),
+    ctaText: document.getElementById('setHeroCta').value.trim() || defaultHeroContent().ctaText,
     painPoints: document.getElementById('setPainPoints').value.split('\n').map(s=>s.trim()).filter(Boolean),
     benefits: document.getElementById('setBenefits').value.split('\n').map(s=>s.trim()).filter(Boolean)
   };
@@ -719,6 +722,7 @@ function renderHeroContent(){
   document.getElementById('heroSubtitle').innerHTML = esc(heroContent.subtitle).replace(/\n/g,'<br>');
   document.getElementById('painPointsWrap').innerHTML = (heroContent.painPoints||[]).map(t=>`<p>${esc(t)}</p>`).join('');
   document.getElementById('benefitsWrap').innerHTML = (heroContent.benefits||[]).map(t=>`<p>✔️ ${esc(t)}</p>`).join('');
+  document.getElementById('heroCta').textContent = heroContent.ctaText || '想聽聽真正的答案';
   document.getElementById('heroCta').href = lineLink;
   document.getElementById('quietLineBtn').href = lineLink;
 }
@@ -973,6 +977,7 @@ function renderSettings(){
   document.getElementById('setWebhook').value = webhookUrl;
   document.getElementById('setHeroTitle').value = heroContent.title;
   document.getElementById('setHeroSubtitle').value = heroContent.subtitle;
+  document.getElementById('setHeroCta').value = heroContent.ctaText || '';
   document.getElementById('setPainPoints').value = (heroContent.painPoints||[]).join('\n');
   document.getElementById('setBenefits').value = (heroContent.benefits||[]).join('\n');
   renderServiceSettings(); renderAddonSettings();
