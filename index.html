@@ -325,6 +325,18 @@ body.admin-mode #adminView{ display:block; }
 .client-footer{ text-align:center; padding:24px 20px 4px; }
 .client-footer a{ font-size:11px; color:#B7A98A; opacity:.6; text-decoration:none; letter-spacing:1px; }
 
+/* 後台密碼鎖 */
+#adminGate{ position:fixed; inset:0; background:var(--cream); z-index:300; display:none; align-items:center; justify-content:center; padding:20px; }
+body.admin-mode.admin-locked #adminGate{ display:flex; }
+body.admin-mode.admin-locked #adminView{ display:none !important; }
+.gate-box{ background:#fff; border:1px solid #EADFC8; border-radius:16px; padding:28px 24px; max-width:340px; width:100%; text-align:center; }
+.gate-box .lock-ico{ font-size:28px; margin-bottom:10px; }
+.gate-box h3{ margin:0 0 6px; font-size:16px; color:var(--brown); }
+.gate-box p{ font-size:12.5px; color:#999; margin:0 0 16px; }
+.gate-box input{ width:100%; padding:12px; border:1.5px solid #EADFC8; border-radius:10px; background:var(--cream); font-size:15px; text-align:center; box-sizing:border-box; font-family:inherit; margin-bottom:12px; }
+.gate-box input:focus{ outline:none; border-color:var(--gold-border); background:#fff; }
+.gate-error{ color:#B4756A; font-size:12px; margin:-6px 0 12px; display:none; }
+
 @media(max-width:480px){ .admin-field-grid{ grid-template-columns:1fr; } .stat-grid{ grid-template-columns:repeat(2,1fr); } }
 </style>
 </head>
@@ -373,9 +385,23 @@ body.admin-mode #adminView{ display:block; }
 
   <div id="bookingConfirmBox" class="box" style="display:none; text-align:center;"></div>
 
-  <div class="client-footer"><a href="?admin=1">· 管理後台 ·</a></div>
+  <div style="height:20px;"></div>
 
 </div>
+</div>
+
+<!-- =========================================================
+     後台密碼鎖（只有 ?admin=1 且尚未通過驗證時顯示）
+========================================================= -->
+<div id="adminGate">
+  <div class="gate-box">
+    <div class="lock-ico">🔒</div>
+    <h3>後台管理</h3>
+    <p>請輸入密碼才能進入</p>
+    <input type="password" id="gatePassword" placeholder="密碼" onkeydown="if(event.key==='Enter') checkAdminPassword()">
+    <div class="gate-error" id="gateError">密碼錯誤，請再試一次</div>
+    <button class="btn" style="margin:0; width:100%;" onclick="checkAdminPassword()">進入後台</button>
+  </div>
 </div>
 
 <!-- =========================================================
@@ -419,6 +445,11 @@ body.admin-mode #adminView{ display:block; }
     </div>
 
     <div class="admin-section" id="tab-settings">
+      <div class="panel">
+        <h3>🔒 後台密碼</h3>
+        <p style="font-size:12px; color:#999; line-height:1.7;">密碼已經改成由 Google Apps Script 驗證，不再存在網站程式碼裡，更安全。想更改密碼，請到 Apps Script 編輯器左側「專案設定」→「指令碼屬性」，修改 ADMIN_PASSWORD 這筆的值即可，不需要重新部署。</p>
+      </div>
+
       <div class="panel">
         <h3>✍️ 開頭介紹文字</h3>
         <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">這是前台最上面吸引人的標題文案，可以隨著服務方向調整隨時修改。</p>
@@ -555,6 +586,35 @@ function saveHeroContentLocal(h){ localStorage.setItem(K_HERO, JSON.stringify(h)
 function loadLine(){ return localStorage.getItem(K_LINE) || DEFAULT_LINE; }
 function saveLine(){ const v=document.getElementById('setLine').value.trim()||DEFAULT_LINE; localStorage.setItem(K_LINE, v); lineLink=v; renderHeroContent(); pushRemoteSettings(); toast('LINE 連結已儲存'); }
 
+/* ---------- 後台密碼鎖（改由 Apps Script 伺服器端驗證，密碼不存在網站程式碼裡） ---------- */
+async function checkAdminPassword(){
+  const input = document.getElementById('gatePassword').value;
+  const errEl = document.getElementById('gateError');
+  errEl.style.display='none';
+  if(!webhookUrl){ errEl.textContent='尚未設定雲端網址，無法驗證密碼'; errEl.style.display='block'; return; }
+  if(!input){ return; }
+  try{
+    const res = await fetch(webhookUrl, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'auth', password: input })
+    });
+    const data = await res.json();
+    if(data && data.ok){
+      sessionStorage.setItem('rt_admin_unlocked','1');
+      sessionStorage.setItem('rt_admin_pw', input); // 暫存在這次瀏覽器分頁的記憶體中，供後續設定儲存時驗證用，關閉分頁即消失
+      document.body.classList.remove('admin-locked');
+      renderDashboard();
+    } else {
+      errEl.textContent='密碼錯誤，請再試一次';
+      errEl.style.display='block';
+    }
+  }catch(err){
+    errEl.textContent='連線失敗，請確認網路後再試一次';
+    errEl.style.display='block';
+  }
+}
+
 function saveHeroContent(){
   heroContent = {
     title: document.getElementById('setHeroTitle').value.trim() || defaultHeroContent().title,
@@ -622,7 +682,7 @@ function pushRemoteSettings(){
     fetch(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'settings', services, addons, line: lineLink, hero: heroContent })
+      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, line: lineLink, hero: heroContent })
     }).catch(err=>console.warn('雲端設定同步失敗', err));
   }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
@@ -1035,9 +1095,16 @@ function importData(e){
 ============================================================ */
 const isAdmin = new URLSearchParams(location.search).get('admin')==='1';
 document.body.classList.add(isAdmin ? 'admin-mode' : 'client-mode');
+if(isAdmin && sessionStorage.getItem('rt_admin_unlocked')!=='1'){
+  document.body.classList.add('admin-locked');
+}
 renderServiceCards();
 renderHeroContent();
-if(isAdmin){ renderDashboard(); } else { resetPublicForm(); }
+if(isAdmin){
+  if(!document.body.classList.contains('admin-locked')) renderDashboard();
+} else {
+  resetPublicForm();
+}
 pullRemoteSettings();
 </script>
 </body>
