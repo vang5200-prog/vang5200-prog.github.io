@@ -78,7 +78,7 @@ p {
     inset 0 2px 6px rgba(255,255,255,0.6);
   transition: all 0.25s ease;
   animation: pulse 2s infinite;
-  border: none; width: calc(100% - 48px); cursor: pointer; font-size: 15px;
+  border: none; width: calc(100% - 48px); cursor: pointer; font-size: 15px; box-sizing: border-box;
 }
 .btn:hover {
   transform: translateY(-4px) scale(1.03);
@@ -340,27 +340,18 @@ body.admin-mode #adminView{ display:block; }
     <img src="https://raw.githubusercontent.com/vang5200-prog/vang5200-prog.github.io/main/photo.jpg" alt="笑笑｜情感讀心師">
   </div>
 
-  <h1>
-    他不是沒看到<br>
-    只是現在還沒準備好回應妳
-  </h1>
-  <p>很多訊號早就出現了，<br>只是妳還沒有一個「確定的答案」。</p>
+  <h1 id="heroTitle"></h1>
+  <p id="heroSubtitle"></p>
 
-  <a class="btn" href="https://lin.ee/5VQ5gbz">想確認他的想法</a>
+  <a class="btn" id="heroCta" href="https://lin.ee/5VQ5gbz">想確認他的想法</a>
   <p class="sub">✔️ 一對一讀心分析 &nbsp;✔️ 私人訂製回覆 &nbsp;✔️ 可提問</p>
   <p class="notice">目前採預約制，近期可安排時段有限</p>
 
   <h2>妳可能正在經歷</h2>
-  <p>他回覆變慢，妳開始焦慮</p>
-  <p>他忽冷忽熱，妳一直幫他找理由</p>
-  <p>妳很累，但卻停不下來</p>
+  <div id="painPointsWrap"></div>
 
   <h2>我會幫妳直接看清</h2>
-  <div class="box">
-    <p>✔️ 他現在對妳的真實想法</p>
-    <p>✔️ 為什麼會變成現在這樣</p>
-    <p>✔️ 妳在他心中的真實位置</p>
-  </div>
+  <div class="box" id="benefitsWrap"></div>
 
   <h2>服務方案</h2>
   <div id="serviceCardsWrap"></div>
@@ -369,7 +360,7 @@ body.admin-mode #adminView{ display:block; }
   <!-- 立即預約按鈕：捲動到下方預約表單 -->
   <button class="btn" style="margin-top:32px;" onclick="scrollToBooking()">線上預約諮詢</button>
   <p class="sub">填寫下方表單即可完成預約，不用自己整理訊息</p>
-  <a class="btn btn-quiet" href="https://lin.ee/5VQ5gbz">或直接私訊詢問 →</a>
+  <a class="btn btn-quiet" id="quietLineBtn" href="https://lin.ee/5VQ5gbz">或直接私訊詢問 →</a>
 
   <div id="bookingAnchor"></div>
 
@@ -428,6 +419,16 @@ body.admin-mode #adminView{ display:block; }
     </div>
 
     <div class="admin-section" id="tab-settings">
+      <div class="panel">
+        <h3>✍️ 開頭介紹文字</h3>
+        <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">這是前台最上面吸引人的標題文案，可以隨著服務方向調整隨時修改。</p>
+        <div class="field"><label>大標題（要換行的地方按 Enter）</label><textarea id="setHeroTitle" style="min-height:60px;"></textarea></div>
+        <div class="field"><label>副標題文字</label><textarea id="setHeroSubtitle" style="min-height:60px;"></textarea></div>
+        <div class="field"><label>「妳可能正在經歷」— 每一行是一項</label><textarea id="setPainPoints" style="min-height:80px;"></textarea></div>
+        <div class="field"><label>「我會幫妳直接看清」— 每一行是一項</label><textarea id="setBenefits" style="min-height:80px;"></textarea></div>
+        <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveHeroContent()">儲存文案</button>
+      </div>
+
       <div class="panel">
         <h3>🔔 新預約自動通知（Google試算表＋LINE）</h3>
         <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">貼上妳部署好的 Google Apps Script 網址，之後客戶每送出一筆預約，就會自動寫進試算表、並推播 LINE 通知給妳。設定教學請看聊天視窗裡的說明。</p>
@@ -533,6 +534,14 @@ function defaultAddons(){
     {id:uid(), name:'讀心解析 加購深入分析 15分鐘', price:699}
   ];
 }
+function defaultHeroContent(){
+  return {
+    title: '他不是沒看到\n只是現在還沒準備好回應妳',
+    subtitle: '很多訊號早就出現了，\n只是妳還沒有一個「確定的答案」。',
+    painPoints: ['他回覆變慢，妳開始焦慮','他忽冷忽熱，妳一直幫他找理由','妳很累，但卻停不下來'],
+    benefits: ['他現在對妳的真實想法','為什麼會變成現在這樣','妳在他心中的真實位置']
+  };
+}
 function loadJSON(key, fallback){ try{ const v=JSON.parse(localStorage.getItem(key)); return v??fallback; }catch(e){ return fallback; } }
 function loadRecords(){ return loadJSON(K_RECORDS, []); }
 function saveRecords(r){ localStorage.setItem(K_RECORDS, JSON.stringify(r)); }
@@ -540,8 +549,24 @@ function loadServices(){ const s=loadJSON(K_SERVICES,null); return (s&&s.length)
 function saveServices(s){ localStorage.setItem(K_SERVICES, JSON.stringify(s)); }
 function loadAddons(){ const a=loadJSON(K_ADDONS,null); return (a&&a.length)?a:defaultAddons(); }
 function saveAddons(a){ localStorage.setItem(K_ADDONS, JSON.stringify(a)); }
+const K_HERO='rt_booking_hero';
+function loadHeroContent(){ const h=loadJSON(K_HERO,null); return h?{...defaultHeroContent(),...h}:defaultHeroContent(); }
+function saveHeroContentLocal(h){ localStorage.setItem(K_HERO, JSON.stringify(h)); }
 function loadLine(){ return localStorage.getItem(K_LINE) || DEFAULT_LINE; }
-function saveLine(){ const v=document.getElementById('setLine').value.trim()||DEFAULT_LINE; localStorage.setItem(K_LINE, v); lineLink=v; pushRemoteSettings(); toast('LINE 連結已儲存'); }
+function saveLine(){ const v=document.getElementById('setLine').value.trim()||DEFAULT_LINE; localStorage.setItem(K_LINE, v); lineLink=v; renderHeroContent(); pushRemoteSettings(); toast('LINE 連結已儲存'); }
+
+function saveHeroContent(){
+  heroContent = {
+    title: document.getElementById('setHeroTitle').value.trim() || defaultHeroContent().title,
+    subtitle: document.getElementById('setHeroSubtitle').value.trim(),
+    painPoints: document.getElementById('setPainPoints').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    benefits: document.getElementById('setBenefits').value.split('\n').map(s=>s.trim()).filter(Boolean)
+  };
+  saveHeroContentLocal(heroContent);
+  renderHeroContent();
+  pushRemoteSettings();
+  toast('文案已儲存');
+}
 
 const K_WEBHOOK='rt_booking_webhook';
 const DEFAULT_WEBHOOK='https://script.google.com/macros/s/AKfycbz-wrJey2fseIfVFUNtqndW6mQLaduqA8WB__gcKBnafQtX8sotoy68rwcBvRhqzVV2tA/exec';
@@ -582,8 +607,10 @@ async function pullRemoteSettings(){
     if(data && data.services && data.services.length){ services = data.services; saveServices(services); changed = true; }
     if(data && data.addons){ addons = data.addons; saveAddons(addons); changed = true; }
     if(data && data.line){ lineLink = data.line; localStorage.setItem(K_LINE, lineLink); changed = true; }
+    if(data && data.hero){ heroContent = {...defaultHeroContent(), ...data.hero}; saveHeroContentLocal(heroContent); changed = true; }
     if(changed){
       renderServiceCards();
+      renderHeroContent();
       if(!isAdmin) resetPublicForm();
       if(isAdmin && document.getElementById('tab-settings').classList.contains('active')) renderSettings();
     }
@@ -595,7 +622,7 @@ function pushRemoteSettings(){
     fetch(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'settings', services, addons, line: lineLink })
+      body: JSON.stringify({ type:'settings', services, addons, line: lineLink, hero: heroContent })
     }).catch(err=>console.warn('雲端設定同步失敗', err));
   }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
@@ -605,6 +632,7 @@ let services = loadServices();
 let addons = loadAddons();
 let lineLink = loadLine();
 let webhookUrl = loadWebhook();
+let heroContent = loadHeroContent();
 if(!localStorage.getItem(K_SERVICES)) saveServices(services);
 if(!localStorage.getItem(K_ADDONS)) saveAddons(addons);
 let editingId = null;
@@ -625,6 +653,14 @@ function renderServiceCards(){
       <div class="addon-label">＋ 加購選項</div>
       ${addons.map(a=>`<div class="addon-item" style="cursor:default;"><strong>${esc(a.name)}</strong>｜NT$${Number(a.price).toLocaleString()}</div>`).join('')}
     </div>` : '';
+}
+function renderHeroContent(){
+  document.getElementById('heroTitle').innerHTML = esc(heroContent.title).replace(/\n/g,'<br>');
+  document.getElementById('heroSubtitle').innerHTML = esc(heroContent.subtitle).replace(/\n/g,'<br>');
+  document.getElementById('painPointsWrap').innerHTML = (heroContent.painPoints||[]).map(t=>`<p>${esc(t)}</p>`).join('');
+  document.getElementById('benefitsWrap').innerHTML = (heroContent.benefits||[]).map(t=>`<p>✔️ ${esc(t)}</p>`).join('');
+  document.getElementById('heroCta').href = lineLink;
+  document.getElementById('quietLineBtn').href = lineLink;
 }
 
 /* ============================================================
@@ -875,6 +911,10 @@ function saveAdminForm(){
 function renderSettings(){
   document.getElementById('setLine').value = lineLink;
   document.getElementById('setWebhook').value = webhookUrl;
+  document.getElementById('setHeroTitle').value = heroContent.title;
+  document.getElementById('setHeroSubtitle').value = heroContent.subtitle;
+  document.getElementById('setPainPoints').value = (heroContent.painPoints||[]).join('\n');
+  document.getElementById('setBenefits').value = (heroContent.benefits||[]).join('\n');
   renderServiceSettings(); renderAddonSettings();
 }
 function renderServiceSettings(){
@@ -965,7 +1005,7 @@ function saveSvcModal(){
    匯出／匯入
 ============================================================ */
 function exportData(){
-  const payload={records,services,addons,line:lineLink,webhook:webhookUrl,exportedAt:new Date().toISOString()};
+  const payload={records,services,addons,line:lineLink,webhook:webhookUrl,hero:heroContent,exportedAt:new Date().toISOString()};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const a=document.createElement('a'); const stamp=new Date().toISOString().slice(0,10);
   a.href=URL.createObjectURL(blob); a.download=`預約系統備份_${stamp}.json`; a.click();
@@ -981,8 +1021,9 @@ function importData(e){
       records=data.records||[]; services=(data.services&&data.services.length)?data.services:defaultServices();
       addons=(data.addons&&data.addons.length)?data.addons:defaultAddons();
       lineLink=data.line||DEFAULT_LINE; webhookUrl=data.webhook||'';
-      saveRecords(records); saveServices(services); saveAddons(addons); localStorage.setItem(K_LINE, lineLink); localStorage.setItem(K_WEBHOOK, webhookUrl);
-      renderSettings(); renderList(); renderDashboard(); renderServiceCards();
+      heroContent = data.hero ? {...defaultHeroContent(), ...data.hero} : defaultHeroContent();
+      saveRecords(records); saveServices(services); saveAddons(addons); localStorage.setItem(K_LINE, lineLink); localStorage.setItem(K_WEBHOOK, webhookUrl); saveHeroContentLocal(heroContent);
+      renderSettings(); renderList(); renderDashboard(); renderServiceCards(); renderHeroContent();
       toast('匯入成功');
     }catch(err){ toast('檔案格式錯誤，匯入失敗'); }
   };
@@ -995,6 +1036,7 @@ function importData(e){
 const isAdmin = new URLSearchParams(location.search).get('admin')==='1';
 document.body.classList.add(isAdmin ? 'admin-mode' : 'client-mode');
 renderServiceCards();
+renderHeroContent();
 if(isAdmin){ renderDashboard(); } else { resetPublicForm(); }
 pullRemoteSettings();
 </script>
