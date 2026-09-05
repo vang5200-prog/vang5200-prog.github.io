@@ -356,14 +356,16 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <p id="heroSubtitle"></p>
 
   <a class="btn" id="heroCta" href="https://lin.ee/5VQ5gbz">想確認他的想法</a>
-  <p class="sub">✔️ 一對一讀心分析 &nbsp;✔️ 私人訂製回覆 &nbsp;✔️ 可提問</p>
+  <p class="sub" id="heroFeatures"></p>
   <p class="notice" id="heroNotice"></p>
 
-  <h2>妳可能正在經歷</h2>
+  <h2 id="painPointsTitle"></h2>
+  <p class="sub" id="painPointsNote" style="text-align:left; opacity:1; padding:0; margin:6px 0 14px; line-height:1.8;"></p>
   <div id="painPointsWrap"></div>
 
   <h2 id="benefitsTitle"></h2>
   <div class="box" id="benefitsWrap"></div>
+  <p class="sub" id="preServicesNote" style="text-align:left; opacity:1; padding:0; margin:14px 0 0; line-height:1.8;"></p>
 
   <h2>服務方案</h2>
   <div id="serviceCardsWrap"></div>
@@ -456,10 +458,14 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
         <div class="field"><label>大標題（要換行的地方按 Enter）</label><textarea id="setHeroTitle" style="min-height:60px;"></textarea></div>
         <div class="field"><label>副標題文字</label><textarea id="setHeroSubtitle" style="min-height:60px;"></textarea></div>
         <div class="field"><label>金色按鈕文字（主要行動呼籲）</label><input id="setHeroCta" placeholder="例如：想聽聽真正的答案"></div>
+        <div class="field"><label>按鈕下方三個特色（每一行是一項）</label><textarea id="setHeroFeatures" style="min-height:70px;"></textarea></div>
         <div class="field"><label>按鈕下方的小提醒文字</label><input id="setHeroNotice" placeholder="例如：目前採預約制，近期可安排時段有限"></div>
-        <div class="field"><label>「我會幫妳直接看清」區塊標題</label><input id="setBenefitsTitle" placeholder="例如：我會幫妳直接看清"></div>
+        <div class="field"><label>「妳可能正在經歷」區塊標題</label><input id="setPainPointsTitle" placeholder="例如：你先把事情告訴我"></div>
+        <div class="field"><label>該標題下方的說明文字（要換行按 Enter）</label><textarea id="setPainPointsNote" style="min-height:70px;"></textarea></div>
         <div class="field"><label>「妳可能正在經歷」— 每一行是一項</label><textarea id="setPainPoints" style="min-height:80px;"></textarea></div>
+        <div class="field"><label>「我會幫妳直接看清」區塊標題</label><input id="setBenefitsTitle" placeholder="例如：我會幫妳直接看清"></div>
         <div class="field"><label>「我會幫妳直接看清」— 每一行是一項</label><textarea id="setBenefits" style="min-height:80px;"></textarea></div>
+        <div class="field"><label>服務方案前的說明文字（要換行按 Enter）</label><textarea id="setPreServicesNote" style="min-height:80px;"></textarea></div>
         <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveHeroContent()">儲存文案</button>
       </div>
 
@@ -496,8 +502,18 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
         <div class="admin-field-grid" style="margin-top:12px;">
           <div class="field"><label>加購名稱</label><input id="newAddonName" placeholder="例如：加購深入分析 10分鐘"></div>
           <div class="field"><label>價格 (NT$)</label><input id="newAddonPrice" type="number" placeholder="599"></div>
+          <div class="field full"><label>說明</label><input id="newAddonDesc" placeholder="這個加購能多幫客戶做什麼"></div>
         </div>
         <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addAddon()">＋ 新增加購</button>
+      </div>
+
+      <div class="panel">
+        <h3>諮詢方式管理</h3>
+        <div id="methodSettingsList"></div>
+        <div class="admin-field-grid" style="margin-top:12px;">
+          <div class="field full"><label>諮詢方式名稱</label><input id="newMethodName" placeholder="例如：視訊通話"></div>
+        </div>
+        <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addMethod()">＋ 新增諮詢方式</button>
       </div>
 
       <div class="panel">
@@ -547,7 +563,10 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
    儲存 Keys
 ============================================================ */
 const K_RECORDS='rt_booking_records', K_SERVICES='rt_booking_services', K_ADDONS='rt_booking_addons', K_LINE='rt_booking_line';
-const METHODS=['文字訊息(LINE)','語音通話','視訊通話'];
+const K_METHODS='rt_booking_methods';
+function defaultMethods(){ return ['文字訊息(LINE)','語音通話','視訊通話']; }
+function loadMethods(){ const m=loadJSON(K_METHODS,null); return (m&&m.length)?m:defaultMethods(); }
+function saveMethods(m){ localStorage.setItem(K_METHODS, JSON.stringify(m)); }
 const STATUSES=['待確認','已確認','已完成','已取消'];
 const STATUS_CLASS={'待確認':'pending','已確認':'confirmed','已完成':'done','已取消':'cancelled'};
 const DEFAULT_LINE='https://lin.ee/5VQ5gbz';
@@ -564,8 +583,8 @@ function defaultServices(){
 }
 function defaultAddons(){
   return [
-    {id:uid(), name:'照片讀心 加購深入分析 10分鐘', price:599},
-    {id:uid(), name:'讀心解析 加購深入分析 15分鐘', price:699}
+    {id:uid(), name:'照片讀心 加購深入分析 10分鐘', price:599, desc:''},
+    {id:uid(), name:'讀心解析 加購深入分析 15分鐘', price:699, desc:''}
   ];
 }
 function defaultHeroContent(){
@@ -573,10 +592,14 @@ function defaultHeroContent(){
     title: '他不是沒看到\n只是現在還沒準備好回應妳',
     subtitle: '很多訊號早就出現了，\n只是妳還沒有一個「確定的答案」。',
     ctaText: '想聽聽真正的答案',
+    features: ['一對一深入了解','依個人情況提供方向','可針對問題提問'],
     notice: '目前採預約制，近期可安排時段有限',
     painPoints: ['他回覆變慢，妳開始焦慮','他忽冷忽熱，妳一直幫他找理由','妳很累，但卻停不下來'],
+    painPointsTitle: '你先把事情告訴我',
+    painPointsNote: '有些事情，不只是聽你怎麼說。\n我也會從事情的發展、你和人的互動，以及你當下呈現出的狀態，一起去看這件事。',
     benefitsTitle: '我會幫妳直接看清',
-    benefits: ['他現在對妳的真實想法','為什麼會變成現在這樣','妳在他心中的真實位置']
+    benefits: ['他現在對妳的真實想法','為什麼會變成現在這樣','妳在他心中的真實位置'],
+    preServicesNote: '我會先從你說的內容、事情的發展和人與人之間的關係去理解。\n而有些時候，在這個過程裡，我也會接收到一些你沒有直接告訴我的感受或畫面。\n這些資訊，會成為我理解整件事情的一部分。'
   };
 }
 function loadJSON(key, fallback){ try{ const v=JSON.parse(localStorage.getItem(key)); return v??fallback; }catch(e){ return fallback; } }
@@ -626,10 +649,14 @@ function saveHeroContent(){
     title: document.getElementById('setHeroTitle').value.trim() || defaultHeroContent().title,
     subtitle: document.getElementById('setHeroSubtitle').value.trim(),
     ctaText: document.getElementById('setHeroCta').value.trim() || defaultHeroContent().ctaText,
+    features: document.getElementById('setHeroFeatures').value.split('\n').map(s=>s.trim()).filter(Boolean),
     notice: document.getElementById('setHeroNotice').value.trim(),
+    painPointsTitle: document.getElementById('setPainPointsTitle').value.trim() || defaultHeroContent().painPointsTitle,
+    painPointsNote: document.getElementById('setPainPointsNote').value.trim(),
     painPoints: document.getElementById('setPainPoints').value.split('\n').map(s=>s.trim()).filter(Boolean),
     benefitsTitle: document.getElementById('setBenefitsTitle').value.trim() || defaultHeroContent().benefitsTitle,
-    benefits: document.getElementById('setBenefits').value.split('\n').map(s=>s.trim()).filter(Boolean)
+    benefits: document.getElementById('setBenefits').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    preServicesNote: document.getElementById('setPreServicesNote').value.trim()
   };
   saveHeroContentLocal(heroContent);
   renderHeroContent();
@@ -675,6 +702,7 @@ async function pullRemoteSettings(){
     let changed = false;
     if(data && data.services && data.services.length){ services = data.services; saveServices(services); changed = true; }
     if(data && data.addons){ addons = data.addons; saveAddons(addons); changed = true; }
+    if(data && data.methods && data.methods.length){ methods = data.methods; saveMethods(methods); changed = true; }
     if(data && data.line){ lineLink = data.line; localStorage.setItem(K_LINE, lineLink); changed = true; }
     if(data && data.hero){ heroContent = {...defaultHeroContent(), ...data.hero}; saveHeroContentLocal(heroContent); changed = true; }
     if(changed){
@@ -691,7 +719,7 @@ function pushRemoteSettings(){
     fetch(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, line: lineLink, hero: heroContent })
+      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent })
     }).catch(err=>console.warn('雲端設定同步失敗', err));
   }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
@@ -702,6 +730,7 @@ let addons = loadAddons();
 let lineLink = loadLine();
 let webhookUrl = loadWebhook();
 let heroContent = loadHeroContent();
+let methods = loadMethods();
 if(!localStorage.getItem(K_SERVICES)) saveServices(services);
 if(!localStorage.getItem(K_ADDONS)) saveAddons(addons);
 let editingId = null;
@@ -720,16 +749,20 @@ function renderServiceCards(){
   document.getElementById('addonCardWrap').innerHTML = addons.length ? `
     <div class="addon-card">
       <div class="addon-label">＋ 加購選項</div>
-      ${addons.map(a=>`<div class="addon-item" style="cursor:default;"><strong>${esc(a.name)}</strong>｜NT$${Number(a.price).toLocaleString()}</div>`).join('')}
+      ${addons.map(a=>`<div class="addon-item" style="cursor:default; display:block;"><div><strong>${esc(a.name)}</strong>｜NT$${Number(a.price).toLocaleString()}</div>${a.desc?`<div style="font-size:12px; color:#888; margin-top:2px;">${esc(a.desc)}</div>`:''}</div>`).join('')}
     </div>` : '';
 }
 function renderHeroContent(){
   document.getElementById('heroTitle').innerHTML = esc(heroContent.title).replace(/\n/g,'<br>');
   document.getElementById('heroSubtitle').innerHTML = esc(heroContent.subtitle).replace(/\n/g,'<br>');
   document.getElementById('heroNotice').textContent = heroContent.notice || '';
+  document.getElementById('heroFeatures').innerHTML = (heroContent.features||[]).map(t=>`✔️ ${esc(t)}`).join(' &nbsp;');
+  document.getElementById('painPointsTitle').textContent = heroContent.painPointsTitle || '妳可能正在經歷';
+  document.getElementById('painPointsNote').innerHTML = esc(heroContent.painPointsNote||'').replace(/\n/g,'<br>');
   document.getElementById('painPointsWrap').innerHTML = (heroContent.painPoints||[]).map(t=>`<p>${esc(t)}</p>`).join('');
   document.getElementById('benefitsTitle').textContent = heroContent.benefitsTitle || '我會幫妳直接看清';
   document.getElementById('benefitsWrap').innerHTML = (heroContent.benefits||[]).map(t=>`<p>✔️ ${esc(t)}</p>`).join('');
+  document.getElementById('preServicesNote').innerHTML = esc(heroContent.preServicesNote||'').replace(/\n/g,'<br>');
   document.getElementById('heroCta').textContent = heroContent.ctaText || '想聽聽真正的答案';
   document.getElementById('heroCta').href = lineLink;
   document.getElementById('quietLineBtn').href = lineLink;
@@ -742,7 +775,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
 
 function publicFieldsHTML(){
   const svcOptions = services.map(s=>`<option value="${s.id}">${esc(s.name)}（NT$${s.price}）</option>`).join('');
-  const methodOptions = METHODS.map(m=>`<option value="${m}">${m}</option>`).join('');
+  const methodOptions = methods.map(m=>`<option value="${m}">${m}</option>`).join('');
   const addonChecks = addons.map(a=>`
     <label class="addon-item"><input type="checkbox" class="pf-addon" value="${a.id}" onchange="updatePricePreview()"> ${esc(a.name)}｜NT$${Number(a.price).toLocaleString()}</label>
   `).join('');
@@ -756,7 +789,7 @@ function publicFieldsHTML(){
     ${addons.length? `<div class="field"><label>加購選項（可複選）</label>${addonChecks}</div>`:''}
     <div class="field price-preview" id="pricePreview"></div>
     <div class="field"><label>諮詢方式 <span class="req">*</span></label><select id="pf_method">${methodOptions}</select></div>
-    <div class="field"><label>想諮詢的問題</label><textarea id="pf_question" placeholder="想聊聊什麼？先讓我知道大概方向"></textarea></div>
+    <div class="field"><label>想諮詢的問題</label><textarea id="pf_question" placeholder="想和我討論什麼事情？請簡單告訴我目前的情況"></textarea></div>
     <div class="field"><label>其他備註</label><textarea id="pf_other" placeholder="有什麼想先讓我知道的嗎？"></textarea></div>
   `;
 }
@@ -939,7 +972,7 @@ function openForm(id=null){
   const rec = id ? records.find(r=>r.id===id) : {};
   document.getElementById('modalTitle').textContent = id ? '編輯預約' : '新增預約';
   const svcOptions = services.map(s=>`<option value="${s.id}" ${rec.serviceId===s.id?'selected':''}>${esc(s.name)}</option>`).join('');
-  const methodOptions = METHODS.map(m=>`<option value="${m}" ${rec.method===m?'selected':''}>${m}</option>`).join('');
+  const methodOptions = methods.map(m=>`<option value="${m}" ${rec.method===m?'selected':''}>${m}</option>`).join('');
   const statusOptions = STATUSES.map(s=>`<option value="${s}" ${rec.status===s?'selected':''}>${s}</option>`).join('');
   document.getElementById('adminFormFields').innerHTML = `
     <div class="field full"><label>客戶姓名 *</label><input id="af_name" value="${esc(rec.name||'')}"></div>
@@ -986,11 +1019,15 @@ function renderSettings(){
   document.getElementById('setHeroTitle').value = heroContent.title;
   document.getElementById('setHeroSubtitle').value = heroContent.subtitle;
   document.getElementById('setHeroCta').value = heroContent.ctaText || '';
+  document.getElementById('setHeroFeatures').value = (heroContent.features||[]).join('\n');
   document.getElementById('setHeroNotice').value = heroContent.notice || '';
+  document.getElementById('setPainPointsTitle').value = heroContent.painPointsTitle || '';
+  document.getElementById('setPainPointsNote').value = heroContent.painPointsNote || '';
   document.getElementById('setBenefitsTitle').value = heroContent.benefitsTitle || '';
   document.getElementById('setPainPoints').value = (heroContent.painPoints||[]).join('\n');
+  document.getElementById('setPreServicesNote').value = heroContent.preServicesNote || '';
   document.getElementById('setBenefits').value = (heroContent.benefits||[]).join('\n');
-  renderServiceSettings(); renderAddonSettings();
+  renderServiceSettings(); renderAddonSettings(); renderMethodSettings();
 }
 function renderServiceSettings(){
   document.getElementById('serviceSettingsList').innerHTML = services.map(s=>`
@@ -1004,7 +1041,7 @@ function renderServiceSettings(){
 }
 function renderAddonSettings(){
   document.getElementById('addonSettingsList').innerHTML = addons.map(a=>`
-    <div class="settings-item"><div><b>${esc(a.name)}</b><div class="d">NT$${Number(a.price).toLocaleString()}</div></div>
+    <div class="settings-item"><div><b>${esc(a.name)}</b><div class="d">NT$${Number(a.price).toLocaleString()}${a.desc?' · '+esc(a.desc):''}</div></div>
       <div style="display:flex; gap:6px;">
         <button style="color:var(--gold-text); border-color:var(--gold-border);" onclick="openAddonEdit('${a.id}')">編輯</button>
         <button onclick="removeAddon('${a.id}')">刪除</button>
@@ -1025,12 +1062,47 @@ function removeService(id){ if(!confirm('確定刪除這個服務項目？')) re
 function addAddon(){
   const name=document.getElementById('newAddonName').value.trim();
   const price=Number(document.getElementById('newAddonPrice').value)||0;
+  const desc=document.getElementById('newAddonDesc').value.trim();
   if(!name){ toast('請輸入加購名稱'); return; }
-  addons.push({id:uid(),name,price}); saveAddons(addons); pushRemoteSettings();
-  document.getElementById('newAddonName').value=''; document.getElementById('newAddonPrice').value='';
+  addons.push({id:uid(),name,price,desc}); saveAddons(addons); pushRemoteSettings();
+  document.getElementById('newAddonName').value=''; document.getElementById('newAddonPrice').value=''; document.getElementById('newAddonDesc').value='';
   renderAddonSettings(); renderServiceCards(); toast('已新增加購選項');
 }
 function removeAddon(id){ if(!confirm('確定刪除這個加購選項？')) return; addons=addons.filter(a=>a.id!==id); saveAddons(addons); pushRemoteSettings(); renderAddonSettings(); renderServiceCards(); toast('已刪除'); }
+
+/* ---------- 諮詢方式管理 ---------- */
+function renderMethodSettings(){
+  document.getElementById('methodSettingsList').innerHTML = methods.map((m,i)=>`
+    <div class="settings-item"><div><b>${esc(m)}</b></div>
+      <div style="display:flex; gap:6px;">
+        <button style="color:var(--gold-text); border-color:var(--gold-border);" onclick="openMethodEdit(${i})">編輯</button>
+        <button onclick="removeMethod(${i})">刪除</button>
+      </div>
+    </div>
+  `).join('') || `<p style="font-size:12px; color:#999;">尚未新增諮詢方式</p>`;
+}
+function addMethod(){
+  const name = document.getElementById('newMethodName').value.trim();
+  if(!name){ toast('請輸入諮詢方式名稱'); return; }
+  if(methods.includes(name)){ toast('這個名稱已經存在'); return; }
+  methods.push(name); saveMethods(methods); pushRemoteSettings();
+  document.getElementById('newMethodName').value='';
+  renderMethodSettings(); toast('已新增諮詢方式');
+}
+function removeMethod(index){
+  if(methods.length<=1){ toast('至少要保留一種諮詢方式'); return; }
+  if(!confirm('確定刪除這個諮詢方式？')) return;
+  methods.splice(index,1); saveMethods(methods); pushRemoteSettings();
+  renderMethodSettings(); toast('已刪除');
+}
+function openMethodEdit(index){
+  svcEditMode='method'; svcEditId=index;
+  document.getElementById('svcModalTitle').textContent = '編輯諮詢方式';
+  document.getElementById('svcModalFields').innerHTML = `
+    <div class="field full"><label>諮詢方式名稱</label><input id="svc_name" value="${esc(methods[index])}"></div>
+  `;
+  document.getElementById('svcModalOverlay').classList.add('open');
+}
 
 /* ---------- 編輯服務項目／加購選項 Modal ---------- */
 let svcEditMode = null; // 'service' | 'addon'
@@ -1053,13 +1125,15 @@ function openAddonEdit(id){
   document.getElementById('svcModalFields').innerHTML = `
     <div class="field full"><label>加購名稱</label><input id="svc_name" value="${esc(a.name)}"></div>
     <div class="field"><label>價格 (NT$)</label><input id="svc_price" type="number" value="${a.price}"></div>
+    <div class="field full"><label>說明</label><input id="svc_desc" value="${esc(a.desc||'')}"></div>
   `;
   document.getElementById('svcModalOverlay').classList.add('open');
 }
 function closeSvcModal(){ document.getElementById('svcModalOverlay').classList.remove('open'); svcEditMode=null; svcEditId=null; }
 function saveSvcModal(){
   const name = document.getElementById('svc_name').value.trim();
-  const price = Number(document.getElementById('svc_price').value)||0;
+  const priceEl = document.getElementById('svc_price');
+  const price = priceEl ? (Number(priceEl.value)||0) : 0;
   if(!name){ toast('請輸入名稱'); return; }
   if(svcEditMode==='service'){
     const s = services.find(x=>x.id===svcEditId); if(!s) return;
@@ -1067,8 +1141,10 @@ function saveSvcModal(){
     saveServices(services); renderServiceSettings();
   } else if(svcEditMode==='addon'){
     const a = addons.find(x=>x.id===svcEditId); if(!a) return;
-    a.name = name; a.price = price;
+    a.name = name; a.price = price; a.desc = document.getElementById('svc_desc').value.trim();
     saveAddons(addons); renderAddonSettings();
+  } else if(svcEditMode==='method'){
+    if(methods[svcEditId]!==undefined){ methods[svcEditId] = name; saveMethods(methods); renderMethodSettings(); }
   }
   pushRemoteSettings();
   renderServiceCards();
@@ -1080,7 +1156,7 @@ function saveSvcModal(){
    匯出／匯入
 ============================================================ */
 function exportData(){
-  const payload={records,services,addons,line:lineLink,webhook:webhookUrl,hero:heroContent,exportedAt:new Date().toISOString()};
+  const payload={records,services,addons,methods,line:lineLink,webhook:webhookUrl,hero:heroContent,exportedAt:new Date().toISOString()};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const a=document.createElement('a'); const stamp=new Date().toISOString().slice(0,10);
   a.href=URL.createObjectURL(blob); a.download=`預約系統備份_${stamp}.json`; a.click();
@@ -1095,9 +1171,10 @@ function importData(e){
       if(!confirm('匯入將會「取代」目前所有資料，確定要繼續嗎？')) return;
       records=data.records||[]; services=(data.services&&data.services.length)?data.services:defaultServices();
       addons=(data.addons&&data.addons.length)?data.addons:defaultAddons();
+      methods=(data.methods&&data.methods.length)?data.methods:defaultMethods();
       lineLink=data.line||DEFAULT_LINE; webhookUrl=data.webhook||'';
       heroContent = data.hero ? {...defaultHeroContent(), ...data.hero} : defaultHeroContent();
-      saveRecords(records); saveServices(services); saveAddons(addons); localStorage.setItem(K_LINE, lineLink); localStorage.setItem(K_WEBHOOK, webhookUrl); saveHeroContentLocal(heroContent);
+      saveRecords(records); saveServices(services); saveAddons(addons); saveMethods(methods); localStorage.setItem(K_LINE, lineLink); localStorage.setItem(K_WEBHOOK, webhookUrl); saveHeroContentLocal(heroContent);
       renderSettings(); renderList(); renderDashboard(); renderServiceCards(); renderHeroContent();
       toast('匯入成功');
     }catch(err){ toast('檔案格式錯誤，匯入失敗'); }
