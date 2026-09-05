@@ -169,6 +169,12 @@ p {
   border-radius: 20px;
   margin: 6px 0 8px;
 }
+.card-subtitle {
+  font-size: 12.5px;
+  color: #A67C2E;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
 .card-desc {
   font-size: 13px;
   color: #666;
@@ -491,6 +497,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
         <div class="admin-field-grid" style="margin-top:12px;">
           <div class="field"><label>服務名稱（含時長）</label><input id="newSvcName" placeholder="例如：塔羅讀心 / 20分鐘"></div>
           <div class="field"><label>價格 (NT$)</label><input id="newSvcPrice" type="number" placeholder="999"></div>
+          <div class="field"><label>地點／形式（選填）</label><input id="newSvcSubtitle" placeholder="例如：遠程／台南面對面"></div>
           <div class="field full"><label>說明</label><input id="newSvcDesc" placeholder="這項服務能幫客戶解決什麼"></div>
         </div>
         <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addService()">＋ 新增服務</button>
@@ -744,6 +751,7 @@ function renderServiceCards(){
       <div class="card-number">${String(i+1).padStart(2,'0')}</div>
       <div class="card-title">${esc(s.name)}</div>
       <div class="card-price">NT$${Number(s.price).toLocaleString()}</div>
+      ${s.subtitle?`<div class="card-subtitle">${esc(s.subtitle)}</div>`:''}
       <p class="card-desc">${esc(s.desc||'')}</p>
     </div>`).join('');
   document.getElementById('addonCardWrap').innerHTML = addons.length ? `
@@ -1031,7 +1039,7 @@ function renderSettings(){
 }
 function renderServiceSettings(){
   document.getElementById('serviceSettingsList').innerHTML = services.map(s=>`
-    <div class="settings-item"><div><b>${esc(s.name)}</b><div class="d">NT$${Number(s.price).toLocaleString()} · ${esc(s.desc||'')}</div></div>
+    <div class="settings-item"><div><b>${esc(s.name)}</b><div class="d">NT$${Number(s.price).toLocaleString()}${s.subtitle?' · '+esc(s.subtitle):''} · ${esc(s.desc||'')}</div></div>
       <div style="display:flex; gap:6px;">
         <button style="color:var(--gold-text); border-color:var(--gold-border);" onclick="openServiceEdit('${s.id}')">編輯</button>
         <button onclick="removeService('${s.id}')">刪除</button>
@@ -1052,10 +1060,11 @@ function renderAddonSettings(){
 function addService(){
   const name=document.getElementById('newSvcName').value.trim();
   const price=Number(document.getElementById('newSvcPrice').value)||0;
+  const subtitle=document.getElementById('newSvcSubtitle').value.trim();
   const desc=document.getElementById('newSvcDesc').value.trim();
   if(!name){ toast('請輸入服務名稱'); return; }
-  services.push({id:uid(),name,price,desc}); saveServices(services); pushRemoteSettings();
-  document.getElementById('newSvcName').value=''; document.getElementById('newSvcPrice').value=''; document.getElementById('newSvcDesc').value='';
+  services.push({id:uid(),name,price,subtitle,desc}); saveServices(services); pushRemoteSettings();
+  document.getElementById('newSvcName').value=''; document.getElementById('newSvcPrice').value=''; document.getElementById('newSvcSubtitle').value=''; document.getElementById('newSvcDesc').value='';
   renderServiceSettings(); renderServiceCards(); toast('已新增服務項目');
 }
 function removeService(id){ if(!confirm('確定刪除這個服務項目？')) return; services=services.filter(s=>s.id!==id); saveServices(services); pushRemoteSettings(); renderServiceSettings(); renderServiceCards(); toast('已刪除'); }
@@ -1114,6 +1123,7 @@ function openServiceEdit(id){
   document.getElementById('svcModalFields').innerHTML = `
     <div class="field full"><label>服務名稱（含時長）</label><input id="svc_name" value="${esc(s.name)}"></div>
     <div class="field"><label>價格 (NT$)</label><input id="svc_price" type="number" value="${s.price}"></div>
+    <div class="field"><label>地點／形式（選填）</label><input id="svc_subtitle" value="${esc(s.subtitle||'')}"></div>
     <div class="field full"><label>說明</label><input id="svc_desc" value="${esc(s.desc||'')}"></div>
   `;
   document.getElementById('svcModalOverlay').classList.add('open');
@@ -1137,7 +1147,7 @@ function saveSvcModal(){
   if(!name){ toast('請輸入名稱'); return; }
   if(svcEditMode==='service'){
     const s = services.find(x=>x.id===svcEditId); if(!s) return;
-    s.name = name; s.price = price; s.desc = document.getElementById('svc_desc').value.trim();
+    s.name = name; s.price = price; s.subtitle = document.getElementById('svc_subtitle').value.trim(); s.desc = document.getElementById('svc_desc').value.trim();
     saveServices(services); renderServiceSettings();
   } else if(svcEditMode==='addon'){
     const a = addons.find(x=>x.id===svcEditId); if(!a) return;
