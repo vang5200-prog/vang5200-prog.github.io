@@ -753,6 +753,7 @@ function renderServiceCards(){
       <div class="card-price">NT$${Number(s.price).toLocaleString()}</div>
       ${s.subtitle?`<div class="card-subtitle">${esc(s.subtitle)}</div>`:''}
       <p class="card-desc">${esc(s.desc||'')}</p>
+      ${s.locationNote?`<p class="card-desc" style="margin-top:6px; color:#999;">${esc(s.locationNote)}</p>`:''}
     </div>`).join('');
   document.getElementById('addonCardWrap').innerHTML = addons.length ? `
     <div class="addon-card">
@@ -1039,7 +1040,7 @@ function renderSettings(){
 }
 function renderServiceSettings(){
   document.getElementById('serviceSettingsList').innerHTML = services.map(s=>`
-    <div class="settings-item"><div><b>${esc(s.name)}</b><div class="d">NT$${Number(s.price).toLocaleString()}${s.subtitle?' · '+esc(s.subtitle):''} · ${esc(s.desc||'')}</div></div>
+    <div class="settings-item"><div><b>${esc(s.name)}</b><div class="d">NT$${Number(s.price).toLocaleString()}${s.subtitle?' · '+esc(s.subtitle):''} · ${esc(s.desc||'')}${s.locationNote?' · 地點說明：'+esc(s.locationNote):''}</div></div>
       <div style="display:flex; gap:6px;">
         <button style="color:var(--gold-text); border-color:var(--gold-border);" onclick="openServiceEdit('${s.id}')">編輯</button>
         <button onclick="removeService('${s.id}')">刪除</button>
@@ -1123,8 +1124,9 @@ function openServiceEdit(id){
   document.getElementById('svcModalFields').innerHTML = `
     <div class="field full"><label>服務名稱（含時長）</label><input id="svc_name" value="${esc(s.name)}"></div>
     <div class="field"><label>價格 (NT$)</label><input id="svc_price" type="number" value="${s.price}"></div>
-    <div class="field"><label>地點／形式（選填）</label><input id="svc_subtitle" value="${esc(s.subtitle||'')}"></div>
-    <div class="field full"><label>說明</label><input id="svc_desc" value="${esc(s.desc||'')}"></div>
+    <div class="field"><label>地點／形式（選填，例如：遠程／台南面對面）</label><input id="svc_subtitle" value="${esc(s.subtitle||'')}"></div>
+    <div class="field full"><label>服務說明</label><input id="svc_desc" value="${esc(s.desc||'')}"></div>
+    <div class="field full"><label>地點說明（選填，可寫更詳細的地點/形式補充）</label><textarea id="svc_locationNote" style="min-height:60px;">${esc(s.locationNote||'')}</textarea></div>
   `;
   document.getElementById('svcModalOverlay').classList.add('open');
 }
@@ -1148,6 +1150,8 @@ function saveSvcModal(){
   if(svcEditMode==='service'){
     const s = services.find(x=>x.id===svcEditId); if(!s) return;
     s.name = name; s.price = price; s.subtitle = document.getElementById('svc_subtitle').value.trim(); s.desc = document.getElementById('svc_desc').value.trim();
+    const locEl = document.getElementById('svc_locationNote');
+    if(locEl) s.locationNote = locEl.value.trim();
     saveServices(services); renderServiceSettings();
   } else if(svcEditMode==='addon'){
     const a = addons.find(x=>x.id===svcEditId); if(!a) return;
