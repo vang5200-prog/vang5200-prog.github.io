@@ -587,17 +587,21 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function parseTiers(tiers){
   return (tiers||[]).map(t=>{
-    const m = t.match(/NT\$?\s*([\d,]+)/);
-    return { label:t, price: m?Number(m[1].replace(/,/g,'')):0 };
+    const parts = t.split('→').map(p=>p.trim());
+    const label = parts[0];
+    const m = label.match(/NT\$?\s*([\d,]+)/);
+    return {
+      label,
+      price: m?Number(m[1].replace(/,/g,'')):0,
+      questionLabel: parts[1]||'',
+      questionPlaceholder: parts[2]||''
+    };
   });
 }
 function servicePriceLabel(s){
   if(Number(s.price)>0) return `NT$${Number(s.price).toLocaleString()}`;
   if(s.tiers && s.tiers.length){
-    const prices = s.tiers.map(t=>{
-      const m = t.match(/NT\$?\s*([\d,]+)/);
-      return m ? Number(m[1].replace(/,/g,'')) : null;
-    }).filter(p=>p!==null && !isNaN(p));
+    const prices = parseTiers(s.tiers).map(t=>t.price).filter(p=>p>0);
     if(prices.length){
       const min=Math.min(...prices), max=Math.max(...prices);
       return min===max ? `NT$${min.toLocaleString()}` : `NT$${min.toLocaleString()}~${max.toLocaleString()}`;
@@ -779,7 +783,7 @@ function renderServiceCards(){
       ${s.subtitle?`<div class="card-subtitle">${esc(s.subtitle)}</div>`:''}
       <p class="card-desc">${esc(s.desc||'')}</p>
       ${s.locationNote?`<p class="card-desc" style="margin-top:6px; color:#999;">${esc(s.locationNote)}</p>`:''}
-      ${(s.tiers&&s.tiers.length)?`<div class="tier-list">${s.tiers.map(t=>`<div class="tier-row${t.includes('⭐')?' recommended':''}">${esc(t)}</div>`).join('')}</div>`:''}
+      ${(s.tiers&&s.tiers.length)?`<div class="tier-list">${parseTiers(s.tiers).map(t=>`<div class="tier-row${t.label.includes('⭐')?' recommended':''}">${esc(t.label)}</div>`).join('')}</div>`:''}
       ${s.note?`<p class="card-note">${esc(s.note)}</p>`:''}
     </div>`).join('');
   document.getElementById('addonCardWrap').innerHTML = addons.length ? `
@@ -822,11 +826,11 @@ function publicFieldsHTML(){
     <div class="field"><label>預約項目 <span class="req">*</span></label>
       <select id="pf_service" onchange="onServiceChange()">${svcOptions}</select>
     </div>
-    <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview()"></select></div>
+    <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview(); updateQuestionField();"></select></div>
     ${addons.length? `<div class="field"><label>加購選項（可複選）</label>${addonChecks}</div>`:''}
     <div class="field price-preview" id="pricePreview"></div>
     <div class="field"><label>諮詢方式 <span class="req">*</span></label><select id="pf_method">${methodOptions}</select></div>
-    <div class="field"><label>想諮詢的問題</label><textarea id="pf_question" placeholder="想和我討論什麼事情？請簡單告訴我目前的情況"></textarea></div>
+    <div class="field"><label id="pf_question_label">想諮詢的問題</label><textarea id="pf_question" placeholder="想和我討論什麼事情？請簡單告訴我目前的情況"></textarea></div>
     <div class="field"><label>其他備註</label><textarea id="pf_other" placeholder="有什麼想先讓我知道的嗎？"></textarea></div>
   `;
 }
@@ -850,9 +854,42 @@ function updateTierField(){
   document.getElementById('pf_tier').innerHTML = '<option value="">請選擇…</option>' + tiers.map((t,i)=>`<option value="${i}">${esc(t.label)}</option>`).join('');
   wrap.style.display='block';
 }
+function updateQuestionField(){
+  const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
+  let qLabel = '想諮詢的問題';
+  let qPlaceholder = '想和我討論什麼事情？請簡單告訴我目前的情況';
+  if(svc){
+    if(svc.questionLabel) qLabel = svc.questionLabel;
+    if(svc.questionPlaceholder) qPlaceholder = svc.questionPlaceholder;
+    const wrap = document.getElementById('tierFieldWrap');
+    const tierEl = document.getElementById('pf_tier');
+    if(wrap.style.display!=='none' && tierEl.value!==''){
+      const tiers = parseTiers(svc.tiers);
+      const t = tiers[Number(tierEl.value)];
+      if(t){
+        if(t.questionLabel) qLabel = t.questionLabel;
+        if(t.questionPlaceholder) qPlaceholder = t.questionPlaceholder;
+      }
+    }
+  }
+  const labelEl = document.getElementById('pf_question_label');
+  const inputEl = document.getElementById('pf_question');
+  if(labelEl) labelEl.textContent = qLabel;
+  if(inputEl) inputEl.placeholder = qPlaceholder;
+}
+function updateMethodField(){
+  const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
+  const methodEl = document.getElementById('pf_method');
+  const allowed = (svc && svc.allowedMethods && svc.allowedMethods.length) ? svc.allowedMethods : methods;
+  const current = methodEl.value;
+  methodEl.innerHTML = allowed.map(m=>`<option value="${m}">${m}</option>`).join('');
+  if(allowed.includes(current)) methodEl.value = current;
+}
 function onServiceChange(){
   updateTierField();
   updatePricePreview();
+  updateQuestionField();
+  updateMethodField();
 }
 function selectedTierPrice(svc){
   if(!svc) return 0;
@@ -1189,8 +1226,11 @@ function openServiceEdit(id){
     <div class="field"><label>地點／形式（選填，例如：遠程／台南面對面）</label><input id="svc_subtitle" value="${esc(s.subtitle||'')}"></div>
     <div class="field full"><label>服務說明</label><input id="svc_desc" value="${esc(s.desc||'')}"></div>
     <div class="field full"><label>地點說明（選填，可寫更詳細的地點/形式補充）</label><textarea id="svc_locationNote" style="min-height:60px;">${esc(s.locationNote||'')}</textarea></div>
-    <div class="field full"><label>展開選項（選填，每一行一項，例如：單一脈輪療癒｜15分鐘｜NT$900，想標示推薦選項可加上 ⭐）</label><textarea id="svc_tiers" style="min-height:80px;">${esc((s.tiers||[]).join('\n'))}</textarea></div>
+    <div class="field full"><label>展開選項（選填，每一行一項，例如：單一脈輪療癒｜15分鐘｜NT$900，想標示推薦選項可加上 ⭐。若想讓這個方案顯示專屬的預約問題，在同一行後面加上 → 問題標題 → 提示文字，例如：三脈輪組合療癒｜30分鐘｜NT$1,500 → 目前想進行療癒的原因（選填） → 可以簡單告訴我目前的狀況或想調整的方向。）</label><textarea id="svc_tiers" style="min-height:100px;">${esc((s.tiers||[]).join('\n'))}</textarea></div>
     <div class="field full"><label>結尾補充說明（選填，顯示在展開選項下方）</label><textarea id="svc_note" style="min-height:70px;">${esc(s.note||'')}</textarea></div>
+    <div class="field full"><label>此服務專屬的預約問題標題（選填，沒有子選項時使用）</label><input id="svc_questionLabel" value="${esc(s.questionLabel||'')}" placeholder="例如：想諮詢的問題"></div>
+    <div class="field full"><label>此服務專屬的預約問題提示文字（選填）</label><input id="svc_questionPlaceholder" value="${esc(s.questionPlaceholder||'')}" placeholder="例如：簡單告訴我目前想處理的是什麼事情。"></div>
+    <div class="field full"><label>限定諮詢方式（選填，若指定則客戶只能選這些方式，用逗號分隔，需與下方「諮詢方式管理」的名稱完全一致，例如：視訊通話）</label><input id="svc_allowedMethods" value="${esc((s.allowedMethods||[]).join('、'))}" placeholder="留空表示不限制"></div>
   `;
   document.getElementById('svcModalOverlay').classList.add('open');
 }
@@ -1220,6 +1260,12 @@ function saveSvcModal(){
     if(tiersEl) s.tiers = tiersEl.value.split('\n').map(t=>t.trim()).filter(Boolean);
     const noteEl = document.getElementById('svc_note');
     if(noteEl) s.note = noteEl.value.trim();
+    const qlEl = document.getElementById('svc_questionLabel');
+    if(qlEl) s.questionLabel = qlEl.value.trim();
+    const qpEl = document.getElementById('svc_questionPlaceholder');
+    if(qpEl) s.questionPlaceholder = qpEl.value.trim();
+    const amEl = document.getElementById('svc_allowedMethods');
+    if(amEl) s.allowedMethods = amEl.value.split(/[、,，]/).map(m=>m.trim()).filter(Boolean);
     saveServices(services); renderServiceSettings();
   } else if(svcEditMode==='addon'){
     const a = addons.find(x=>x.id===svcEditId); if(!a) return;
