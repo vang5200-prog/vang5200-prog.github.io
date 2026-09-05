@@ -182,6 +182,11 @@ p {
   padding: 0;
   margin: 0;
 }
+.tier-list{ margin-top:12px; border-top:1px dashed #EADFC8; padding-top:10px; }
+.tier-row{ font-size:13.5px; color:#4A3728; padding:6px 0; border-bottom:1px solid #F5EFE6; }
+.tier-row:last-child{ border-bottom:none; }
+.tier-row.recommended{ font-weight:700; color:#A67C2E; background:#FFF8E8; margin:0 -8px; padding:6px 8px; border-radius:8px; border-bottom:none; }
+.card-note{ font-size:12.5px; color:#999; line-height:1.7; margin-top:12px; padding-top:10px; border-top:1px dashed #EADFC8; }
 
 /* ===== 加購區 ===== */
 .addon-card {
@@ -754,6 +759,8 @@ function renderServiceCards(){
       ${s.subtitle?`<div class="card-subtitle">${esc(s.subtitle)}</div>`:''}
       <p class="card-desc">${esc(s.desc||'')}</p>
       ${s.locationNote?`<p class="card-desc" style="margin-top:6px; color:#999;">${esc(s.locationNote)}</p>`:''}
+      ${(s.tiers&&s.tiers.length)?`<div class="tier-list">${s.tiers.map(t=>`<div class="tier-row${t.includes('⭐')?' recommended':''}">${esc(t)}</div>`).join('')}</div>`:''}
+      ${s.note?`<p class="card-note">${esc(s.note)}</p>`:''}
     </div>`).join('');
   document.getElementById('addonCardWrap').innerHTML = addons.length ? `
     <div class="addon-card">
@@ -1127,6 +1134,8 @@ function openServiceEdit(id){
     <div class="field"><label>地點／形式（選填，例如：遠程／台南面對面）</label><input id="svc_subtitle" value="${esc(s.subtitle||'')}"></div>
     <div class="field full"><label>服務說明</label><input id="svc_desc" value="${esc(s.desc||'')}"></div>
     <div class="field full"><label>地點說明（選填，可寫更詳細的地點/形式補充）</label><textarea id="svc_locationNote" style="min-height:60px;">${esc(s.locationNote||'')}</textarea></div>
+    <div class="field full"><label>展開選項（選填，每一行一項，例如：單一脈輪療癒｜15分鐘｜NT$900，想標示推薦選項可加上 ⭐）</label><textarea id="svc_tiers" style="min-height:80px;">${esc((s.tiers||[]).join('\n'))}</textarea></div>
+    <div class="field full"><label>結尾補充說明（選填，顯示在展開選項下方）</label><textarea id="svc_note" style="min-height:70px;">${esc(s.note||'')}</textarea></div>
   `;
   document.getElementById('svcModalOverlay').classList.add('open');
 }
@@ -1152,6 +1161,10 @@ function saveSvcModal(){
     s.name = name; s.price = price; s.subtitle = document.getElementById('svc_subtitle').value.trim(); s.desc = document.getElementById('svc_desc').value.trim();
     const locEl = document.getElementById('svc_locationNote');
     if(locEl) s.locationNote = locEl.value.trim();
+    const tiersEl = document.getElementById('svc_tiers');
+    if(tiersEl) s.tiers = tiersEl.value.split('\n').map(t=>t.trim()).filter(Boolean);
+    const noteEl = document.getElementById('svc_note');
+    if(noteEl) s.note = noteEl.value.trim();
     saveServices(services); renderServiceSettings();
   } else if(svcEditMode==='addon'){
     const a = addons.find(x=>x.id===svcEditId); if(!a) return;
