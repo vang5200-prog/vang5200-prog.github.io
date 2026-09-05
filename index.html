@@ -585,6 +585,26 @@ const DEFAULT_LINE='https://lin.ee/5VQ5gbz';
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function parseTiers(tiers){
+  return (tiers||[]).map(t=>{
+    const m = t.match(/NT\$?\s*([\d,]+)/);
+    return { label:t, price: m?Number(m[1].replace(/,/g,'')):0 };
+  });
+}
+function servicePriceLabel(s){
+  if(Number(s.price)>0) return `NT$${Number(s.price).toLocaleString()}`;
+  if(s.tiers && s.tiers.length){
+    const prices = s.tiers.map(t=>{
+      const m = t.match(/NT\$?\s*([\d,]+)/);
+      return m ? Number(m[1].replace(/,/g,'')) : null;
+    }).filter(p=>p!==null && !isNaN(p));
+    if(prices.length){
+      const min=Math.min(...prices), max=Math.max(...prices);
+      return min===max ? `NT$${min.toLocaleString()}` : `NT$${min.toLocaleString()}~${max.toLocaleString()}`;
+    }
+  }
+  return '';
+}
 
 function defaultServices(){
   return [
@@ -755,7 +775,7 @@ function renderServiceCards(){
     <div class="service-card">
       <div class="card-number">${String(i+1).padStart(2,'0')}</div>
       <div class="card-title">${esc(s.name)}</div>
-      <div class="card-price">NT$${Number(s.price).toLocaleString()}</div>
+      ${servicePriceLabel(s)?`<div class="card-price">${servicePriceLabel(s)}</div>`:''}
       ${s.subtitle?`<div class="card-subtitle">${esc(s.subtitle)}</div>`:''}
       <p class="card-desc">${esc(s.desc||'')}</p>
       ${s.locationNote?`<p class="card-desc" style="margin-top:6px; color:#999;">${esc(s.locationNote)}</p>`:''}
@@ -790,7 +810,7 @@ function renderHeroContent(){
 function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoView({behavior:'smooth'}); }
 
 function publicFieldsHTML(){
-  const svcOptions = services.map(s=>`<option value="${s.id}">${esc(s.name)}（NT$${s.price}）</option>`).join('');
+  const svcOptions = services.map(s=>{ const pl=servicePriceLabel(s); return `<option value="${s.id}">${esc(s.name)}${pl?`（${pl}）`:''}</option>`; }).join('');
   const methodOptions = methods.map(m=>`<option value="${m}">${m}</option>`).join('');
   const addonChecks = addons.map(a=>`
     <label class="addon-item"><input type="checkbox" class="pf-addon" value="${a.id}" onchange="updatePricePreview()"> ${esc(a.name)}｜NT$${Number(a.price).toLocaleString()}</label>
@@ -800,8 +820,9 @@ function publicFieldsHTML(){
     <div class="field"><label>Email</label><input id="pf_email" type="email" placeholder="收到通知用"></div>
     <div class="field"><label>預約時間 <span class="req">*</span></label><input id="pf_datetime" type="datetime-local"></div>
     <div class="field"><label>預約項目 <span class="req">*</span></label>
-      <select id="pf_service" onchange="updatePricePreview()">${svcOptions}</select>
+      <select id="pf_service" onchange="onServiceChange()">${svcOptions}</select>
     </div>
+    <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview()"></select></div>
     ${addons.length? `<div class="field"><label>加購選項（可複選）</label>${addonChecks}</div>`:''}
     <div class="field price-preview" id="pricePreview"></div>
     <div class="field"><label>諮詢方式 <span class="req">*</span></label><select id="pf_method">${methodOptions}</select></div>
@@ -814,17 +835,41 @@ function resetPublicForm(){
   document.getElementById('bookingConfirmBox').style.display='none';
   document.getElementById('publicFields').innerHTML = publicFieldsHTML();
   document.getElementById('conflictWarning').style.display='none';
-  updatePricePreview();
+  onServiceChange();
   document.getElementById('pf_datetime').addEventListener('change', checkConflict);
 }
 function currentSelectedAddons(){
   return Array.from(document.querySelectorAll('.pf-addon:checked')).map(el=>addons.find(a=>a.id===el.value)).filter(Boolean);
 }
+function updateTierField(){
+  const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
+  const wrap = document.getElementById('tierFieldWrap');
+  const hasTiers = svc && svc.tiers && svc.tiers.length && Number(svc.price)<=0;
+  if(!hasTiers){ wrap.style.display='none'; document.getElementById('pf_tier').innerHTML=''; return; }
+  const tiers = parseTiers(svc.tiers);
+  document.getElementById('pf_tier').innerHTML = '<option value="">請選擇…</option>' + tiers.map((t,i)=>`<option value="${i}">${esc(t.label)}</option>`).join('');
+  wrap.style.display='block';
+}
+function onServiceChange(){
+  updateTierField();
+  updatePricePreview();
+}
+function selectedTierPrice(svc){
+  if(!svc) return 0;
+  const wrap = document.getElementById('tierFieldWrap');
+  const tierEl = document.getElementById('pf_tier');
+  if(tierEl && wrap.style.display!=='none' && tierEl.value!==''){
+    const tiers = parseTiers(svc.tiers);
+    const t = tiers[Number(tierEl.value)];
+    return t ? t.price : 0;
+  }
+  return Number(svc.price)||0;
+}
 function updatePricePreview(){
   const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
   const sel = currentSelectedAddons();
-  const total = (svc?Number(svc.price):0) + sel.reduce((s,a)=>s+Number(a.price),0);
-  document.getElementById('pricePreview').textContent = svc ? `本次預估費用：NT$ ${total.toLocaleString()}` : '';
+  const total = (svc?selectedTierPrice(svc):0) + sel.reduce((s,a)=>s+Number(a.price),0);
+  document.getElementById('pricePreview').textContent = (svc && total>0) ? `本次預估費用：NT$ ${total.toLocaleString()}` : '';
 }
 function checkConflict(){
   const dt = document.getElementById('pf_datetime').value;
@@ -837,11 +882,21 @@ function submitPublicBooking(){
   const serviceId = document.getElementById('pf_service').value;
   if(!name || !datetime || !serviceId){ toast('請填寫姓名、預約時間與預約項目'); return; }
   const svc = services.find(s=>s.id===serviceId);
+  const tierWrap = document.getElementById('tierFieldWrap');
+  const tierEl = document.getElementById('pf_tier');
+  let tierLabel = '';
+  if(tierWrap.style.display!=='none'){
+    if(!tierEl.value){ toast('請選擇方案'); return; }
+    const tiers = parseTiers(svc.tiers);
+    tierLabel = tiers[Number(tierEl.value)] ? tiers[Number(tierEl.value)].label : '';
+  }
   const sel = currentSelectedAddons();
-  const price = (svc?Number(svc.price):0) + sel.reduce((s,a)=>s+Number(a.price),0);
+  const basePrice = selectedTierPrice(svc);
+  const price = basePrice + sel.reduce((s,a)=>s+Number(a.price),0);
   const rec = {
     id:uid(), name, email:document.getElementById('pf_email').value.trim(),
-    datetime, serviceId, serviceName:svc?svc.name:'', addonNames:sel.map(a=>a.name), price,
+    datetime, serviceId, serviceName: (svc?svc.name:'') + (tierLabel? ' - '+tierLabel : ''),
+    addonNames:sel.map(a=>a.name), price,
     method:document.getElementById('pf_method').value,
     question:document.getElementById('pf_question').value.trim(),
     other:document.getElementById('pf_other').value.trim(),
