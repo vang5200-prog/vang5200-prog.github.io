@@ -258,6 +258,8 @@ p {
 .slot-btn{ font-family:inherit; cursor:pointer; border:1.5px solid #EADFC8; background:#FBF7EF; color:var(--ink); font-size:13.5px; font-weight:700; padding:10px 4px; border-radius:10px; text-align:center; }
 .slot-btn.selected{ background:linear-gradient(135deg,#C6A85A,#E5C97A); color:#2C2C2C; border-color:var(--gold-border); }
 .slot-btn.full{ background:#FBEDE9; color:#D9A9A0; border-color:#F0DAD5; cursor:not-allowed; }
+.slot-btn.pending-slot{ background:#EAF3EA; color:#6F8770; border-color:#C9DFC9; }
+.slot-btn.pending-slot.selected{ background:linear-gradient(135deg,#8FA089,#B4C8AE); color:#fff; border-color:#8FA089; }
 .slot-btn.past{ background:#F0EDE6; color:#C7C2B6; border-color:#E8E4D9; cursor:not-allowed; }
 .slot-hint{ font-size:12px; color:#999; margin-top:6px; }
 #bookingAnchor{scroll-margin-top:20px;}
@@ -311,6 +313,8 @@ body.admin-mode #adminView{ display:block; }
 .badge.confirmed{ background:#E3EDF3; color:#5C7C8F; }
 .badge.done{ background:#E8F0E8; color:#6F8770; }
 .badge.cancelled{ background:#F0E7E5; color:#9B9A97; }
+.badge.noshow{ background:#F5D9D9; color:#A64545; }
+.badge.latecancel{ background:#F5E3CC; color:#A67C2E; }
 .rec-body{ display:flex; flex-wrap:wrap; gap:5px 14px; font-size:12.5px; color:#555; margin-bottom:8px; }
 .rec-note{ font-size:12px; color:#888; background:#FAF6EE; border-radius:8px; padding:7px 10px; margin-bottom:8px; line-height:1.6; }
 .rec-actions{ display:flex; flex-wrap:wrap; gap:6px; }
@@ -510,6 +514,13 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
         </div>
 
         <div class="panel">
+          <h3>⚠️ 預約注意事項（顯示在確認畫面）</h3>
+          <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">客戶按「送出預約」後、看到的「請確認你的預約內容」畫面上，會用粉色小字顯示這段文字，例如取消與爽約規範。</p>
+          <textarea id="setBookingPolicy" style="min-height:110px;"></textarea>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveBookingPolicy()">儲存注意事項</button>
+        </div>
+
+        <div class="panel">
           <h3>✍️ 開頭介紹文字</h3>
           <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">這是前台最上面吸引人的標題文案，可以隨著服務方向調整隨時修改。</p>
           <div class="field"><label>大標題（要換行的地方按 Enter）</label><textarea id="setHeroTitle" style="min-height:60px;"></textarea></div>
@@ -651,8 +662,8 @@ const K_METHODS='rt_booking_methods';
 function defaultMethods(){ return ['文字訊息(LINE)','語音通話','視訊通話']; }
 function loadMethods(){ const m=loadJSON(K_METHODS,null); return (m&&m.length)?m:defaultMethods(); }
 function saveMethods(m){ localStorage.setItem(K_METHODS, JSON.stringify(m)); }
-const STATUSES=['待確認','已確認','已完成','已取消'];
-const STATUS_CLASS={'待確認':'pending','已確認':'confirmed','已完成':'done','已取消':'cancelled'};
+const STATUSES=['待確認','已確認','已完成','已取消','無故爽約','臨時取消'];
+const STATUS_CLASS={'待確認':'pending','已確認':'confirmed','已完成':'done','已取消':'cancelled','無故爽約':'noshow','臨時取消':'latecancel'};
 const DEFAULT_LINE='https://lin.ee/5VQ5gbz';
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
@@ -744,6 +755,12 @@ const K_WELCOME='rt_welcome_msg';
 function defaultWelcomeMsg(){ return '謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說你的狀況。'; }
 function loadWelcomeMsg(){ return localStorage.getItem(K_WELCOME) || defaultWelcomeMsg(); }
 function saveWelcomeMsg(){ const v=document.getElementById('setWelcomeMsg').value.trim()||defaultWelcomeMsg(); localStorage.setItem(K_WELCOME, v); welcomeMsg=v; pushRemoteSettings(); toast('歡迎詞已儲存'); }
+const K_POLICY='rt_booking_policy';
+function defaultBookingPolicy(){
+  return '【取消與爽約規範】\n・無故爽約（預約時間已到未出現）：不退款，將列入紀錄，累計達3次，半年內將無法再預約。\n・預約時間24小時前告知取消：不退款，將列入紀錄，可協助改期。\n・預約時間24小時內才告知取消：不退款，視同無故爽約列入紀錄。';
+}
+function loadBookingPolicy(){ return localStorage.getItem(K_POLICY) || defaultBookingPolicy(); }
+function saveBookingPolicy(){ const v=document.getElementById('setBookingPolicy').value.trim()||defaultBookingPolicy(); localStorage.setItem(K_POLICY, v); bookingPolicy=v; pushRemoteSettings(); toast('預約注意事項已儲存'); }
 
 /* ---------- 後台密碼鎖（改由 Apps Script 伺服器端驗證，密碼不存在網站程式碼裡） ---------- */
 async function checkAdminPassword(){
@@ -838,6 +855,7 @@ async function pullRemoteSettings(){
     if(data && data.line){ lineLink = data.line; localStorage.setItem(K_LINE, lineLink); changed = true; }
     if(data && typeof data.paymentInfo === 'string'){ paymentInfo = data.paymentInfo; localStorage.setItem(K_PAYMENT, paymentInfo); changed = true; }
     if(data && typeof data.welcomeMsg === 'string' && data.welcomeMsg){ welcomeMsg = data.welcomeMsg; localStorage.setItem(K_WELCOME, welcomeMsg); changed = true; }
+    if(data && typeof data.bookingPolicy === 'string' && data.bookingPolicy){ bookingPolicy = data.bookingPolicy; localStorage.setItem(K_POLICY, bookingPolicy); changed = true; }
     if(data && data.hero){ heroContent = {...defaultHeroContent(), ...data.hero}; saveHeroContentLocal(heroContent); changed = true; }
     if(data && data.availability){ availability = {...defaultAvailability(), ...data.availability}; saveAvailabilityLocal(availability); changed = true; }
     if(changed){
@@ -854,7 +872,7 @@ function pushRemoteSettings(){
     fetch(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo, welcomeMsg })
+      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo, welcomeMsg, bookingPolicy })
     }).catch(err=>console.warn('雲端設定同步失敗', err));
   }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
@@ -865,6 +883,7 @@ let addons = loadAddons();
 let lineLink = loadLine();
 let paymentInfo = loadPaymentInfo();
 let welcomeMsg = loadWelcomeMsg();
+let bookingPolicy = loadBookingPolicy();
 let webhookUrl = loadWebhook();
 let heroContent = loadHeroContent();
 let availability = loadAvailability();
@@ -945,9 +964,18 @@ function resetPublicForm(){
   document.getElementById('bookingFormBox').style.display='block';
   document.getElementById('bookingConfirmBox').style.display='none';
   document.getElementById('publicFields').innerHTML = publicFieldsHTML();
-  const todayStr = new Date().toISOString().slice(0,10);
-  document.getElementById('pf_date').min = todayStr;
+  document.getElementById('pf_date').min = earliestBookableDate();
   onServiceChange();
+}
+function earliestBookableDate(){
+  const now = new Date();
+  const nowMinutes = now.getHours()*60 + now.getMinutes();
+  // 今天的營業時間已經過了（現在時間 >= 結束時間），最早只能選明天
+  if(nowMinutes >= availability.endHour*60){
+    const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
+    return tomorrow.toISOString().slice(0,10);
+  }
+  return now.toISOString().slice(0,10);
 }
 function currentSelectedAddons(){
   return Array.from(document.querySelectorAll('.pf-addon:checked')).map(el=>addons.find(a=>a.id===el.value)).filter(Boolean);
@@ -1063,7 +1091,8 @@ async function loadSlotsForDate(){
   hint.textContent = '讀取空位中…';
   grid.innerHTML = '';
 
-  let busy = []; // [[startMin,endMin], ...]
+  let busy = []; // [[startMin,endMin], ...] 已確認，真正鎖住
+  let pending = []; // [[startMin,endMin], ...] 待確認，可候補
   let dailyTotal = 0;
   if(webhookUrl){
     try{
@@ -1071,16 +1100,17 @@ async function loadSlotsForDate(){
       const res = await fetch(webhookUrl + sep + 'action=availability&date=' + dateStr);
       const data = await res.json();
       busy = data.busy || [];
+      pending = data.pending || [];
       dailyTotal = data.total || 0;
     }catch(err){
       records.forEach(r=>{
-        if(r.status==='已確認' && (r.datetime||'').slice(0,10)===dateStr){
+        if((r.datetime||'').slice(0,10)===dateStr){
           const h = Number((r.datetime||'').slice(11,13)), mi = Number((r.datetime||'').slice(14,16))||0;
           const start = h*60+mi;
           const addonMin = (r.addonNames||[]).reduce((sum,n)=>sum+getDurationMinutes(n),0);
           const dur = getDurationMinutes(r.serviceName) + addonMin;
-          busy.push([start, start+dur+(availability.bufferMinutes??15)]);
-          dailyTotal++;
+          if(r.status==='已確認'){ busy.push([start, start+dur+(availability.bufferMinutes??15)]); dailyTotal++; }
+          else if(r.status==='待確認'){ pending.push([start, start+dur]); }
         }
       });
     }
@@ -1110,18 +1140,25 @@ async function loadSlotsForDate(){
     anySlot = true;
     const hh = String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
     const isPast = isToday && t<=nowMinutes;
-    const overlaps = busy.some(b=> t < b[1] && (t+duration) > b[0]);
-    const isFull = dayFull || overlaps;
+    const overlapsConfirmed = busy.some(b=> t < b[1] && (t+duration) > b[0]);
+    const overlapsPending = pending.some(b=> t < b[1] && (t+duration) > b[0]);
+    const isFull = dayFull || overlapsConfirmed;
+    const isPendingSlot = !isFull && overlapsPending;
     let cls = 'slot-btn';
     if(isPast) cls += ' past';
     else if(isFull) cls += ' full';
-    html += `<button type="button" class="${cls}" ${(isPast||isFull)?'disabled':''} onclick="selectSlot('${hh}')" id="slotBtn_${t}">${hh}${(!isPast&&isFull)?'<br><span style="font-size:10px;">額滿</span>':''}</button>`;
+    else if(isPendingSlot) cls += ' pending-slot';
+    html += `<button type="button" class="${cls}" ${(isPast||isFull)?'disabled':''} onclick="selectSlot('${hh}', ${isPendingSlot})" id="slotBtn_${t}">${hh}${(!isPast&&isFull)?'<br><span style="font-size:10px;">額滿</span>':''}${isPendingSlot?'<br><span style="font-size:10px;">可候補</span>':''}</button>`;
   }
   grid.innerHTML = html;
   if(!anySlot) hint.textContent = '這個服務時長超過開放時段，請聯繫我另外安排。';
-  else hint.textContent = dayFull ? '這天預約已滿，請選擇其他日期。' : `請選擇一個時段（本項目約需 ${duration} 分鐘）。`;
+  else hint.textContent = dayFull ? '這天預約已滿，請選擇其他日期。' : `請選擇一個時段（本項目約需 ${duration} 分鐘）。綠色「可候補」時段表示已有人登記但尚未付款確認。`;
 }
-function selectSlot(hh){
+function selectSlot(hh, isPendingSlot){
+  if(isPendingSlot){
+    const proceed = confirm('這個時段已經有其他客戶搶先登記，但對方尚未完成匯款確認。\n\n你可以選擇「候補」這個時段——如果對方最後沒有完成付款，這個時段就會優先保留給你；如果不想候補，可以改選其他時段。\n\n要候補這個時段嗎？');
+    if(!proceed) return;
+  }
   selectedSlotHour = hh;
   document.querySelectorAll('.slot-btn').forEach(b=>b.classList.remove('selected'));
   const t = Number(hh.slice(0,2))*60 + Number(hh.slice(3,5));
@@ -1184,7 +1221,8 @@ function showBookingReview(b){
       ${b.question?`<div><b>想諮詢的問題：</b>${esc(b.question)}</div>`:''}
       ${b.other?`<div><b>其他備註：</b>${esc(b.other)}</div>`:''}
     </div>
-    <p style="padding:0; color:#999; font-size:12px; margin-top:12px;">請確認以上內容無誤，確認後就無法直接修改，需要再次聯繫我調整。</p>
+    ${bookingPolicy?`<p style="padding:0; color:#B4756A; font-size:12px; margin-top:12px; line-height:1.8; white-space:pre-line;">${esc(bookingPolicy)}</p>`:''}
+    <p style="padding:0; color:#999; font-size:12px; margin-top:8px;">請確認以上內容無誤。送出後將無法自行修改，如果之後想更改預約內容，請直接透過LINE聯繫我調整。</p>
     <div style="display:flex; gap:10px; margin-top:14px;">
       <button class="btn btn-outline" style="flex:1; margin:0;" onclick="backToEditForm()">← 修改</button>
       <button class="btn" style="flex:1; margin:0;" onclick="confirmAndSubmit()">確認無誤，送出</button>
@@ -1353,11 +1391,14 @@ function renderList(){
       <div class="rec-actions">
         ${r.status==='待確認'?`<button class="primary" onclick="quickStatus('${r.id}','已確認')">確認預約</button>`:''}
         ${r.status==='已確認'?`<button class="primary" onclick="quickStatus('${r.id}','已完成')">標記完成</button>`:''}
+        ${r.status==='已確認'?`<button class="danger" onclick="quickStatus('${r.id}','無故爽約')">標記無故爽約</button>`:''}
+        ${r.status==='已確認'?`<button onclick="quickStatus('${r.id}','臨時取消')">標記臨時取消</button>`:''}
         ${r.status==='待確認'?`<button class="danger" onclick="rejectBookingFull('${r.id}')">婉拒（時段已滿）</button>`:''}
         <button onclick="openForm('${r.id}')">編輯</button>
         ${r.status!=='已取消'?`<button onclick="quickStatus('${r.id}','已取消')">取消</button>`:''}
         <button class="danger" onclick="deleteRecord('${r.id}')">刪除</button>
       </div>
+      ${(()=>{ const cnt = records.filter(x=>x.email && x.email===r.email && x.status==='無故爽約').length; return cnt>0 ? `<div style="font-size:11px; color:#A64545; margin-top:6px;">⚠️ 此客戶過去無故爽約 ${cnt} 次${cnt>=3?'（已達禁止預約門檻，請留意）':''}</div>` : ''; })()}
     </div>`).join('');
 }
 document.getElementById('searchInput')?.addEventListener('input', renderList);
@@ -1420,10 +1461,12 @@ function quickStatus(id,status){
     confirmBookingRemote(r).then(res=>{
       if(res.ok && res.linePushed){
         r.status='已確認'; saveRecords(records); renderList(); renderDashboard();
-        toast('已確認，並已透過LINE通知客戶 🎉');
+        toast('已確認，並已透過LINE通知客戶 🎉' + (res.autoRejected?`（同時已自動婉拒 ${res.autoRejected} 筆時段重疊的待確認預約）`:''));
+        if(res.autoRejected) syncRecordsFromCloud();
       } else if(res.ok && !res.linePushed){
         r.status='已確認'; saveRecords(records); renderList(); renderDashboard();
-        toast('已確認，但客戶尚未提供預約代碼，無法發送LINE通知');
+        toast('已確認，但客戶尚未提供預約代碼，無法發送LINE通知' + (res.autoRejected?`（同時已自動婉拒 ${res.autoRejected} 筆時段重疊的待確認預約）`:''));
+        if(res.autoRejected) syncRecordsFromCloud();
       } else if(res.error==='conflict'){
         const cw = res.conflictWith || {};
         const proceed = confirm(`⚠️ 這個時段已經有一位「已確認」的客戶：\n${cw.name||''}（${cw.datetime||''}）\n\n仍要確認這一筆、造成同時段兩位客戶嗎？`);
@@ -1526,6 +1569,7 @@ function renderSettings(){
   document.getElementById('setLine').value = lineLink;
   document.getElementById('setPaymentInfo').value = paymentInfo;
   document.getElementById('setWelcomeMsg').value = welcomeMsg;
+  document.getElementById('setBookingPolicy').value = bookingPolicy;
   document.getElementById('setWebhook').value = webhookUrl;
   document.getElementById('setHeroTitle').value = heroContent.title;
   document.getElementById('setHeroSubtitle').value = heroContent.subtitle;
