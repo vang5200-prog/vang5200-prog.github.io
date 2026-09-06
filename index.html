@@ -254,6 +254,12 @@ p {
 .field textarea{resize:vertical; min-height:64px;}
 .price-preview{font-size:12.5px; color:var(--gold-text); font-weight:700; margin-top:6px;}
 .conflict-warning{background:#FBEDE9; color:#B4756A; border-radius:10px; padding:10px 12px; font-size:12.5px; margin-top:6px; display:none;}
+.slot-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(78px,1fr)); gap:8px; margin-top:8px; }
+.slot-btn{ font-family:inherit; cursor:pointer; border:1.5px solid #EADFC8; background:#FBF7EF; color:var(--ink); font-size:13.5px; font-weight:700; padding:10px 4px; border-radius:10px; text-align:center; }
+.slot-btn.selected{ background:linear-gradient(135deg,#C6A85A,#E5C97A); color:#2C2C2C; border-color:var(--gold-border); }
+.slot-btn.full{ background:#FBEDE9; color:#D9A9A0; border-color:#F0DAD5; cursor:not-allowed; }
+.slot-btn.past{ background:#F0EDE6; color:#C7C2B6; border-color:#E8E4D9; cursor:not-allowed; }
+.slot-hint{ font-size:12px; color:#999; margin-top:6px; }
 #bookingAnchor{scroll-margin-top:20px;}
 
 /* 送出後確認畫面 */
@@ -392,10 +398,10 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <h2>預約表單</h2>
   <div id="bookingFormBox" class="box">
     <div id="publicFields"></div>
-    <div class="conflict-warning" id="conflictWarning">⚠️ 這個時段已經有其他預約，建議選擇其他時間，我會再與妳確認。</div>
-    <button class="btn" style="margin:18px 0 0; width:100%;" onclick="submitPublicBooking()">送出預約</button>
+    <button class="btn" style="margin:18px 0 0; width:100%;" onclick="reviewBooking()">送出預約</button>
   </div>
 
+  <div id="bookingReviewBox" class="box" style="display:none;"></div>
   <div id="bookingConfirmBox" class="box" style="display:none; text-align:center;"></div>
 
   <div style="height:20px;"></div>
@@ -458,6 +464,39 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
     </div>
 
     <div class="admin-section" id="tab-settings">
+      <div class="panel">
+        <h3>🗓️ 開放預約時間設定</h3>
+        <div class="field">
+          <label>開放的星期（不勾選 = 該天不開放預約）</label>
+          <div id="availDaysWrap" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;"></div>
+        </div>
+        <div class="admin-field-grid" style="margin-top:14px;">
+          <div class="field"><label>每天開放時段：從幾點</label><input id="availStartHour" type="number" min="0" max="23"></div>
+          <div class="field"><label>到幾點（不含）</label><input id="availEndHour" type="number" min="1" max="24"></div>
+          <div class="field full"><label>每天最多幾組預約名額</label><input id="availCapacity" type="number" min="1"></div>
+        </div>
+        <button class="btn btn-outline" style="margin:12px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveAvailabilityBasic()">儲存時段設定</button>
+
+        <div style="margin-top:20px; padding-top:16px; border-top:1px dashed #EADFC8;">
+          <h3 style="margin-bottom:8px;">手動封鎖整天</h3>
+          <div id="blockedDatesList"></div>
+          <div class="admin-field-grid" style="margin-top:10px;">
+            <div class="field full"><label>選擇日期</label><input id="newBlockedDate" type="date"></div>
+          </div>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addBlockedDate()">＋ 封鎖這一天</button>
+        </div>
+
+        <div style="margin-top:20px; padding-top:16px; border-top:1px dashed #EADFC8;">
+          <h3 style="margin-bottom:8px;">手動封鎖單一時段</h3>
+          <div id="blockedSlotsList"></div>
+          <div class="admin-field-grid" style="margin-top:10px;">
+            <div class="field"><label>日期</label><input id="newBlockedSlotDate" type="date"></div>
+            <div class="field"><label>時段</label><select id="newBlockedSlotHour"></select></div>
+          </div>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addBlockedSlot()">＋ 封鎖這個時段</button>
+        </div>
+      </div>
+
       <div class="panel">
         <h3>🔒 後台密碼</h3>
         <p style="font-size:12px; color:#999; line-height:1.7;">密碼已經改成由 Google Apps Script 驗證，不再存在網站程式碼裡，更安全。想更改密碼，請到 Apps Script 編輯器左側「專案設定」→「指令碼屬性」，修改 ADMIN_PASSWORD 這筆的值即可，不需要重新部署。</p>
@@ -623,6 +662,19 @@ function defaultAddons(){
     {id:uid(), name:'讀心解析 加購深入分析 15分鐘', price:699, desc:''}
   ];
 }
+function defaultAvailability(){
+  return {
+    days: [1,2,3,4,5,6,0], // 0=週日 1=週一...6=週六，預設全開
+    startHour: 15,
+    endHour: 20, // 不含此小時，15~19共5個時段
+    dailyCapacity: 5,
+    blockedDates: [],   // 整天封鎖，格式 'YYYY-MM-DD'
+    blockedSlots: []    // 單一時段封鎖，格式 'YYYY-MM-DD|HH:00'
+  };
+}
+const K_AVAIL='rt_booking_availability';
+function loadAvailability(){ const a=loadJSON(K_AVAIL,null); return a?{...defaultAvailability(),...a}:defaultAvailability(); }
+function saveAvailabilityLocal(a){ localStorage.setItem(K_AVAIL, JSON.stringify(a)); }
 function defaultHeroContent(){
   return {
     title: '他不是沒看到\n只是現在還沒準備好回應妳',
@@ -741,6 +793,7 @@ async function pullRemoteSettings(){
     if(data && data.methods && data.methods.length){ methods = data.methods; saveMethods(methods); changed = true; }
     if(data && data.line){ lineLink = data.line; localStorage.setItem(K_LINE, lineLink); changed = true; }
     if(data && data.hero){ heroContent = {...defaultHeroContent(), ...data.hero}; saveHeroContentLocal(heroContent); changed = true; }
+    if(data && data.availability){ availability = {...defaultAvailability(), ...data.availability}; saveAvailabilityLocal(availability); changed = true; }
     if(changed){
       renderServiceCards();
       renderHeroContent();
@@ -755,7 +808,7 @@ function pushRemoteSettings(){
     fetch(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent })
+      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability })
     }).catch(err=>console.warn('雲端設定同步失敗', err));
   }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
@@ -766,6 +819,7 @@ let addons = loadAddons();
 let lineLink = loadLine();
 let webhookUrl = loadWebhook();
 let heroContent = loadHeroContent();
+let availability = loadAvailability();
 let methods = loadMethods();
 if(!localStorage.getItem(K_SERVICES)) saveServices(services);
 if(!localStorage.getItem(K_ADDONS)) saveAddons(addons);
@@ -822,7 +876,12 @@ function publicFieldsHTML(){
   return `
     <div class="field"><label>客戶姓名 <span class="req">*</span></label><input id="pf_name" placeholder="怎麼稱呼妳？"></div>
     <div class="field"><label>Email <span class="req">*</span></label><input id="pf_email" type="email" placeholder="收到通知用"></div>
-    <div class="field"><label>預約時間 <span class="req">*</span></label><input id="pf_datetime" type="datetime-local"></div>
+    <div class="field"><label>預約日期 <span class="req">*</span></label><input id="pf_date" type="date" onchange="loadSlotsForDate()"></div>
+    <div class="field full" id="slotFieldWrap" style="display:none;">
+      <label>預約時段 <span class="req">*</span></label>
+      <div class="slot-grid" id="slotGrid"></div>
+      <div class="slot-hint" id="slotHint"></div>
+    </div>
     <div class="field"><label>預約項目 <span class="req">*</span></label>
       <select id="pf_service" onchange="onServiceChange()">${svcOptions}</select>
     </div>
@@ -838,9 +897,9 @@ function resetPublicForm(){
   document.getElementById('bookingFormBox').style.display='block';
   document.getElementById('bookingConfirmBox').style.display='none';
   document.getElementById('publicFields').innerHTML = publicFieldsHTML();
-  document.getElementById('conflictWarning').style.display='none';
+  const todayStr = new Date().toISOString().slice(0,10);
+  document.getElementById('pf_date').min = todayStr;
   onServiceChange();
-  document.getElementById('pf_datetime').addEventListener('change', checkConflict);
 }
 function currentSelectedAddons(){
   return Array.from(document.querySelectorAll('.pf-addon:checked')).map(el=>addons.find(a=>a.id===el.value)).filter(Boolean);
@@ -908,23 +967,95 @@ function updatePricePreview(){
   const total = (svc?selectedTierPrice(svc):0) + sel.reduce((s,a)=>s+Number(a.price),0);
   document.getElementById('pricePreview').textContent = (svc && total>0) ? `本次預估費用：NT$ ${total.toLocaleString()}` : '';
 }
-function checkConflict(){
-  const dt = document.getElementById('pf_datetime').value;
-  const clash = records.some(r=>r.datetime===dt && r.status!=='已取消');
-  document.getElementById('conflictWarning').style.display = (dt && clash) ? 'block' : 'none';
+let selectedSlotHour = null;
+async function loadSlotsForDate(){
+  selectedSlotHour = null;
+  const dateStr = document.getElementById('pf_date').value;
+  const wrap = document.getElementById('slotFieldWrap');
+  const grid = document.getElementById('slotGrid');
+  const hint = document.getElementById('slotHint');
+  if(!dateStr){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+
+  const d = new Date(dateStr+'T00:00:00');
+  const weekday = d.getDay();
+  if(!availability.days.includes(weekday)){
+    grid.innerHTML = '';
+    hint.textContent = '這天不開放預約，請選擇其他日期。';
+    return;
+  }
+  if(availability.blockedDates.includes(dateStr)){
+    grid.innerHTML = '';
+    hint.textContent = '這天目前不開放預約，請選擇其他日期。';
+    return;
+  }
+
+  hint.textContent = '讀取空位中…';
+  grid.innerHTML = '';
+
+  let counts = {};
+  let dailyTotal = 0;
+  if(webhookUrl){
+    try{
+      const sep = webhookUrl.includes('?') ? '&' : '?';
+      const res = await fetch(webhookUrl + sep + 'action=availability&date=' + dateStr);
+      const data = await res.json();
+      counts = data.counts || {};
+      dailyTotal = data.total || 0;
+    }catch(err){
+      // 讀取失敗就用本機資料估算，至少不會完全無法預約
+      records.forEach(r=>{
+        if(r.status!=='已取消' && (r.datetime||'').slice(0,10)===dateStr){
+          const h = (r.datetime||'').slice(11,13);
+          counts[h+':00'] = (counts[h+':00']||0)+1;
+          dailyTotal++;
+        }
+      });
+    }
+  }
+
+  const now = new Date();
+  const isToday = dateStr === now.toISOString().slice(0,10);
+  const dayFull = dailyTotal >= availability.dailyCapacity;
+
+  let html = '';
+  for(let h=availability.startHour; h<availability.endHour; h++){
+    const hh = String(h).padStart(2,'0')+':00';
+    const slotKey = dateStr+'|'+hh;
+    const slotCount = counts[hh]||0;
+    const manuallyBlocked = availability.blockedSlots.includes(slotKey);
+    const isPast = isToday && h <= now.getHours();
+    const isFull = manuallyBlocked || dayFull || slotCount>=1;
+    let cls = 'slot-btn';
+    if(isPast) cls += ' past';
+    else if(isFull) cls += ' full';
+    html += `<button type="button" class="${cls}" ${(isPast||isFull)?'disabled':''} onclick="selectSlot('${hh}')" id="slotBtn_${h}">${hh}${(!isPast&&isFull)?'<br><span style=\"font-size:10px;\">額滿</span>':''}</button>`;
+  }
+  grid.innerHTML = html;
+  hint.textContent = dayFull ? '這天預約已滿，請選擇其他日期。' : '請選擇一個時段。';
+}
+function selectSlot(hh){
+  selectedSlotHour = hh;
+  document.querySelectorAll('.slot-btn').forEach(b=>b.classList.remove('selected'));
+  const idx = Number(hh.slice(0,2));
+  const btn = document.getElementById('slotBtn_'+idx);
+  if(btn) btn.classList.add('selected');
 }
 function generateBookingCode(){
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 避開容易混淆的 O/0、I/1
   let s=''; for(let i=0;i<6;i++) s+=chars[Math.floor(Math.random()*chars.length)];
   return s;
 }
-function submitPublicBooking(){
+let pendingBooking = null;
+function reviewBooking(){
   const name = document.getElementById('pf_name').value.trim();
   const email = document.getElementById('pf_email').value.trim();
-  const datetime = document.getElementById('pf_datetime').value;
+  const dateStr = document.getElementById('pf_date').value;
   const serviceId = document.getElementById('pf_service').value;
-  if(!name || !email || !datetime || !serviceId){ toast('請填寫姓名、Email、預約時間與預約項目'); return; }
+  if(!name || !email || !dateStr || !serviceId){ toast('請填寫姓名、Email、預約日期與預約項目'); return; }
+  if(!selectedSlotHour){ toast('請選擇預約時段'); return; }
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast('請輸入正確的 Email 格式'); return; }
+  const datetime = dateStr + 'T' + selectedSlotHour;
   const svc = services.find(s=>s.id===serviceId);
   const tierWrap = document.getElementById('tierFieldWrap');
   const tierEl = document.getElementById('pf_tier');
@@ -937,18 +1068,54 @@ function submitPublicBooking(){
   const sel = currentSelectedAddons();
   const basePrice = selectedTierPrice(svc);
   const price = basePrice + sel.reduce((s,a)=>s+Number(a.price),0);
-  const rec = {
-    id:uid(), code:generateBookingCode(), name, email,
-    datetime, serviceId, serviceName: (svc?svc.name:'') + (tierLabel? ' - '+tierLabel : ''),
+
+  pendingBooking = {
+    name, email, datetime, serviceId,
+    serviceName: (svc?svc.name:'') + (tierLabel? ' - '+tierLabel : ''),
     addonNames:sel.map(a=>a.name), price,
     method:document.getElementById('pf_method').value,
     question:document.getElementById('pf_question').value.trim(),
-    other:document.getElementById('pf_other').value.trim(),
-    status:'待確認', createdAt:Date.now()
+    other:document.getElementById('pf_other').value.trim()
   };
+  showBookingReview(pendingBooking);
+}
+function showBookingReview(b){
+  document.getElementById('bookingFormBox').style.display='none';
+  const box = document.getElementById('bookingReviewBox');
+  box.style.display='block';
+  const dt = new Date(b.datetime);
+  const dtStr = isNaN(dt) ? b.datetime : dt.toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',weekday:'short',hour:'2-digit',minute:'2-digit'});
+  box.innerHTML = `
+    <h2 style="padding:0; margin-bottom:10px;">請確認你的預約內容</h2>
+    <div class="confirm-summary">
+      <div><b>姓名：</b>${esc(b.name)}</div>
+      <div><b>Email：</b>${esc(b.email)}</div>
+      <div><b>項目：</b>${esc(b.serviceName)}${b.addonNames.length?'＋'+b.addonNames.map(esc).join('、'):''}</div>
+      <div><b>時間：</b>${esc(dtStr)}</div>
+      <div><b>諮詢方式：</b>${esc(b.method)}</div>
+      ${b.price>0?`<div><b>費用：</b>NT$${Number(b.price).toLocaleString()}</div>`:''}
+      ${b.question?`<div><b>想諮詢的問題：</b>${esc(b.question)}</div>`:''}
+      ${b.other?`<div><b>其他備註：</b>${esc(b.other)}</div>`:''}
+    </div>
+    <p style="padding:0; color:#999; font-size:12px; margin-top:12px;">請確認以上內容無誤，確認後就無法直接修改，需要再次聯繫我調整。</p>
+    <div style="display:flex; gap:10px; margin-top:14px;">
+      <button class="btn btn-outline" style="flex:1; margin:0;" onclick="backToEditForm()">← 修改</button>
+      <button class="btn" style="flex:1; margin:0;" onclick="confirmAndSubmit()">確認無誤，送出</button>
+    </div>
+  `;
+}
+function backToEditForm(){
+  document.getElementById('bookingReviewBox').style.display='none';
+  document.getElementById('bookingFormBox').style.display='block';
+}
+function confirmAndSubmit(){
+  if(!pendingBooking) return;
+  const rec = { id:uid(), code:generateBookingCode(), status:'待確認', createdAt:Date.now(), ...pendingBooking };
   records.push(rec); saveRecords(records);
   notifyWebhook(rec);
+  document.getElementById('bookingReviewBox').style.display='none';
   showConfirm(rec);
+  pendingBooking = null;
 }
 function copyBookingCode(code){
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -1041,7 +1208,7 @@ function renderDashboard(){
     {label:'本月預估營收', num:'NT$'+revenue.toLocaleString(), gold:true}
   ];
   document.getElementById('statGrid').innerHTML = stats.map(s=>`<div class="stat-card ${s.gold?'gold':''}"><div class="num">${s.num}</div><div class="lab">${s.label}</div></div>`).join('');
-  const upcoming = records.filter(r=>r.status==='待確認'||r.status==='已確認').sort((a,b)=>new Date(a.datetime)-new Date(b.datetime)).slice(0,6);
+  const upcoming = records.filter(r=>r.status==='待確認'||r.status==='已確認').sort(sortPendingFirst).slice(0,6);
   document.getElementById('upcomingList').innerHTML = upcoming.length ? upcoming.map(r=>`
     <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px dashed #F0E8D8; font-size:13px;">
       <div><b>${esc(r.name)}</b> · ${esc(r.serviceName)}<div style="font-size:11.5px; color:#999;">${fmtDt(r.datetime)}</div></div>
@@ -1055,6 +1222,12 @@ function renderDashboard(){
 function renderFilterOptions(){
   document.getElementById('filterService').innerHTML = '<option value="">全部項目</option>' + services.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
 }
+function sortPendingFirst(a,b){
+  const ap = a.status==='待確認' ? 0 : 1;
+  const bp = b.status==='待確認' ? 0 : 1;
+  if(ap!==bp) return ap-bp;
+  return new Date(a.datetime)-new Date(b.datetime);
+}
 function renderList(){
   renderFilterOptions();
   const q=(document.getElementById('searchInput').value||'').toLowerCase();
@@ -1065,7 +1238,7 @@ function renderList(){
     const ms=!st || r.status===st;
     const msv=!sv || r.serviceId===sv;
     return mq&&ms&&msv;
-  }).sort((a,b)=>new Date(b.datetime)-new Date(a.datetime));
+  }).sort(sortPendingFirst);
   const c=document.getElementById('listContainer');
   if(!list.length){ c.innerHTML=`<div class="empty-state">還沒有符合條件的預約紀錄</div>`; return; }
   c.innerHTML = list.map(r=>`
@@ -1108,7 +1281,7 @@ async function confirmBookingRemote(rec){
 }
 function quickStatus(id,status){
   const r=records.find(x=>x.id===id); if(!r)return;
-  r.status=status; saveRecords(records); renderList();
+  r.status=status; saveRecords(records); renderList(); renderDashboard();
   if(status==='已確認'){
     confirmBookingRemote(r).then(res=>{
       if(res.ok && res.linePushed) toast('已確認，並已透過LINE通知客戶 🎉');
@@ -1186,6 +1359,7 @@ function renderSettings(){
   document.getElementById('setPreServicesNote').value = heroContent.preServicesNote || '';
   document.getElementById('setBenefits').value = (heroContent.benefits||[]).join('\n');
   renderServiceSettings(); renderAddonSettings(); renderMethodSettings();
+  renderAvailabilitySettings();
 }
 function renderServiceSettings(){
   document.getElementById('serviceSettingsList').innerHTML = services.map(s=>`
@@ -1230,6 +1404,69 @@ function addAddon(){
 function removeAddon(id){ if(!confirm('確定刪除這個加購選項？')) return; addons=addons.filter(a=>a.id!==id); saveAddons(addons); pushRemoteSettings(); renderAddonSettings(); renderServiceCards(); toast('已刪除'); }
 
 /* ---------- 諮詢方式管理 ---------- */
+const WEEKDAY_LABELS = ['日','一','二','三','四','五','六'];
+function renderAvailabilitySettings(){
+  document.getElementById('availDaysWrap').innerHTML = WEEKDAY_LABELS.map((label,i)=>`
+    <label style="display:flex; align-items:center; gap:5px; font-size:13px; cursor:pointer;">
+      <input type="checkbox" value="${i}" ${availability.days.includes(i)?'checked':''} onchange="toggleAvailDay(${i}, this.checked)" style="accent-color:var(--gold-border); width:16px; height:16px;">
+      週${label}
+    </label>`).join('');
+  document.getElementById('availStartHour').value = availability.startHour;
+  document.getElementById('availEndHour').value = availability.endHour;
+  document.getElementById('availCapacity').value = availability.dailyCapacity;
+
+  document.getElementById('blockedDatesList').innerHTML = availability.blockedDates.length ? availability.blockedDates.map(d=>`
+    <div class="settings-item"><div><b>${esc(d)}</b></div><button onclick="removeBlockedDate('${d}')">解除</button></div>
+  `).join('') : `<p style="font-size:12px; color:#999;">目前沒有封鎖任何一天</p>`;
+
+  document.getElementById('blockedSlotsList').innerHTML = availability.blockedSlots.length ? availability.blockedSlots.map(s=>`
+    <div class="settings-item"><div><b>${esc(s.replace('|',' '))}</b></div><button onclick="removeBlockedSlot('${s}')">解除</button></div>
+  `).join('') : `<p style="font-size:12px; color:#999;">目前沒有封鎖任何單一時段</p>`;
+
+  const hourSel = document.getElementById('newBlockedSlotHour');
+  let opts = '';
+  for(let h=availability.startHour; h<availability.endHour; h++){ opts += `<option value="${String(h).padStart(2,'0')}:00">${String(h).padStart(2,'0')}:00</option>`; }
+  hourSel.innerHTML = opts;
+}
+function toggleAvailDay(day, checked){
+  if(checked){ if(!availability.days.includes(day)) availability.days.push(day); }
+  else { availability.days = availability.days.filter(d=>d!==day); }
+}
+function saveAvailabilityBasic(){
+  const start = Number(document.getElementById('availStartHour').value);
+  const end = Number(document.getElementById('availEndHour').value);
+  const cap = Number(document.getElementById('availCapacity').value);
+  if(end<=start){ toast('結束時間要比開始時間晚'); return; }
+  availability.startHour = start; availability.endHour = end; availability.dailyCapacity = cap||1;
+  saveAvailabilityLocal(availability); pushRemoteSettings(); renderAvailabilitySettings();
+  toast('開放時段設定已儲存');
+}
+function addBlockedDate(){
+  const d = document.getElementById('newBlockedDate').value;
+  if(!d){ toast('請選擇日期'); return; }
+  if(!availability.blockedDates.includes(d)) availability.blockedDates.push(d);
+  saveAvailabilityLocal(availability); pushRemoteSettings(); renderAvailabilitySettings();
+  toast('已封鎖這一天');
+}
+function removeBlockedDate(d){
+  availability.blockedDates = availability.blockedDates.filter(x=>x!==d);
+  saveAvailabilityLocal(availability); pushRemoteSettings(); renderAvailabilitySettings();
+  toast('已解除封鎖');
+}
+function addBlockedSlot(){
+  const d = document.getElementById('newBlockedSlotDate').value;
+  const h = document.getElementById('newBlockedSlotHour').value;
+  if(!d || !h){ toast('請選擇日期與時段'); return; }
+  const key = d+'|'+h;
+  if(!availability.blockedSlots.includes(key)) availability.blockedSlots.push(key);
+  saveAvailabilityLocal(availability); pushRemoteSettings(); renderAvailabilitySettings();
+  toast('已封鎖這個時段');
+}
+function removeBlockedSlot(key){
+  availability.blockedSlots = availability.blockedSlots.filter(x=>x!==key);
+  saveAvailabilityLocal(availability); pushRemoteSettings(); renderAvailabilitySettings();
+  toast('已解除封鎖');
+}
 function renderMethodSettings(){
   document.getElementById('methodSettingsList').innerHTML = methods.map((m,i)=>`
     <div class="settings-item"><div><b>${esc(m)}</b></div>
@@ -1334,7 +1571,7 @@ function saveSvcModal(){
    匯出／匯入
 ============================================================ */
 function exportData(){
-  const payload={records,services,addons,methods,line:lineLink,webhook:webhookUrl,hero:heroContent,exportedAt:new Date().toISOString()};
+  const payload={records,services,addons,methods,line:lineLink,webhook:webhookUrl,hero:heroContent,availability,exportedAt:new Date().toISOString()};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const a=document.createElement('a'); const stamp=new Date().toISOString().slice(0,10);
   a.href=URL.createObjectURL(blob); a.download=`預約系統備份_${stamp}.json`; a.click();
@@ -1352,7 +1589,8 @@ function importData(e){
       methods=(data.methods&&data.methods.length)?data.methods:defaultMethods();
       lineLink=data.line||DEFAULT_LINE; webhookUrl=data.webhook||'';
       heroContent = data.hero ? {...defaultHeroContent(), ...data.hero} : defaultHeroContent();
-      saveRecords(records); saveServices(services); saveAddons(addons); saveMethods(methods); localStorage.setItem(K_LINE, lineLink); localStorage.setItem(K_WEBHOOK, webhookUrl); saveHeroContentLocal(heroContent);
+      availability = data.availability ? {...defaultAvailability(), ...data.availability} : defaultAvailability();
+      saveRecords(records); saveServices(services); saveAddons(addons); saveMethods(methods); localStorage.setItem(K_LINE, lineLink); localStorage.setItem(K_WEBHOOK, webhookUrl); saveHeroContentLocal(heroContent); saveAvailabilityLocal(availability);
       renderSettings(); renderList(); renderDashboard(); renderServiceCards(); renderHeroContent();
       toast('匯入成功');
     }catch(err){ toast('檔案格式錯誤，匯入失敗'); }
