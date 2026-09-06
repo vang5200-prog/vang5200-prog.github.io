@@ -458,6 +458,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
           <option value="已取消">已取消</option>
         </select>
         <select id="filterService"><option value="">全部項目</option></select>
+        <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="syncRecordsFromCloud()">🔄 同步</button>
         <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="openForm()">＋ 新增</button>
       </div>
       <div id="listContainer"></div>
@@ -735,6 +736,7 @@ async function checkAdminPassword(){
       sessionStorage.setItem('rt_admin_pw', input); // 暫存在這次瀏覽器分頁的記憶體中，供後續設定儲存時驗證用，關閉分頁即消失
       document.body.classList.remove('admin-locked');
       renderDashboard();
+      syncRecordsFromCloud();
     } else {
       errEl.textContent='密碼錯誤，請再試一次';
       errEl.style.display='block';
@@ -1325,6 +1327,46 @@ function renderList(){
 document.getElementById('searchInput')?.addEventListener('input', renderList);
 document.getElementById('filterStatus')?.addEventListener('change', renderList);
 document.getElementById('filterService')?.addEventListener('change', renderList);
+async function syncRecordsFromCloud(){
+  if(!webhookUrl) return;
+  try{
+    const res = await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'getRecords', password: sessionStorage.getItem('rt_admin_pw')||'' })
+    });
+    const data = await res.json();
+    if(data && data.ok && data.records){
+      // 依服務名稱比對回 serviceId，讓清單頁的項目篩選功能可以正常運作
+      data.records.forEach(r=>{
+        const matched = services.find(s=> r.serviceName && r.serviceName.indexOf(s.name)===0);
+        r.serviceId = matched ? matched.id : '';
+      });
+      records = data.records;
+      saveRecords(records);
+      renderDashboard();
+      if(document.getElementById('tab-list').classList.contains('active')) renderList();
+      toast('預約清單已同步最新資料');
+    }
+  }catch(err){ console.warn('同步預約清單失敗', err); }
+}
+async function updateStatusRemote(code, status){
+  if(!webhookUrl || !code) return;
+  try{
+    await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'updateStatus', password: sessionStorage.getItem('rt_admin_pw')||'', code, status })
+    });
+  }catch(err){ console.warn('雲端狀態同步失敗', err); }
+}
+async function deleteRecordRemote(code){
+  if(!webhookUrl || !code) return;
+  try{
+    await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'deleteRecord', password: sessionStorage.getItem('rt_admin_pw')||'', code })
+    });
+  }catch(err){ console.warn('雲端刪除同步失敗', err); }
+}
 async function confirmBookingRemote(rec){
   if(!webhookUrl) return {ok:false, error:'no_webhook'};
   if(!rec.code) return {ok:false, error:'no_code'};
@@ -1347,10 +1389,17 @@ function quickStatus(id,status){
       else toast('已確認（雲端通知失敗，請檢查設定）');
     });
   } else {
+    updateStatusRemote(r.code, status);
     toast('狀態已更新為「'+status+'」');
   }
 }
-function deleteRecord(id){ if(!confirm('確定要刪除這筆預約嗎？此動作無法復原。'))return; records=records.filter(r=>r.id!==id); saveRecords(records); renderList(); toast('已刪除'); }
+function deleteRecord(id){
+  const r=records.find(x=>x.id===id); if(!r)return;
+  if(!confirm('確定要刪除這筆預約嗎？此動作無法復原。'))return;
+  records=records.filter(x=>x.id!==id); saveRecords(records); renderList();
+  deleteRecordRemote(r.code);
+  toast('已刪除');
+}
 
 /* ============================================================
    後台：新增/編輯 Modal
