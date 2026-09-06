@@ -372,7 +372,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <h1 id="heroTitle"></h1>
   <p id="heroSubtitle"></p>
 
-  <button type="button" class="btn" id="heroCta" onclick="scrollToBooking()">想確認他的想法</button>
+  <a class="btn" id="heroCta" href="https://lin.ee/5VQ5gbz">想確認他的想法</a>
   <p class="sub" id="heroFeatures"></p>
   <p class="notice" id="heroNotice"></p>
 
@@ -904,6 +904,7 @@ function renderHeroContent(){
   document.getElementById('benefitsWrap').innerHTML = (heroContent.benefits||[]).map(t=>`<p>✔️ ${esc(t)}</p>`).join('');
   document.getElementById('preServicesNote').innerHTML = esc(heroContent.preServicesNote||'').replace(/\n/g,'<br>');
   document.getElementById('heroCta').textContent = heroContent.ctaText || '想聽聽真正的答案';
+  document.getElementById('heroCta').href = lineLink;
   document.getElementById('quietLineBtn').href = lineLink;
 }
 
