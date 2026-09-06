@@ -372,7 +372,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <h1 id="heroTitle"></h1>
   <p id="heroSubtitle"></p>
 
-  <a class="btn" id="heroCta" href="https://lin.ee/5VQ5gbz">想確認他的想法</a>
+  <button type="button" class="btn" id="heroCta" onclick="scrollToBooking()">想確認他的想法</button>
   <p class="sub" id="heroFeatures"></p>
   <p class="notice" id="heroNotice"></p>
 
@@ -520,6 +520,13 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
         <div class="field"><label>「我會幫妳直接看清」— 每一行是一項</label><textarea id="setBenefits" style="min-height:80px;"></textarea></div>
         <div class="field"><label>服務方案前的說明文字（要換行按 Enter）</label><textarea id="setPreServicesNote" style="min-height:80px;"></textarea></div>
         <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveHeroContent()">儲存文案</button>
+      </div>
+
+      <div class="panel">
+        <h3>👋 加入好友歡迎詞</h3>
+        <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">因為開啟了 Messaging API，LINE 原本內建的歡迎詞功能會失效，改由這裡設定的文字自動回覆給新加入的好友。</p>
+        <textarea id="setWelcomeMsg" style="min-height:90px;" placeholder="例如：謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說你的狀況。"></textarea>
+        <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveWelcomeMsg()">儲存歡迎詞</button>
       </div>
 
       <div class="panel">
@@ -716,6 +723,10 @@ function saveLine(){ const v=document.getElementById('setLine').value.trim()||DE
 const K_PAYMENT='rt_payment_info';
 function loadPaymentInfo(){ return localStorage.getItem(K_PAYMENT) || ''; }
 function savePaymentInfo(){ const v=document.getElementById('setPaymentInfo').value.trim(); localStorage.setItem(K_PAYMENT, v); paymentInfo=v; pushRemoteSettings(); toast('匯款資訊已儲存'); }
+const K_WELCOME='rt_welcome_msg';
+function defaultWelcomeMsg(){ return '謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說你的狀況。'; }
+function loadWelcomeMsg(){ return localStorage.getItem(K_WELCOME) || defaultWelcomeMsg(); }
+function saveWelcomeMsg(){ const v=document.getElementById('setWelcomeMsg').value.trim()||defaultWelcomeMsg(); localStorage.setItem(K_WELCOME, v); welcomeMsg=v; pushRemoteSettings(); toast('歡迎詞已儲存'); }
 
 /* ---------- 後台密碼鎖（改由 Apps Script 伺服器端驗證，密碼不存在網站程式碼裡） ---------- */
 async function checkAdminPassword(){
@@ -809,6 +820,7 @@ async function pullRemoteSettings(){
     if(data && data.methods && data.methods.length){ methods = data.methods; saveMethods(methods); changed = true; }
     if(data && data.line){ lineLink = data.line; localStorage.setItem(K_LINE, lineLink); changed = true; }
     if(data && typeof data.paymentInfo === 'string'){ paymentInfo = data.paymentInfo; localStorage.setItem(K_PAYMENT, paymentInfo); changed = true; }
+    if(data && typeof data.welcomeMsg === 'string' && data.welcomeMsg){ welcomeMsg = data.welcomeMsg; localStorage.setItem(K_WELCOME, welcomeMsg); changed = true; }
     if(data && data.hero){ heroContent = {...defaultHeroContent(), ...data.hero}; saveHeroContentLocal(heroContent); changed = true; }
     if(data && data.availability){ availability = {...defaultAvailability(), ...data.availability}; saveAvailabilityLocal(availability); changed = true; }
     if(changed){
@@ -825,7 +837,7 @@ function pushRemoteSettings(){
     fetch(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo })
+      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo, welcomeMsg })
     }).catch(err=>console.warn('雲端設定同步失敗', err));
   }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
@@ -835,6 +847,7 @@ let services = loadServices();
 let addons = loadAddons();
 let lineLink = loadLine();
 let paymentInfo = loadPaymentInfo();
+let welcomeMsg = loadWelcomeMsg();
 let webhookUrl = loadWebhook();
 let heroContent = loadHeroContent();
 let availability = loadAvailability();
@@ -876,7 +889,6 @@ function renderHeroContent(){
   document.getElementById('benefitsWrap').innerHTML = (heroContent.benefits||[]).map(t=>`<p>✔️ ${esc(t)}</p>`).join('');
   document.getElementById('preServicesNote').innerHTML = esc(heroContent.preServicesNote||'').replace(/\n/g,'<br>');
   document.getElementById('heroCta').textContent = heroContent.ctaText || '想聽聽真正的答案';
-  document.getElementById('heroCta').href = lineLink;
   document.getElementById('quietLineBtn').href = lineLink;
 }
 
@@ -1490,6 +1502,7 @@ function saveAdminForm(){
 function renderSettings(){
   document.getElementById('setLine').value = lineLink;
   document.getElementById('setPaymentInfo').value = paymentInfo;
+  document.getElementById('setWelcomeMsg').value = welcomeMsg;
   document.getElementById('setWebhook').value = webhookUrl;
   document.getElementById('setHeroTitle').value = heroContent.title;
   document.getElementById('setHeroSubtitle').value = heroContent.subtitle;
