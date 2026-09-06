@@ -465,134 +465,149 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
     </div>
 
     <div class="admin-section" id="tab-settings">
-      <div class="panel">
-        <h3>🗓️ 開放預約時間設定</h3>
-        <div class="field">
-          <label>開放的星期（不勾選 = 該天不開放預約）</label>
-          <div id="availDaysWrap" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;"></div>
-        </div>
-        <div class="admin-field-grid" style="margin-top:14px;">
-          <div class="field"><label>每天開放時段：從幾點</label><input id="availStartHour" type="number" min="0" max="23"></div>
-          <div class="field"><label>到幾點（不含）</label><input id="availEndHour" type="number" min="1" max="24"></div>
-          <div class="field"><label>時段間隔（分鐘）</label><input id="availInterval" type="number" min="5" max="120" step="5"></div>
-          <div class="field"><label>每天最多幾組預約名額</label><input id="availCapacity" type="number" min="1"></div>
-        </div>
-        <p style="font-size:11.5px; color:#999; margin-top:6px; line-height:1.6;">系統會依照客戶選的服務項目時長（名稱裡的「OO分鐘」）自動算出實際會佔用的時間，時段間隔只是決定「每隔幾分鐘可以有一個新的起始時間」，例如設15分鐘，時段就會是 15:00、15:15、15:30...這樣排列。</p>
-        <button class="btn btn-outline" style="margin:12px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveAvailabilityBasic()">儲存時段設定</button>
+      <div class="admin-nav" id="settingsSubNav" style="background:var(--cream); margin:-20px -20px 20px; padding:14px 16px;">
+        <button data-subtab="frontend" class="active" onclick="switchSettingsSubTab('frontend')">前台設定</button>
+        <button data-subtab="backend" onclick="switchSettingsSubTab('backend')">後台設定</button>
+        <button data-subtab="line" onclick="switchSettingsSubTab('line')">官方LINE設定</button>
+      </div>
 
-        <div style="margin-top:20px; padding-top:16px; border-top:1px dashed #EADFC8;">
-          <h3 style="margin-bottom:8px;">手動封鎖整天</h3>
-          <div id="blockedDatesList"></div>
-          <div class="admin-field-grid" style="margin-top:10px;">
-            <div class="field full"><label>選擇日期</label><input id="newBlockedDate" type="date"></div>
+      <!-- ========== 前台設定：預約設定／開頭介紹文字／服務方案／加購／諮詢方式 ========== -->
+      <div class="settings-subsection active" id="settings-frontend">
+        <div class="panel">
+          <h3>🗓️ 開放預約時間設定</h3>
+          <div class="field">
+            <label>開放的星期（不勾選 = 該天不開放預約）</label>
+            <div id="availDaysWrap" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;"></div>
           </div>
-          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addBlockedDate()">＋ 封鎖這一天</button>
-        </div>
-
-        <div style="margin-top:20px; padding-top:16px; border-top:1px dashed #EADFC8;">
-          <h3 style="margin-bottom:8px;">手動封鎖單一時段</h3>
-          <div id="blockedSlotsList"></div>
-          <div class="admin-field-grid" style="margin-top:10px;">
-            <div class="field"><label>日期</label><input id="newBlockedSlotDate" type="date"></div>
-            <div class="field"><label>時段</label><select id="newBlockedSlotHour"></select></div>
+          <div class="admin-field-grid" style="margin-top:14px;">
+            <div class="field"><label>每天開放時段：從幾點</label><input id="availStartHour" type="number" min="0" max="23"></div>
+            <div class="field"><label>到幾點（不含）</label><input id="availEndHour" type="number" min="1" max="24"></div>
+            <div class="field"><label>時段間隔（分鐘）</label><input id="availInterval" type="number" min="5" max="120" step="5"></div>
+            <div class="field"><label>每天最多幾組預約名額</label><input id="availCapacity" type="number" min="1"></div>
           </div>
-          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addBlockedSlot()">＋ 封鎖這個時段</button>
+          <p style="font-size:11.5px; color:#999; margin-top:6px; line-height:1.6;">系統會依照客戶選的服務項目時長（名稱裡的「OO分鐘」）自動算出實際會佔用的時間，時段間隔只是決定「每隔幾分鐘可以有一個新的起始時間」，例如設15分鐘，時段就會是 15:00、15:15、15:30...這樣排列。</p>
+          <button class="btn btn-outline" style="margin:12px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveAvailabilityBasic()">儲存時段設定</button>
+
+          <div style="margin-top:20px; padding-top:16px; border-top:1px dashed #EADFC8;">
+            <h3 style="margin-bottom:8px;">手動封鎖整天</h3>
+            <div id="blockedDatesList"></div>
+            <div class="admin-field-grid" style="margin-top:10px;">
+              <div class="field full"><label>選擇日期</label><input id="newBlockedDate" type="date"></div>
+            </div>
+            <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addBlockedDate()">＋ 封鎖這一天</button>
+          </div>
+
+          <div style="margin-top:20px; padding-top:16px; border-top:1px dashed #EADFC8;">
+            <h3 style="margin-bottom:8px;">手動封鎖單一時段</h3>
+            <div id="blockedSlotsList"></div>
+            <div class="admin-field-grid" style="margin-top:10px;">
+              <div class="field"><label>日期</label><input id="newBlockedSlotDate" type="date"></div>
+              <div class="field"><label>時段</label><select id="newBlockedSlotHour"></select></div>
+            </div>
+            <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addBlockedSlot()">＋ 封鎖這個時段</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>✍️ 開頭介紹文字</h3>
+          <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">這是前台最上面吸引人的標題文案，可以隨著服務方向調整隨時修改。</p>
+          <div class="field"><label>大標題（要換行的地方按 Enter）</label><textarea id="setHeroTitle" style="min-height:60px;"></textarea></div>
+          <div class="field"><label>副標題文字</label><textarea id="setHeroSubtitle" style="min-height:60px;"></textarea></div>
+          <div class="field"><label>金色按鈕文字（主要行動呼籲）</label><input id="setHeroCta" placeholder="例如：想聽聽真正的答案"></div>
+          <div class="field"><label>按鈕下方三個特色（每一行是一項）</label><textarea id="setHeroFeatures" style="min-height:70px;"></textarea></div>
+          <div class="field"><label>按鈕下方的小提醒文字</label><input id="setHeroNotice" placeholder="例如：目前採預約制，近期可安排時段有限"></div>
+          <div class="field"><label>「妳可能正在經歷」區塊標題</label><input id="setPainPointsTitle" placeholder="例如：你先把事情告訴我"></div>
+          <div class="field"><label>該標題下方的說明文字（要換行按 Enter）</label><textarea id="setPainPointsNote" style="min-height:70px;"></textarea></div>
+          <div class="field"><label>「妳可能正在經歷」— 每一行是一項</label><textarea id="setPainPoints" style="min-height:80px;"></textarea></div>
+          <div class="field"><label>「我會幫妳直接看清」區塊標題</label><input id="setBenefitsTitle" placeholder="例如：我會幫妳直接看清"></div>
+          <div class="field"><label>「我會幫妳直接看清」— 每一行是一項</label><textarea id="setBenefits" style="min-height:80px;"></textarea></div>
+          <div class="field"><label>服務方案前的說明文字（要換行按 Enter）</label><textarea id="setPreServicesNote" style="min-height:80px;"></textarea></div>
+          <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveHeroContent()">儲存文案</button>
+        </div>
+
+        <div class="panel">
+          <h3>服務方案管理</h3>
+          <div id="serviceSettingsList"></div>
+          <div class="admin-field-grid" style="margin-top:12px;">
+            <div class="field"><label>服務名稱（含時長）</label><input id="newSvcName" placeholder="例如：塔羅讀心 / 20分鐘"></div>
+            <div class="field"><label>價格 (NT$)</label><input id="newSvcPrice" type="number" placeholder="999"></div>
+            <div class="field"><label>地點／形式（選填）</label><input id="newSvcSubtitle" placeholder="例如：遠程／台南面對面"></div>
+            <div class="field full"><label>說明</label><input id="newSvcDesc" placeholder="這項服務能幫客戶解決什麼"></div>
+          </div>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addService()">＋ 新增服務</button>
+        </div>
+
+        <div class="panel">
+          <h3>加購選項管理</h3>
+          <div id="addonSettingsList"></div>
+          <div class="admin-field-grid" style="margin-top:12px;">
+            <div class="field"><label>加購名稱</label><input id="newAddonName" placeholder="例如：加購深入分析 10分鐘"></div>
+            <div class="field"><label>價格 (NT$)</label><input id="newAddonPrice" type="number" placeholder="599"></div>
+            <div class="field full"><label>說明</label><input id="newAddonDesc" placeholder="這個加購能多幫客戶做什麼"></div>
+          </div>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addAddon()">＋ 新增加購</button>
+        </div>
+
+        <div class="panel">
+          <h3>諮詢方式管理</h3>
+          <div id="methodSettingsList"></div>
+          <div class="admin-field-grid" style="margin-top:12px;">
+            <div class="field full"><label>諮詢方式名稱</label><input id="newMethodName" placeholder="例如：視訊通話"></div>
+          </div>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addMethod()">＋ 新增諮詢方式</button>
         </div>
       </div>
 
-      <div class="panel">
-        <h3>🔒 後台密碼</h3>
-        <p style="font-size:12px; color:#999; line-height:1.7;">密碼已經改成由 Google Apps Script 驗證，不再存在網站程式碼裡，更安全。想更改密碼，請到 Apps Script 編輯器左側「專案設定」→「指令碼屬性」，修改 ADMIN_PASSWORD 這筆的值即可，不需要重新部署。</p>
-      </div>
+      <!-- ========== 後台設定：密碼提示／資料備份 ========== -->
+      <div class="settings-subsection" id="settings-backend" style="display:none;">
+        <div class="panel">
+          <h3>🔒 後台密碼</h3>
+          <p style="font-size:12px; color:#999; line-height:1.7;">密碼已經改成由 Google Apps Script 驗證，不再存在網站程式碼裡，更安全。想更改密碼，請到 Apps Script 編輯器左側「專案設定」→「指令碼屬性」，修改 ADMIN_PASSWORD 這筆的值即可，不需要重新部署。</p>
+        </div>
 
-      <div class="panel">
-        <h3>✍️ 開頭介紹文字</h3>
-        <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">這是前台最上面吸引人的標題文案，可以隨著服務方向調整隨時修改。</p>
-        <div class="field"><label>大標題（要換行的地方按 Enter）</label><textarea id="setHeroTitle" style="min-height:60px;"></textarea></div>
-        <div class="field"><label>副標題文字</label><textarea id="setHeroSubtitle" style="min-height:60px;"></textarea></div>
-        <div class="field"><label>金色按鈕文字（主要行動呼籲）</label><input id="setHeroCta" placeholder="例如：想聽聽真正的答案"></div>
-        <div class="field"><label>按鈕下方三個特色（每一行是一項）</label><textarea id="setHeroFeatures" style="min-height:70px;"></textarea></div>
-        <div class="field"><label>按鈕下方的小提醒文字</label><input id="setHeroNotice" placeholder="例如：目前採預約制，近期可安排時段有限"></div>
-        <div class="field"><label>「妳可能正在經歷」區塊標題</label><input id="setPainPointsTitle" placeholder="例如：你先把事情告訴我"></div>
-        <div class="field"><label>該標題下方的說明文字（要換行按 Enter）</label><textarea id="setPainPointsNote" style="min-height:70px;"></textarea></div>
-        <div class="field"><label>「妳可能正在經歷」— 每一行是一項</label><textarea id="setPainPoints" style="min-height:80px;"></textarea></div>
-        <div class="field"><label>「我會幫妳直接看清」區塊標題</label><input id="setBenefitsTitle" placeholder="例如：我會幫妳直接看清"></div>
-        <div class="field"><label>「我會幫妳直接看清」— 每一行是一項</label><textarea id="setBenefits" style="min-height:80px;"></textarea></div>
-        <div class="field"><label>服務方案前的說明文字（要換行按 Enter）</label><textarea id="setPreServicesNote" style="min-height:80px;"></textarea></div>
-        <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveHeroContent()">儲存文案</button>
-      </div>
-
-      <div class="panel">
-        <h3>👋 加入好友歡迎詞</h3>
-        <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">因為開啟了 Messaging API，LINE 原本內建的歡迎詞功能會失效，改由這裡設定的文字自動回覆給新加入的好友。</p>
-        <textarea id="setWelcomeMsg" style="min-height:90px;" placeholder="例如：謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說你的狀況。"></textarea>
-        <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveWelcomeMsg()">儲存歡迎詞</button>
-      </div>
-
-      <div class="panel">
-        <h3>💰 匯款資訊（客戶核對代碼後自動回覆）</h3>
-        <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">客戶加LINE好友、傳送預約代碼過來核對成功時，除了應付金額（自動代入該筆預約費用），還會附上這段文字，告訴他怎麼匯款。</p>
-        <textarea id="setPaymentInfo" style="min-height:100px;" placeholder="例如：&#10;銀行：OO銀行(700)&#10;帳號：1234-5678-9012&#10;戶名：翁笑笑&#10;匯款後請直接回覆這裡告知，完成匯款者優先保留時段。"></textarea>
-        <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="savePaymentInfo()">儲存匯款資訊</button>
-      </div>
-
-      <div class="panel">
-        <h3>🔔 新預約自動通知（Google試算表＋LINE）</h3>
-        <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">貼上妳部署好的 Google Apps Script 網址，之後客戶每送出一筆預約，就會自動寫進試算表、並推播 LINE 通知給妳。設定教學請看聊天視窗裡的說明。</p>
-        <div class="field"><input id="setWebhook" placeholder="https://script.google.com/macros/s/xxx/exec"></div>
-        <div class="io-row" style="margin-top:12px;">
-          <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveWebhook()">儲存</button>
-          <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="testWebhook()">📨 發送測試通知</button>
+        <div class="panel">
+          <h3>資料備份</h3>
+          <p style="font-size:12px; color:#999; margin-bottom:12px;">換裝置或清除瀏覽器資料前，記得先匯出備份。</p>
+          <div class="io-row">
+            <button class="btn btn-outline" onclick="exportData()">⬇ 匯出備份</button>
+            <label class="btn btn-outline" style="display:inline-flex; align-items:center; cursor:pointer;">
+              ⬆ 匯入備份
+              <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+            </label>
+          </div>
         </div>
       </div>
 
-      <div class="panel">
-        <h3>LINE 官方帳號連結</h3>
-        <div class="field"><input id="setLine" placeholder="https://lin.ee/xxxxxxx"></div>
-        <button class="btn btn-outline" style="margin:12px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveLine()">儲存</button>
-      </div>
-
-      <div class="panel">
-        <h3>服務方案管理</h3>
-        <div id="serviceSettingsList"></div>
-        <div class="admin-field-grid" style="margin-top:12px;">
-          <div class="field"><label>服務名稱（含時長）</label><input id="newSvcName" placeholder="例如：塔羅讀心 / 20分鐘"></div>
-          <div class="field"><label>價格 (NT$)</label><input id="newSvcPrice" type="number" placeholder="999"></div>
-          <div class="field"><label>地點／形式（選填）</label><input id="newSvcSubtitle" placeholder="例如：遠程／台南面對面"></div>
-          <div class="field full"><label>說明</label><input id="newSvcDesc" placeholder="這項服務能幫客戶解決什麼"></div>
+      <!-- ========== 官方LINE設定：歡迎詞／匯款資訊／自動通知／LINE連結 ========== -->
+      <div class="settings-subsection" id="settings-line" style="display:none;">
+        <div class="panel">
+          <h3>👋 加入好友歡迎詞</h3>
+          <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">因為開啟了 Messaging API，LINE 原本內建的歡迎詞功能會失效，改由這裡設定的文字自動回覆給新加入的好友。</p>
+          <textarea id="setWelcomeMsg" style="min-height:90px;" placeholder="例如：謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說你的狀況。"></textarea>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveWelcomeMsg()">儲存歡迎詞</button>
         </div>
-        <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addService()">＋ 新增服務</button>
-      </div>
 
-      <div class="panel">
-        <h3>加購選項管理</h3>
-        <div id="addonSettingsList"></div>
-        <div class="admin-field-grid" style="margin-top:12px;">
-          <div class="field"><label>加購名稱</label><input id="newAddonName" placeholder="例如：加購深入分析 10分鐘"></div>
-          <div class="field"><label>價格 (NT$)</label><input id="newAddonPrice" type="number" placeholder="599"></div>
-          <div class="field full"><label>說明</label><input id="newAddonDesc" placeholder="這個加購能多幫客戶做什麼"></div>
+        <div class="panel">
+          <h3>💰 匯款資訊（客戶核對代碼後自動回覆）</h3>
+          <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">客戶加LINE好友、傳送預約代碼過來核對成功時，除了應付金額（自動代入該筆預約費用），還會附上這段文字，告訴他怎麼匯款。</p>
+          <textarea id="setPaymentInfo" style="min-height:100px;" placeholder="例如：&#10;銀行：OO銀行(700)&#10;帳號：1234-5678-9012&#10;戶名：翁笑笑&#10;匯款後請直接回覆這裡告知，完成匯款者優先保留時段。"></textarea>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="savePaymentInfo()">儲存匯款資訊</button>
         </div>
-        <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addAddon()">＋ 新增加購</button>
-      </div>
 
-      <div class="panel">
-        <h3>諮詢方式管理</h3>
-        <div id="methodSettingsList"></div>
-        <div class="admin-field-grid" style="margin-top:12px;">
-          <div class="field full"><label>諮詢方式名稱</label><input id="newMethodName" placeholder="例如：視訊通話"></div>
+        <div class="panel">
+          <h3>🔔 新預約自動通知（Google試算表＋LINE）</h3>
+          <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">貼上妳部署好的 Google Apps Script 網址，之後客戶每送出一筆預約，就會自動寫進試算表、並推播 LINE 通知給妳。設定教學請看聊天視窗裡的說明。</p>
+          <div class="field"><input id="setWebhook" placeholder="https://script.google.com/macros/s/xxx/exec"></div>
+          <div class="io-row" style="margin-top:12px;">
+            <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveWebhook()">儲存</button>
+            <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="testWebhook()">📨 發送測試通知</button>
+          </div>
         </div>
-        <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="addMethod()">＋ 新增諮詢方式</button>
-      </div>
 
-      <div class="panel">
-        <h3>資料備份</h3>
-        <p style="font-size:12px; color:#999; margin-bottom:12px;">換裝置或清除瀏覽器資料前，記得先匯出備份。</p>
-        <div class="io-row">
-          <button class="btn btn-outline" onclick="exportData()">⬇ 匯出備份</button>
-          <label class="btn btn-outline" style="display:inline-flex; align-items:center; cursor:pointer;">
-            ⬆ 匯入備份
-            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
-          </label>
+        <div class="panel">
+          <h3>LINE 官方帳號連結</h3>
+          <div class="field"><input id="setLine" placeholder="https://lin.ee/xxxxxxx"></div>
+          <button class="btn btn-outline" style="margin:12px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveLine()">儲存</button>
         </div>
       </div>
     </div>
@@ -1245,6 +1260,11 @@ function switchAdminTab(tab){
   if(tab==='dashboard') renderDashboard();
   if(tab==='list') renderList();
   if(tab==='settings') renderSettings();
+}
+function switchSettingsSubTab(tab){
+  document.querySelectorAll('.settings-subsection').forEach(s=>s.style.display='none');
+  document.getElementById('settings-'+tab).style.display='block';
+  document.querySelectorAll('#settingsSubNav button').forEach(b=>b.classList.toggle('active', b.dataset.subtab===tab));
 }
 document.getElementById('adminNav').addEventListener('click', e=>{
   const b=e.target.closest('button[data-tab]'); if(b) switchAdminTab(b.dataset.tab);
