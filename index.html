@@ -1318,6 +1318,7 @@ function renderList(){
       <div class="rec-actions">
         ${r.status==='待確認'?`<button class="primary" onclick="quickStatus('${r.id}','已確認')">確認預約</button>`:''}
         ${r.status==='已確認'?`<button class="primary" onclick="quickStatus('${r.id}','已完成')">標記完成</button>`:''}
+        ${r.status==='待確認'?`<button class="danger" onclick="rejectBookingFull('${r.id}')">婉拒（時段已滿）</button>`:''}
         <button onclick="openForm('${r.id}')">編輯</button>
         ${r.status!=='已取消'?`<button onclick="quickStatus('${r.id}','已取消')">取消</button>`:''}
         <button class="danger" onclick="deleteRecord('${r.id}')">刪除</button>
@@ -1410,6 +1411,24 @@ function quickStatus(id,status){
   r.status=status; saveRecords(records); renderList(); renderDashboard();
   updateStatusRemote(r.code, status);
   toast('狀態已更新為「'+status+'」');
+}
+async function rejectBookingFull(id){
+  const r=records.find(x=>x.id===id); if(!r)return;
+  if(!confirm(`確定要婉拒「${r.name}」這筆預約嗎？\n系統會發送LINE通知，告訴客戶這個時段已滿、請他重新選擇時間。`)) return;
+  if(!webhookUrl || !r.code){ toast('尚未設定雲端網址，無法通知客戶'); return; }
+  try{
+    const res = await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'rejectBooking', password: sessionStorage.getItem('rt_admin_pw')||'', code: r.code })
+    });
+    const data = await res.json();
+    if(data && data.ok){
+      r.status='已取消'; saveRecords(records); renderList(); renderDashboard();
+      toast(data.linePushed ? '已婉拒，並已通知客戶時段已滿' : '已婉拒，但客戶尚未提供預約代碼，無法通知');
+    } else {
+      toast('婉拒失敗，請檢查雲端設定');
+    }
+  }catch(err){ toast('婉拒失敗，請檢查網路連線'); }
 }
 function deleteRecord(id){
   const r=records.find(x=>x.id===id); if(!r)return;
