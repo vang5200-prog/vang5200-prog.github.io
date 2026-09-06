@@ -483,6 +483,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
             <div class="field"><label>每天開放時段：從幾點</label><input id="availStartHour" type="number" min="0" max="23"></div>
             <div class="field"><label>到幾點（不含）</label><input id="availEndHour" type="number" min="1" max="24"></div>
             <div class="field"><label>時段間隔（分鐘）</label><input id="availInterval" type="number" min="5" max="120" step="5"></div>
+            <div class="field"><label>時段緩衝（分鐘，兩個預約中間至少間隔）</label><input id="availBuffer" type="number" min="0" max="60" step="5"></div>
             <div class="field"><label>每天最多幾組預約名額</label><input id="availCapacity" type="number" min="1"></div>
           </div>
           <p style="font-size:11.5px; color:#999; margin-top:6px; line-height:1.6;">系統會依照客戶選的服務項目時長（名稱裡的「OO分鐘」）自動算出實際會佔用的時間，時段間隔只是決定「每隔幾分鐘可以有一個新的起始時間」，例如設15分鐘，時段就會是 15:00、15:15、15:30...這樣排列。</p>
@@ -700,6 +701,7 @@ function defaultAvailability(){
     startHour: 15,
     endHour: 20, // 不含此小時
     slotInterval: 30, // 時段間隔（分鐘），決定可選擇的起始時間刻度
+    bufferMinutes: 15, // 每個預約結束後，到下一個預約開始前，至少要空出的緩衝時間
     dailyCapacity: 5,
     blockedDates: [],   // 整天封鎖，格式 'YYYY-MM-DD'
     blockedSlots: []    // 單一時段封鎖，格式 'YYYY-MM-DD|HH:00'
@@ -1072,12 +1074,12 @@ async function loadSlotsForDate(){
       dailyTotal = data.total || 0;
     }catch(err){
       records.forEach(r=>{
-        if(r.status!=='已取消' && (r.datetime||'').slice(0,10)===dateStr){
+        if(r.status==='已確認' && (r.datetime||'').slice(0,10)===dateStr){
           const h = Number((r.datetime||'').slice(11,13)), mi = Number((r.datetime||'').slice(14,16))||0;
           const start = h*60+mi;
           const addonMin = (r.addonNames||[]).reduce((sum,n)=>sum+getDurationMinutes(n),0);
           const dur = getDurationMinutes(r.serviceName) + addonMin;
-          busy.push([start, start+dur]);
+          busy.push([start, start+dur+(availability.bufferMinutes??15)]);
           dailyTotal++;
         }
       });
@@ -1592,6 +1594,7 @@ function renderAvailabilitySettings(){
   document.getElementById('availStartHour').value = availability.startHour;
   document.getElementById('availEndHour').value = availability.endHour;
   document.getElementById('availInterval').value = availability.slotInterval || 30;
+  document.getElementById('availBuffer').value = availability.bufferMinutes ?? 15;
   document.getElementById('availCapacity').value = availability.dailyCapacity;
 
   document.getElementById('blockedDatesList').innerHTML = availability.blockedDates.length ? availability.blockedDates.map(d=>`
@@ -1615,9 +1618,10 @@ function saveAvailabilityBasic(){
   const start = Number(document.getElementById('availStartHour').value);
   const end = Number(document.getElementById('availEndHour').value);
   const interval = Number(document.getElementById('availInterval').value);
+  const buffer = Number(document.getElementById('availBuffer').value);
   const cap = Number(document.getElementById('availCapacity').value);
   if(end<=start){ toast('結束時間要比開始時間晚'); return; }
-  availability.startHour = start; availability.endHour = end; availability.slotInterval = interval||30; availability.dailyCapacity = cap||1;
+  availability.startHour = start; availability.endHour = end; availability.slotInterval = interval||30; availability.bufferMinutes = buffer>=0?buffer:15; availability.dailyCapacity = cap||1;
   saveAvailabilityLocal(availability); pushRemoteSettings(); renderAvailabilitySettings();
   toast('開放時段設定已儲存');
 }
