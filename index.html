@@ -757,7 +757,7 @@ function loadWelcomeMsg(){ return localStorage.getItem(K_WELCOME) || defaultWelc
 function saveWelcomeMsg(){ const v=document.getElementById('setWelcomeMsg').value.trim()||defaultWelcomeMsg(); localStorage.setItem(K_WELCOME, v); welcomeMsg=v; pushRemoteSettings(); toast('歡迎詞已儲存'); }
 const K_POLICY='rt_booking_policy';
 function defaultBookingPolicy(){
-  return '【取消與爽約規範】\n・無故爽約（預約時間已到未出現）：不退款，將列入紀錄，累計達3次，半年內將無法再預約。\n・預約時間24小時前告知取消：不退款，將列入紀錄，可協助改期。\n・預約時間24小時內才告知取消：不退款，視同無故爽約列入紀錄。';
+  return '【取消與爽約規範】\n系統都會提前一天溫馨小提醒預約時間，如需改期請務必提前告知，若:\n・無故爽約（預約時間已到未出現）：累計若達3次，半年內將無法再預約。\n・預約時間前24小時告知取消：可協助改期。\n・預約時間24小時內告知取消：可協助改期，但視同無故爽約。';
 }
 function loadBookingPolicy(){ return localStorage.getItem(K_POLICY) || defaultBookingPolicy(); }
 function saveBookingPolicy(){ const v=document.getElementById('setBookingPolicy').value.trim()||defaultBookingPolicy(); localStorage.setItem(K_POLICY, v); bookingPolicy=v; pushRemoteSettings(); toast('預約注意事項已儲存'); }
