@@ -473,8 +473,10 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
         <div class="admin-field-grid" style="margin-top:14px;">
           <div class="field"><label>每天開放時段：從幾點</label><input id="availStartHour" type="number" min="0" max="23"></div>
           <div class="field"><label>到幾點（不含）</label><input id="availEndHour" type="number" min="1" max="24"></div>
-          <div class="field full"><label>每天最多幾組預約名額</label><input id="availCapacity" type="number" min="1"></div>
+          <div class="field"><label>時段間隔（分鐘）</label><input id="availInterval" type="number" min="5" max="120" step="5"></div>
+          <div class="field"><label>每天最多幾組預約名額</label><input id="availCapacity" type="number" min="1"></div>
         </div>
+        <p style="font-size:11.5px; color:#999; margin-top:6px; line-height:1.6;">系統會依照客戶選的服務項目時長（名稱裡的「OO分鐘」）自動算出實際會佔用的時間，時段間隔只是決定「每隔幾分鐘可以有一個新的起始時間」，例如設15分鐘，時段就會是 15:00、15:15、15:30...這樣排列。</p>
         <button class="btn btn-outline" style="margin:12px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveAvailabilityBasic()">儲存時段設定</button>
 
         <div style="margin-top:20px; padding-top:16px; border-top:1px dashed #EADFC8;">
@@ -666,7 +668,8 @@ function defaultAvailability(){
   return {
     days: [1,2,3,4,5,6,0], // 0=週日 1=週一...6=週六，預設全開
     startHour: 15,
-    endHour: 20, // 不含此小時，15~19共5個時段
+    endHour: 20, // 不含此小時
+    slotInterval: 30, // 時段間隔（分鐘），決定可選擇的起始時間刻度
     dailyCapacity: 5,
     blockedDates: [],   // 整天封鎖，格式 'YYYY-MM-DD'
     blockedSlots: []    // 單一時段封鎖，格式 'YYYY-MM-DD|HH:00'
@@ -871,23 +874,23 @@ function publicFieldsHTML(){
   const svcOptions = services.map(s=>{ const pl=servicePriceLabel(s); return `<option value="${s.id}">${esc(s.name)}${pl?`（${pl}）`:''}</option>`; }).join('');
   const methodOptions = methods.map(m=>`<option value="${m}">${m}</option>`).join('');
   const addonChecks = addons.map(a=>`
-    <label class="addon-item"><input type="checkbox" class="pf-addon" value="${a.id}" onchange="updatePricePreview()"> ${esc(a.name)}｜NT$${Number(a.price).toLocaleString()}</label>
+    <label class="addon-item"><input type="checkbox" class="pf-addon" value="${a.id}" onchange="updatePricePreview(); if(document.getElementById('pf_date').value) loadSlotsForDate();"> ${esc(a.name)}｜NT$${Number(a.price).toLocaleString()}</label>
   `).join('');
   return `
     <div class="field"><label>客戶姓名 <span class="req">*</span></label><input id="pf_name" placeholder="怎麼稱呼妳？"></div>
     <div class="field"><label>Email <span class="req">*</span></label><input id="pf_email" type="email" placeholder="收到通知用"></div>
+    <div class="field"><label>預約項目 <span class="req">*</span></label>
+      <select id="pf_service" onchange="onServiceChange()">${svcOptions}</select>
+    </div>
+    <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview(); updateQuestionField(); if(document.getElementById('pf_date').value) loadSlotsForDate();"></select></div>
+    ${addons.length? `<div class="field"><label>加購選項（可複選）</label>${addonChecks}</div>`:''}
+    <div class="field price-preview" id="pricePreview"></div>
     <div class="field"><label>預約日期 <span class="req">*</span></label><input id="pf_date" type="date" onchange="loadSlotsForDate()"></div>
     <div class="field full" id="slotFieldWrap" style="display:none;">
       <label>預約時段 <span class="req">*</span></label>
       <div class="slot-grid" id="slotGrid"></div>
       <div class="slot-hint" id="slotHint"></div>
     </div>
-    <div class="field"><label>預約項目 <span class="req">*</span></label>
-      <select id="pf_service" onchange="onServiceChange()">${svcOptions}</select>
-    </div>
-    <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview(); updateQuestionField();"></select></div>
-    ${addons.length? `<div class="field"><label>加購選項（可複選）</label>${addonChecks}</div>`:''}
-    <div class="field price-preview" id="pricePreview"></div>
     <div class="field"><label>諮詢方式 <span class="req">*</span></label><select id="pf_method">${methodOptions}</select></div>
     <div class="field"><label id="pf_question_label">想諮詢的問題</label><textarea id="pf_question" placeholder="想和我討論什麼事情？請簡單告訴我目前的情況"></textarea></div>
     <div class="field"><label>其他備註</label><textarea id="pf_other" placeholder="有什麼想先讓我知道的嗎？"></textarea></div>
@@ -949,6 +952,7 @@ function onServiceChange(){
   updatePricePreview();
   updateQuestionField();
   updateMethodField();
+  if(document.getElementById('pf_date').value) loadSlotsForDate();
 }
 function selectedTierPrice(svc){
   if(!svc) return 0;
@@ -968,6 +972,27 @@ function updatePricePreview(){
   document.getElementById('pricePreview').textContent = (svc && total>0) ? `本次預估費用：NT$ ${total.toLocaleString()}` : '';
 }
 let selectedSlotHour = null;
+function getDurationMinutes(text){
+  const m = String(text||'').match(/(\d+)\s*分鐘/);
+  return m ? Number(m[1]) : 60; // 抓不到時長時，保守預設佔用60分鐘
+}
+function getSelectedDurationSourceText(){
+  const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
+  if(!svc) return '';
+  const tierWrap = document.getElementById('tierFieldWrap');
+  const tierEl = document.getElementById('pf_tier');
+  if(tierWrap && tierWrap.style.display!=='none' && tierEl && tierEl.value!==''){
+    const tiers = parseTiers(svc.tiers);
+    const t = tiers[Number(tierEl.value)];
+    if(t) return t.label;
+  }
+  return svc.name;
+}
+function getTotalDurationMinutes(){
+  const base = getDurationMinutes(getSelectedDurationSourceText());
+  const addonMinutes = currentSelectedAddons().reduce((sum,a)=>sum+getDurationMinutes(a.name),0);
+  return base + addonMinutes;
+}
 async function loadSlotsForDate(){
   selectedSlotHour = null;
   const dateStr = document.getElementById('pf_date').value;
@@ -993,52 +1018,69 @@ async function loadSlotsForDate(){
   hint.textContent = '讀取空位中…';
   grid.innerHTML = '';
 
-  let counts = {};
+  let busy = []; // [[startMin,endMin], ...]
   let dailyTotal = 0;
   if(webhookUrl){
     try{
       const sep = webhookUrl.includes('?') ? '&' : '?';
       const res = await fetch(webhookUrl + sep + 'action=availability&date=' + dateStr);
       const data = await res.json();
-      counts = data.counts || {};
+      busy = data.busy || [];
       dailyTotal = data.total || 0;
     }catch(err){
-      // 讀取失敗就用本機資料估算，至少不會完全無法預約
       records.forEach(r=>{
         if(r.status!=='已取消' && (r.datetime||'').slice(0,10)===dateStr){
-          const h = (r.datetime||'').slice(11,13);
-          counts[h+':00'] = (counts[h+':00']||0)+1;
+          const h = Number((r.datetime||'').slice(11,13)), mi = Number((r.datetime||'').slice(14,16))||0;
+          const start = h*60+mi;
+          const addonMin = (r.addonNames||[]).reduce((sum,n)=>sum+getDurationMinutes(n),0);
+          const dur = getDurationMinutes(r.serviceName) + addonMin;
+          busy.push([start, start+dur]);
           dailyTotal++;
         }
       });
     }
   }
+  // 手動封鎖的時段，也當作忙碌區間處理（每個封鎖時段視為佔用1小時）
+  availability.blockedSlots.forEach(s=>{
+    const [d2,hh] = s.split('|');
+    if(d2===dateStr){
+      const h = Number(hh.slice(0,2));
+      busy.push([h*60, h*60+60]);
+    }
+  });
 
   const now = new Date();
   const isToday = dateStr === now.toISOString().slice(0,10);
+  const nowMinutes = now.getHours()*60 + now.getMinutes();
   const dayFull = dailyTotal >= availability.dailyCapacity;
 
+  const duration = getTotalDurationMinutes();
+  const interval = availability.slotInterval || 30;
+  const openStart = availability.startHour*60;
+  const openEnd = availability.endHour*60;
+
   let html = '';
-  for(let h=availability.startHour; h<availability.endHour; h++){
-    const hh = String(h).padStart(2,'0')+':00';
-    const slotKey = dateStr+'|'+hh;
-    const slotCount = counts[hh]||0;
-    const manuallyBlocked = availability.blockedSlots.includes(slotKey);
-    const isPast = isToday && h <= now.getHours();
-    const isFull = manuallyBlocked || dayFull || slotCount>=1;
+  let anySlot = false;
+  for(let t=openStart; t+duration<=openEnd; t+=interval){
+    anySlot = true;
+    const hh = String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+    const isPast = isToday && t<=nowMinutes;
+    const overlaps = busy.some(b=> t < b[1] && (t+duration) > b[0]);
+    const isFull = dayFull || overlaps;
     let cls = 'slot-btn';
     if(isPast) cls += ' past';
     else if(isFull) cls += ' full';
-    html += `<button type="button" class="${cls}" ${(isPast||isFull)?'disabled':''} onclick="selectSlot('${hh}')" id="slotBtn_${h}">${hh}${(!isPast&&isFull)?'<br><span style=\"font-size:10px;\">額滿</span>':''}</button>`;
+    html += `<button type="button" class="${cls}" ${(isPast||isFull)?'disabled':''} onclick="selectSlot('${hh}')" id="slotBtn_${t}">${hh}${(!isPast&&isFull)?'<br><span style="font-size:10px;">額滿</span>':''}</button>`;
   }
   grid.innerHTML = html;
-  hint.textContent = dayFull ? '這天預約已滿，請選擇其他日期。' : '請選擇一個時段。';
+  if(!anySlot) hint.textContent = '這個服務時長超過開放時段，請聯繫我另外安排。';
+  else hint.textContent = dayFull ? '這天預約已滿，請選擇其他日期。' : `請選擇一個時段（本項目約需 ${duration} 分鐘）。`;
 }
 function selectSlot(hh){
   selectedSlotHour = hh;
   document.querySelectorAll('.slot-btn').forEach(b=>b.classList.remove('selected'));
-  const idx = Number(hh.slice(0,2));
-  const btn = document.getElementById('slotBtn_'+idx);
+  const t = Number(hh.slice(0,2))*60 + Number(hh.slice(3,5));
+  const btn = document.getElementById('slotBtn_'+t);
   if(btn) btn.classList.add('selected');
 }
 function generateBookingCode(){
@@ -1413,6 +1455,7 @@ function renderAvailabilitySettings(){
     </label>`).join('');
   document.getElementById('availStartHour').value = availability.startHour;
   document.getElementById('availEndHour').value = availability.endHour;
+  document.getElementById('availInterval').value = availability.slotInterval || 30;
   document.getElementById('availCapacity').value = availability.dailyCapacity;
 
   document.getElementById('blockedDatesList').innerHTML = availability.blockedDates.length ? availability.blockedDates.map(d=>`
@@ -1435,9 +1478,10 @@ function toggleAvailDay(day, checked){
 function saveAvailabilityBasic(){
   const start = Number(document.getElementById('availStartHour').value);
   const end = Number(document.getElementById('availEndHour').value);
+  const interval = Number(document.getElementById('availInterval').value);
   const cap = Number(document.getElementById('availCapacity').value);
   if(end<=start){ toast('結束時間要比開始時間晚'); return; }
-  availability.startHour = start; availability.endHour = end; availability.dailyCapacity = cap||1;
+  availability.startHour = start; availability.endHour = end; availability.slotInterval = interval||30; availability.dailyCapacity = cap||1;
   saveAvailabilityLocal(availability); pushRemoteSettings(); renderAvailabilitySettings();
   toast('開放時段設定已儲存');
 }
