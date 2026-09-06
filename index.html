@@ -449,7 +449,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 
     <div class="admin-section" id="tab-list">
       <div class="toolbar">
-        <input type="text" id="searchInput" placeholder="搜尋客戶姓名 / Email">
+        <input type="text" id="searchInput" placeholder="搜尋客戶姓名 / Email" autocomplete="off" name="rt-search-no-autofill">
         <select id="filterStatus">
           <option value="">全部狀態</option>
           <option value="待確認">待確認</option>
@@ -519,6 +519,13 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
         <div class="field"><label>「我會幫妳直接看清」— 每一行是一項</label><textarea id="setBenefits" style="min-height:80px;"></textarea></div>
         <div class="field"><label>服務方案前的說明文字（要換行按 Enter）</label><textarea id="setPreServicesNote" style="min-height:80px;"></textarea></div>
         <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveHeroContent()">儲存文案</button>
+      </div>
+
+      <div class="panel">
+        <h3>💰 匯款資訊（客戶核對代碼後自動回覆）</h3>
+        <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">客戶加LINE好友、傳送預約代碼過來核對成功時，除了應付金額（自動代入該筆預約費用），還會附上這段文字，告訴他怎麼匯款。</p>
+        <textarea id="setPaymentInfo" style="min-height:100px;" placeholder="例如：&#10;銀行：OO銀行(700)&#10;帳號：1234-5678-9012&#10;戶名：翁笑笑&#10;匯款後請直接回覆這裡告知，完成匯款者優先保留時段。"></textarea>
+        <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="savePaymentInfo()">儲存匯款資訊</button>
       </div>
 
       <div class="panel">
@@ -705,6 +712,9 @@ function loadHeroContent(){ const h=loadJSON(K_HERO,null); return h?{...defaultH
 function saveHeroContentLocal(h){ localStorage.setItem(K_HERO, JSON.stringify(h)); }
 function loadLine(){ return localStorage.getItem(K_LINE) || DEFAULT_LINE; }
 function saveLine(){ const v=document.getElementById('setLine').value.trim()||DEFAULT_LINE; localStorage.setItem(K_LINE, v); lineLink=v; renderHeroContent(); pushRemoteSettings(); toast('LINE 連結已儲存'); }
+const K_PAYMENT='rt_payment_info';
+function loadPaymentInfo(){ return localStorage.getItem(K_PAYMENT) || ''; }
+function savePaymentInfo(){ const v=document.getElementById('setPaymentInfo').value.trim(); localStorage.setItem(K_PAYMENT, v); paymentInfo=v; pushRemoteSettings(); toast('匯款資訊已儲存'); }
 
 /* ---------- 後台密碼鎖（改由 Apps Script 伺服器端驗證，密碼不存在網站程式碼裡） ---------- */
 async function checkAdminPassword(){
@@ -759,16 +769,17 @@ const K_WEBHOOK='rt_booking_webhook';
 const DEFAULT_WEBHOOK='https://script.google.com/macros/s/AKfycbz-wrJey2fseIfVFUNtqndW6mQLaduqA8WB__gcKBnafQtX8sotoy68rwcBvRhqzVV2tA/exec';
 function loadWebhook(){ return localStorage.getItem(K_WEBHOOK) || DEFAULT_WEBHOOK; }
 function saveWebhook(){ const v=document.getElementById('setWebhook').value.trim(); localStorage.setItem(K_WEBHOOK, v); webhookUrl=v; toast(v? '通知網址已儲存':'已清空通知網址'); }
-function notifyWebhook(payload){
+async function notifyWebhook(payload){
   const url = webhookUrl;
-  if(!url) return;
+  if(!url) return null;
   try{
-    fetch(url, {
+    const res = await fetch(url, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify(payload)
-    }).catch(err=>console.warn('通知傳送失敗', err));
-  }catch(err){ console.warn('通知傳送失敗', err); }
+    });
+    return await res.json();
+  }catch(err){ console.warn('通知傳送失敗', err); return null; }
 }
 function testWebhook(){
   if(!webhookUrl){ toast('請先貼上並儲存通知網址'); return; }
@@ -795,6 +806,7 @@ async function pullRemoteSettings(){
     if(data && data.addons){ addons = data.addons; saveAddons(addons); changed = true; }
     if(data && data.methods && data.methods.length){ methods = data.methods; saveMethods(methods); changed = true; }
     if(data && data.line){ lineLink = data.line; localStorage.setItem(K_LINE, lineLink); changed = true; }
+    if(data && typeof data.paymentInfo === 'string'){ paymentInfo = data.paymentInfo; localStorage.setItem(K_PAYMENT, paymentInfo); changed = true; }
     if(data && data.hero){ heroContent = {...defaultHeroContent(), ...data.hero}; saveHeroContentLocal(heroContent); changed = true; }
     if(data && data.availability){ availability = {...defaultAvailability(), ...data.availability}; saveAvailabilityLocal(availability); changed = true; }
     if(changed){
@@ -811,7 +823,7 @@ function pushRemoteSettings(){
     fetch(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability })
+      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo })
     }).catch(err=>console.warn('雲端設定同步失敗', err));
   }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
@@ -820,6 +832,7 @@ let records = loadRecords();
 let services = loadServices();
 let addons = loadAddons();
 let lineLink = loadLine();
+let paymentInfo = loadPaymentInfo();
 let webhookUrl = loadWebhook();
 let heroContent = loadHeroContent();
 let availability = loadAvailability();
@@ -1150,8 +1163,10 @@ function backToEditForm(){
   document.getElementById('bookingReviewBox').style.display='none';
   document.getElementById('bookingFormBox').style.display='block';
 }
-function confirmAndSubmit(){
+async function confirmAndSubmit(){
   if(!pendingBooking) return;
+  const btn = document.querySelector('#bookingReviewBox .btn:not(.btn-outline)');
+  if(btn){ btn.disabled = true; btn.textContent = '送出中…'; }
   const rec = { id:uid(), code:generateBookingCode(), status:'待確認', createdAt:Date.now(), ...pendingBooking };
   records.push(rec); saveRecords(records);
   notifyWebhook(rec);
@@ -1174,7 +1189,7 @@ function showConfirm(rec){
   const dtStr = isNaN(dt) ? rec.datetime : dt.toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
   box.innerHTML = `
     <h2 style="padding:0; margin-bottom:6px;">✓ 已收到預約申請</h2>
-    <p style="padding:0; color:#666; font-size:13.5px; line-height:1.8;">我會先確認你填寫的預約資料與時段，並透過官方 LINE 與你聯繫付款及後續安排。<br>完成付款後，才會正式保留你的預約時段。 🌙</p>
+    <p style="padding:0; color:#666; font-size:13.5px; line-height:1.8;">請先加官方LINE好友並傳送下方預約代碼，我會回覆匯款資訊；完成匯款後，這個時段才會正式保留給你。<br>若同一時段有多人登記，將以完成匯款的先後順序為準 🌙</p>
     <div class="confirm-summary">
       <div><b>姓名：</b>${esc(rec.name)}</div>
       <div><b>項目：</b>${esc(rec.serviceName)}${rec.addonNames.length?'＋'+rec.addonNames.map(esc).join('、'):''}</div>
@@ -1184,7 +1199,7 @@ function showConfirm(rec){
     <div style="background:#FFF8E8; border:1.5px dashed var(--gold-border); border-radius:12px; padding:16px; margin:16px 0; text-align:center;">
       <div style="font-size:12px; color:#999; margin-bottom:6px;">你的預約代碼</div>
       <div style="font-size:26px; font-weight:900; letter-spacing:4px; color:var(--gold-text);">${esc(rec.code)}</div>
-      <div style="font-size:12px; color:#A67C2E; margin-top:8px; line-height:1.7;">加官方LINE好友後，請把這組代碼傳過去，方便核對你的預約，之後的確認與提醒通知才收得到喔！</div>
+      <div style="font-size:12px; color:#A67C2E; margin-top:8px; line-height:1.7;">加官方LINE好友後，請把這組代碼傳過去，我會立刻回覆你匯款金額與方式！</div>
       <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:8px 18px; font-size:12.5px;" onclick="copyBookingCode('${esc(rec.code)}')">📋 複製代碼</button>
     </div>
     <a class="btn" href="${esc(lineLink)}" target="_blank" rel="noopener" style="margin:0; width:100%;">💬 加入官方 LINE，完成付款與預約 →</a>
@@ -1388,6 +1403,7 @@ function saveAdminForm(){
 ============================================================ */
 function renderSettings(){
   document.getElementById('setLine').value = lineLink;
+  document.getElementById('setPaymentInfo').value = paymentInfo;
   document.getElementById('setWebhook').value = webhookUrl;
   document.getElementById('setHeroTitle').value = heroContent.title;
   document.getElementById('setHeroSubtitle').value = heroContent.subtitle;
