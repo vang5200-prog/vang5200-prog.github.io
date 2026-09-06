@@ -1367,31 +1367,49 @@ async function deleteRecordRemote(code){
     });
   }catch(err){ console.warn('雲端刪除同步失敗', err); }
 }
-async function confirmBookingRemote(rec){
+async function confirmBookingRemote(rec, force){
   if(!webhookUrl) return {ok:false, error:'no_webhook'};
   if(!rec.code) return {ok:false, error:'no_code'};
   try{
     const res = await fetch(webhookUrl, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'confirmBooking', password: sessionStorage.getItem('rt_admin_pw')||'', code: rec.code })
+      body: JSON.stringify({ type:'confirmBooking', password: sessionStorage.getItem('rt_admin_pw')||'', code: rec.code, force: !!force })
     });
     return await res.json();
   }catch(err){ return {ok:false, error:String(err)}; }
 }
 function quickStatus(id,status){
   const r=records.find(x=>x.id===id); if(!r)return;
-  r.status=status; saveRecords(records); renderList(); renderDashboard();
   if(status==='已確認'){
     confirmBookingRemote(r).then(res=>{
-      if(res.ok && res.linePushed) toast('已確認，並已透過LINE通知客戶 🎉');
-      else if(res.ok && !res.linePushed) toast('已確認，但客戶尚未提供預約代碼，無法發送LINE通知');
-      else if(res.error==='not_found') toast('已確認（雲端試算表找不到對應代碼，請確認Code.gs已更新）');
-      else toast('已確認（雲端通知失敗，請檢查設定）');
+      if(res.ok && res.linePushed){
+        r.status='已確認'; saveRecords(records); renderList(); renderDashboard();
+        toast('已確認，並已透過LINE通知客戶 🎉');
+      } else if(res.ok && !res.linePushed){
+        r.status='已確認'; saveRecords(records); renderList(); renderDashboard();
+        toast('已確認，但客戶尚未提供預約代碼，無法發送LINE通知');
+      } else if(res.error==='conflict'){
+        const cw = res.conflictWith || {};
+        const proceed = confirm(`⚠️ 這個時段已經有一位「已確認」的客戶：\n${cw.name||''}（${cw.datetime||''}）\n\n仍要確認這一筆、造成同時段兩位客戶嗎？`);
+        if(proceed){
+          confirmBookingRemote(r, true).then(res2=>{
+            r.status='已確認'; saveRecords(records); renderList(); renderDashboard();
+            toast(res2.linePushed ? '已強制確認，並已通知客戶 🎉' : '已強制確認');
+          });
+        } else {
+          toast('已取消，未確認這筆預約');
+        }
+      } else if(res.error==='not_found'){
+        toast('雲端試算表找不到對應代碼，請確認Code.gs已更新');
+      } else {
+        toast('確認失敗，請檢查雲端設定');
+      }
     });
-  } else {
-    updateStatusRemote(r.code, status);
-    toast('狀態已更新為「'+status+'」');
+    return;
   }
+  r.status=status; saveRecords(records); renderList(); renderDashboard();
+  updateStatusRemote(r.code, status);
+  toast('狀態已更新為「'+status+'」');
 }
 function deleteRecord(id){
   const r=records.find(x=>x.id===id); if(!r)return;
