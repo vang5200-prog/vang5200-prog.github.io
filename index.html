@@ -913,6 +913,11 @@ function checkConflict(){
   const clash = records.some(r=>r.datetime===dt && r.status!=='已取消');
   document.getElementById('conflictWarning').style.display = (dt && clash) ? 'block' : 'none';
 }
+function generateBookingCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 避開容易混淆的 O/0、I/1
+  let s=''; for(let i=0;i<6;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
 function submitPublicBooking(){
   const name = document.getElementById('pf_name').value.trim();
   const email = document.getElementById('pf_email').value.trim();
@@ -933,7 +938,7 @@ function submitPublicBooking(){
   const basePrice = selectedTierPrice(svc);
   const price = basePrice + sel.reduce((s,a)=>s+Number(a.price),0);
   const rec = {
-    id:uid(), name, email,
+    id:uid(), code:generateBookingCode(), name, email,
     datetime, serviceId, serviceName: (svc?svc.name:'') + (tierLabel? ' - '+tierLabel : ''),
     addonNames:sel.map(a=>a.name), price,
     method:document.getElementById('pf_method').value,
@@ -944,6 +949,13 @@ function submitPublicBooking(){
   records.push(rec); saveRecords(records);
   notifyWebhook(rec);
   showConfirm(rec);
+}
+function copyBookingCode(code){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(()=>toast('代碼已複製')).catch(()=>toast('複製失敗，請手動選取'));
+  } else {
+    toast('請手動選取代碼複製');
+  }
 }
 function showConfirm(rec){
   document.getElementById('bookingFormBox').style.display='none';
@@ -960,7 +972,13 @@ function showConfirm(rec){
       <div><b>時間：</b>${esc(dtStr)}</div>
       <div><b>費用：</b>NT$${Number(rec.price).toLocaleString()}</div>
     </div>
-    <a class="btn" href="${esc(lineLink)}" target="_blank" rel="noopener" style="margin:16px 0 0; width:100%;">💬 加入官方 LINE，完成付款與預約 →</a>
+    <div style="background:#FFF8E8; border:1.5px dashed var(--gold-border); border-radius:12px; padding:16px; margin:16px 0; text-align:center;">
+      <div style="font-size:12px; color:#999; margin-bottom:6px;">你的預約代碼</div>
+      <div style="font-size:26px; font-weight:900; letter-spacing:4px; color:var(--gold-text);">${esc(rec.code)}</div>
+      <div style="font-size:12px; color:#A67C2E; margin-top:8px; line-height:1.7;">加官方LINE好友後，請把這組代碼傳過去，方便核對你的預約，之後的確認與提醒通知才收得到喔！</div>
+      <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:8px 18px; font-size:12.5px;" onclick="copyBookingCode('${esc(rec.code)}')">📋 複製代碼</button>
+    </div>
+    <a class="btn" href="${esc(lineLink)}" target="_blank" rel="noopener" style="margin:0; width:100%;">💬 加入官方 LINE，完成付款與預約 →</a>
     <button class="btn btn-outline" style="margin:10px 0 0; width:100%;" onclick="downloadIcs('${rec.id}')">📅 下載行事曆提醒</button>
     <button class="btn btn-quiet" style="margin:14px auto 0;" onclick="backToHome()">← 返回首頁</button>
   `;
@@ -1061,6 +1079,7 @@ function renderList(){
         <span>💬 ${esc(r.serviceName)}${r.addonNames&&r.addonNames.length?'＋'+r.addonNames.map(esc).join('、'):''}</span>
         <span>📞 ${esc(r.method)}</span>
         <span>💰 NT$${Number(r.price).toLocaleString()}</span>
+        ${r.code?`<span>🔑 ${esc(r.code)}</span>`:''}
       </div>
       ${r.question?`<div class="rec-note">諮詢問題：${esc(r.question)}</div>`:''}
       ${r.other?`<div class="rec-note">其他備註：${esc(r.other)}</div>`:''}
@@ -1076,7 +1095,31 @@ function renderList(){
 document.getElementById('searchInput')?.addEventListener('input', renderList);
 document.getElementById('filterStatus')?.addEventListener('change', renderList);
 document.getElementById('filterService')?.addEventListener('change', renderList);
-function quickStatus(id,status){ const r=records.find(x=>x.id===id); if(!r)return; r.status=status; saveRecords(records); renderList(); toast('狀態已更新為「'+status+'」'); }
+async function confirmBookingRemote(rec){
+  if(!webhookUrl) return {ok:false, error:'no_webhook'};
+  if(!rec.code) return {ok:false, error:'no_code'};
+  try{
+    const res = await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'confirmBooking', password: sessionStorage.getItem('rt_admin_pw')||'', code: rec.code })
+    });
+    return await res.json();
+  }catch(err){ return {ok:false, error:String(err)}; }
+}
+function quickStatus(id,status){
+  const r=records.find(x=>x.id===id); if(!r)return;
+  r.status=status; saveRecords(records); renderList();
+  if(status==='已確認'){
+    confirmBookingRemote(r).then(res=>{
+      if(res.ok && res.linePushed) toast('已確認，並已透過LINE通知客戶 🎉');
+      else if(res.ok && !res.linePushed) toast('已確認，但客戶尚未提供預約代碼，無法發送LINE通知');
+      else if(res.error==='not_found') toast('已確認（雲端試算表找不到對應代碼，請確認Code.gs已更新）');
+      else toast('已確認（雲端通知失敗，請檢查設定）');
+    });
+  } else {
+    toast('狀態已更新為「'+status+'」');
+  }
+}
 function deleteRecord(id){ if(!confirm('確定要刪除這筆預約嗎？此動作無法復原。'))return; records=records.filter(r=>r.id!==id); saveRecords(records); renderList(); toast('已刪除'); }
 
 /* ============================================================
