@@ -260,6 +260,8 @@ p {
 .slot-btn.full{ background:#FBEDE9; color:#D9A9A0; border-color:#F0DAD5; cursor:not-allowed; }
 .slot-btn.pending-slot{ background:#EAF3EA; color:#6F8770; border-color:#C9DFC9; }
 .slot-btn.pending-slot.selected{ background:linear-gradient(135deg,#8FA089,#B4C8AE); color:#fff; border-color:#8FA089; }
+.slot-btn.charity-slot{ background:#FFF3D6; color:#A67C2E; border-color:var(--gold-border); font-weight:900; }
+.slot-btn.charity-slot.selected{ background:linear-gradient(135deg,#C6A85A,#E5C97A); color:#2C2C2C; }
 .slot-btn.past{ background:#F0EDE6; color:#C7C2B6; border-color:#E8E4D9; cursor:not-allowed; }
 .slot-hint{ font-size:12px; color:#999; margin-top:6px; }
 #bookingAnchor{scroll-margin-top:20px;}
@@ -756,6 +758,9 @@ function defaultWelcomeMsg(){ return '謝謝加入好友🌙 如果想預約，�
 function loadWelcomeMsg(){ return localStorage.getItem(K_WELCOME) || defaultWelcomeMsg(); }
 function saveWelcomeMsg(){ const v=document.getElementById('setWelcomeMsg').value.trim()||defaultWelcomeMsg(); localStorage.setItem(K_WELCOME, v); welcomeMsg=v; pushRemoteSettings(); toast('歡迎詞已儲存'); }
 const K_POLICY='rt_booking_policy';
+function defaultCharityNotice(){
+  return '選擇這個名額，需要請你完成以下兩件事：\n1. 兩天內做一件善事（形式不拘，例如：到便利商店捐零錢、扶老人家過馬路都可以）\n2. 到我的 Instagram 留言分享這次諮詢的感受，作為我未來調整服務的參考\n\n每半年僅限使用一次這個名額。也請把這個珍貴的名額，留給更需要的人。\n\n要繼續選擇這個名額嗎？';
+}
 function defaultBookingPolicy(){
   return '【取消與爽約規範】\n系統都會提前一天溫馨小提醒預約時間，如需改期請務必提前告知，若:\n・無故爽約（預約時間已到未出現）：累計若達3次，半年內將無法再預約。\n・預約時間前24小時告知取消：可協助改期。\n・預約時間24小時內告知取消：可協助改期，但視同無故爽約。';
 }
@@ -965,7 +970,16 @@ function resetPublicForm(){
   document.getElementById('bookingConfirmBox').style.display='none';
   document.getElementById('publicFields').innerHTML = publicFieldsHTML();
   document.getElementById('pf_date').min = earliestBookableDate();
+  applyPrefillFromUrl();
   onServiceChange();
+}
+function applyPrefillFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const name = params.get('prefill_name');
+  const email = params.get('prefill_email');
+  if(name) document.getElementById('pf_name').value = name;
+  if(email) document.getElementById('pf_email').value = email;
+  if(name || email) toast('已幫你帶入上次填寫的姓名與Email，只需要重新選項目跟時間');
 }
 function earliestBookableDate(){
   const now = new Date();
@@ -1020,7 +1034,18 @@ function updateMethodField(){
   methodEl.innerHTML = allowed.map(m=>`<option value="${m}">${m}</option>`).join('');
   if(allowed.includes(current)) methodEl.value = current;
 }
+let lastNonCharityServiceId = null;
 function onServiceChange(){
+  const sel = document.getElementById('pf_service');
+  const svc = services.find(s=>s.id===sel.value);
+  if(svc && svc.isCharity){
+    const proceed = confirm(svc.charityNotice || defaultCharityNotice());
+    if(!proceed){
+      sel.value = lastNonCharityServiceId || (services.find(s=>!s.isCharity)||{}).id || sel.value;
+    }
+  }
+  const finalSvc = services.find(s=>s.id===sel.value);
+  if(finalSvc && !finalSvc.isCharity) lastNonCharityServiceId = finalSvc.id;
   updateTierField();
   updatePricePreview();
   updateQuestionField();
@@ -1087,6 +1112,13 @@ async function loadSlotsForDate(){
     hint.textContent = '這天目前不開放預約，請選擇其他日期。';
     return;
   }
+  const selSvc = services.find(s=>s.id===document.getElementById('pf_service').value);
+  if(selSvc && selSvc.isCharity && Number(selSvc.charityWeekday)!==weekday){
+    grid.innerHTML = '';
+    const wLabels=['日','一','二','三','四','五','六'];
+    hint.textContent = `義診名額只在每週${wLabels[selSvc.charityWeekday]}開放，請重新選擇日期。`;
+    return;
+  }
 
   hint.textContent = '讀取空位中…';
   grid.innerHTML = '';
@@ -1148,7 +1180,8 @@ async function loadSlotsForDate(){
     if(isPast) cls += ' past';
     else if(isFull) cls += ' full';
     else if(isPendingSlot) cls += ' pending-slot';
-    html += `<button type="button" class="${cls}" ${(isPast||isFull)?'disabled':''} onclick="selectSlot('${hh}', ${isPendingSlot})" id="slotBtn_${t}">${hh}${(!isPast&&isFull)?'<br><span style="font-size:10px;">額滿</span>':''}${isPendingSlot?'<br><span style="font-size:10px;">可候補</span>':''}</button>`;
+    else if(selSvc && selSvc.isCharity) cls += ' charity-slot';
+    html += `<button type="button" class="${cls}" ${(isPast||isFull)?'disabled':''} onclick="selectSlot('${hh}', ${isPendingSlot})" id="slotBtn_${t}">${hh}${(!isPast&&isFull)?'<br><span style="font-size:10px;">額滿</span>':''}${isPendingSlot?'<br><span style="font-size:10px;">可候補</span>':''}${(selSvc&&selSvc.isCharity&&!isFull&&!isPendingSlot)?'<br><span style="font-size:10px;">💛義診</span>':''}</button>`;
   }
   grid.innerHTML = html;
   if(!anySlot) hint.textContent = '這個服務時長超過開放時段，請聯繫我另外安排。';
@@ -1171,7 +1204,7 @@ function generateBookingCode(){
   return s;
 }
 let pendingBooking = null;
-function reviewBooking(){
+async function reviewBooking(){
   const name = document.getElementById('pf_name').value.trim();
   const email = document.getElementById('pf_email').value.trim();
   const dateStr = document.getElementById('pf_date').value;
@@ -1179,8 +1212,19 @@ function reviewBooking(){
   if(!name || !email || !dateStr || !serviceId){ toast('請填寫姓名、Email、預約日期與預約項目'); return; }
   if(!selectedSlotHour){ toast('請選擇預約時段'); return; }
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast('請輸入正確的 Email 格式'); return; }
-  const datetime = dateStr + 'T' + selectedSlotHour;
   const svc = services.find(s=>s.id===serviceId);
+  if(svc && svc.isCharity && webhookUrl){
+    try{
+      const sep = webhookUrl.includes('?') ? '&' : '?';
+      const res = await fetch(webhookUrl + sep + 'action=charityCheck&email=' + encodeURIComponent(email) + '&service=' + encodeURIComponent(svc.name));
+      const data = await res.json();
+      if(data && data.lastUsed){
+        alert(`很抱歉，你已經在 ${data.lastUsed} 使用過義診名額，每半年僅限使用一次，需要再等待一段時間才能再次預約這個名額。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
+        return;
+      }
+    }catch(err){ console.warn('義診資格檢查失敗', err); }
+  }
+  const datetime = dateStr + 'T' + selectedSlotHour;
   const tierWrap = document.getElementById('tierFieldWrap');
   const tierEl = document.getElementById('pf_tier');
   let tierLabel = '';
@@ -1746,6 +1790,20 @@ function openServiceEdit(id){
     <div class="field full"><label>此服務專屬的預約問題標題（選填，沒有子選項時使用）</label><input id="svc_questionLabel" value="${esc(s.questionLabel||'')}" placeholder="例如：想諮詢的問題"></div>
     <div class="field full"><label>此服務專屬的預約問題提示文字（選填）</label><input id="svc_questionPlaceholder" value="${esc(s.questionPlaceholder||'')}" placeholder="例如：簡單告訴我目前想處理的是什麼事情。"></div>
     <div class="field full"><label>限定諮詢方式（選填，若指定則客戶只能選這些方式，用逗號分隔，需與下方「諮詢方式管理」的名稱完全一致，例如：視訊通話）</label><input id="svc_allowedMethods" value="${esc((s.allowedMethods||[]).join('、'))}" placeholder="留空表示不限制"></div>
+    <div style="grid-column:1/-1; margin-top:6px; padding-top:14px; border-top:1px dashed #EADFC8;">
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--brown); cursor:pointer;">
+        <input type="checkbox" id="svc_isCharity" ${s.isCharity?'checked':''} style="width:16px; height:16px; accent-color:var(--gold-border);" onchange="document.getElementById('svcCharityFields').style.display=this.checked?'grid':'none';">
+        💛 設為義診限定名額（免費、每週限定星期開放一次）
+      </label>
+    </div>
+    <div class="admin-field-grid" id="svcCharityFields" style="grid-column:1/-1; display:${s.isCharity?'grid':'none'};">
+      <div class="field"><label>每週開放星期</label>
+        <select id="svc_charityWeekday">
+          ${['日','一','二','三','四','五','六'].map((label,i)=>`<option value="${i}" ${Number(s.charityWeekday)===i?'selected':''}>星期${label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field full"><label>客戶選擇此名額時，彈出的說明文字</label><textarea id="svc_charityNotice" style="min-height:100px;">${esc(s.charityNotice||defaultCharityNotice())}</textarea></div>
+    </div>
   `;
   document.getElementById('svcModalOverlay').classList.add('open');
 }
@@ -1781,6 +1839,14 @@ function saveSvcModal(){
     if(qpEl) s.questionPlaceholder = qpEl.value.trim();
     const amEl = document.getElementById('svc_allowedMethods');
     if(amEl) s.allowedMethods = amEl.value.split(/[、,，]/).map(m=>m.trim()).filter(Boolean);
+    const charityEl = document.getElementById('svc_isCharity');
+    if(charityEl){
+      s.isCharity = charityEl.checked;
+      if(s.isCharity){
+        s.charityWeekday = Number(document.getElementById('svc_charityWeekday').value);
+        s.charityNotice = document.getElementById('svc_charityNotice').value.trim() || defaultCharityNotice();
+      }
+    }
     saveServices(services); renderServiceSettings();
   } else if(svcEditMode==='addon'){
     const a = addons.find(x=>x.id===svcEditId); if(!a) return;
