@@ -431,7 +431,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <a class="social-link" id="igLinkTopBtn" href="#" target="_blank" rel="noopener" style="display:none;">
     <span class="link-inline">
       <svg viewBox="0 0 24 24" width="17" height="17"><defs><linearGradient id="igGradTop" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#FFDD55"/><stop offset="50%" stop-color="#E1306C"/><stop offset="100%" stop-color="#833AB4"/></linearGradient></defs><rect x="1" y="1" width="22" height="22" rx="6" fill="url(#igGradTop)"/><circle cx="12" cy="12" r="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="#fff"/></svg>
-      追蹤Instagram看更多影片
+      追蹤Instagram看更多影片 →
     </span>
   </a>
   <a class="btn" id="heroCta" href="https://lin.ee/5VQ5gbz">想確認他的想法</a>
@@ -463,7 +463,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
     <a class="social-link" id="igLinkBtn" href="#" target="_blank" rel="noopener" style="display:none;">
       <span class="link-inline">
         <svg viewBox="0 0 24 24" width="17" height="17"><defs><linearGradient id="igGradBottom" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#FFDD55"/><stop offset="50%" stop-color="#E1306C"/><stop offset="100%" stop-color="#833AB4"/></linearGradient></defs><rect x="1" y="1" width="22" height="22" rx="6" fill="url(#igGradBottom)"/><circle cx="12" cy="12" r="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="#fff"/></svg>
-        <span class="link-text">追蹤Instagram看更多影片</span>
+        <span class="link-text">追蹤Instagram看更多影片 →</span>
       </span>
     </a>
   </div>
@@ -772,6 +772,7 @@ function parseTiers(tiers){
   });
 }
 function servicePriceLabel(s){
+  if(s.isFree) return '免費';
   if(Number(s.price)>0) return `NT$${Number(s.price).toLocaleString()}`;
   if(s.tiers && s.tiers.length){
     const prices = parseTiers(s.tiers).map(t=>t.price).filter(p=>p>0);
@@ -1008,7 +1009,7 @@ function renderServiceCards(){
   document.getElementById('addonCardWrap').innerHTML = addons.length ? `
     <div class="addon-card">
       <div class="addon-label">＋ 加購選項</div>
-      ${addons.map(a=>`<div class="addon-item" style="cursor:default; display:block;"><div><strong>${esc(a.name)}</strong>｜NT$${Number(a.price).toLocaleString()}</div>${a.desc?`<div style="font-size:12px; color:#888; margin-top:2px;">${esc(a.desc)}</div>`:''}</div>`).join('')}
+      ${addons.map(a=>`<div class="addon-item" style="cursor:default; display:block;"><div><strong>${esc(a.name)}</strong>｜${a.isFree?'免費':'NT$'+Number(a.price).toLocaleString()}</div>${a.desc?`<div style="font-size:12px; color:#888; margin-top:2px;">${esc(a.desc)}</div>`:''}</div>`).join('')}
     </div>` : '';
 }
 function renderHeroContent(){
@@ -1045,7 +1046,7 @@ function publicFieldsHTML(){
   const svcOptions = services.map(s=>{ const pl=servicePriceLabel(s); return `<option value="${s.id}">${esc(s.name)}${pl?`（${pl}）`:''}</option>`; }).join('');
   const methodOptions = methods.map(m=>`<option value="${m}">${m}</option>`).join('');
   const addonChecks = addons.map(a=>`
-    <label class="addon-item"><input type="checkbox" class="pf-addon" value="${a.id}" onchange="updatePricePreview(); if(document.getElementById('pf_date').value) loadSlotsForDate();"> ${esc(a.name)}｜NT$${Number(a.price).toLocaleString()}</label>
+    <label class="addon-item"><input type="checkbox" class="pf-addon" value="${a.id}" onchange="updatePricePreview(); if(document.getElementById('pf_date').value) loadSlotsForDate();"> ${esc(a.name)}｜${a.isFree?'免費':'NT$'+Number(a.price).toLocaleString()}</label>
   `).join('');
   return `
     <div class="field"><label>客戶姓名 <span class="req">*</span></label><input id="pf_name" placeholder="怎麼稱呼妳？"></div>
@@ -1054,7 +1055,10 @@ function publicFieldsHTML(){
       <select id="pf_service" onchange="onServiceChange()">${svcOptions}</select>
     </div>
     <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview(); updateQuestionField(); if(document.getElementById('pf_date').value) loadSlotsForDate();"></select></div>
-    ${addons.length? `<div class="field"><label>加購選項（可複選）</label>${addonChecks}</div>`:''}
+    ${addons.length? `<div class="field" id="addonFieldWrap"><label>加購選項（可複選）</label>
+      <div id="addonChecksWrap">${addonChecks}</div>
+      <p class="sub" id="addonFreeNotice" style="display:none; text-align:left; opacity:1; margin:6px 0 0; padding:0;">💛 此項目為免費服務，暫不提供加購延長諮詢方案</p>
+    </div>`:''}
     <div class="field price-preview" id="pricePreview"></div>
     <div class="field"><label>預約日期 <span class="req">*</span></label><input id="pf_date" type="date" onchange="loadSlotsForDate()"></div>
     <div class="field full" id="slotFieldWrap" style="display:none;">
@@ -1083,15 +1087,24 @@ function applyPrefillFromUrl(){
   if(email) document.getElementById('pf_email').value = email;
   if(name || email) toast('已幫你帶入上次填寫的姓名與Email，只需要重新選項目跟時間');
 }
+// 把 Date 物件轉成「當地時間」的 YYYY-MM-DD 字串。
+// 注意：不能用 .toISOString()，那個是轉成 UTC 時間，台灣是 UTC+8，
+// 只要是當地 00:00~07:59 之間，toISOString() 換算出來的日期就會整個倒退一天。
+function toLocalDateStr(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
 function earliestBookableDate(){
   const now = new Date();
   const nowMinutes = now.getHours()*60 + now.getMinutes();
   // 今天的營業時間已經過了（現在時間 >= 結束時間），最早只能選明天
   if(nowMinutes >= availability.endHour*60){
     const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
-    return tomorrow.toISOString().slice(0,10);
+    return toLocalDateStr(tomorrow);
   }
-  return now.toISOString().slice(0,10);
+  return toLocalDateStr(now);
 }
 function currentSelectedAddons(){
   return Array.from(document.querySelectorAll('.pf-addon:checked')).map(el=>addons.find(a=>a.id===el.value)).filter(Boolean);
@@ -1159,11 +1172,28 @@ async function onServiceChange(){
   const finalSvc = services.find(s=>s.id===sel.value);
   if(finalSvc && !finalSvc.isCharity) lastNonCharityServiceId = finalSvc.id;
   updateTierField();
+  applyCharityAddonConstraint();
   updatePricePreview();
   updateQuestionField();
   updateMethodField();
   applyCharityDateConstraint();
   if(document.getElementById('pf_date').value) loadSlotsForDate();
+}
+/* 選到「善的力量」義診名額時，加購選項（例如延長諮詢）直接隱藏並取消勾選，
+   改顯示「此項目為免費服務，暫不提供加購」的提示；換回一般項目時恢復正常 */
+function applyCharityAddonConstraint(){
+  const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
+  const checksWrap = document.getElementById('addonChecksWrap');
+  const notice = document.getElementById('addonFreeNotice');
+  if(!checksWrap || !notice) return;
+  if(svc && svc.isCharity){
+    document.querySelectorAll('.pf-addon:checked').forEach(el=>{ el.checked = false; });
+    checksWrap.style.display = 'none';
+    notice.style.display = 'block';
+  } else {
+    checksWrap.style.display = '';
+    notice.style.display = 'none';
+  }
 }
 /* 選到「善的力量」義診名額時，日期欄位只開放它指定的那個星期可選，
    其他星期在日期選擇器上直接反白、點不了；換回一般項目時就恢復全部可選 */
@@ -1176,7 +1206,7 @@ function applyCharityDateConstraint(){
     const targetWeekday = Number(svc.charityWeekday);
     let d = new Date(earliest+'T00:00:00');
     while(d.getDay()!==targetWeekday){ d.setDate(d.getDate()+1); }
-    const minStr = d.toISOString().slice(0,10);
+    const minStr = toLocalDateStr(d);
     dateEl.min = minStr;
     dateEl.step = 7;
     if(dateEl.value){
@@ -1797,7 +1827,7 @@ function renderSettings(){
 }
 function renderServiceSettings(){
   document.getElementById('serviceSettingsList').innerHTML = services.map(s=>`
-    <div class="settings-item"><div><b>${esc(s.name)}</b><div class="d">NT$${Number(s.price).toLocaleString()}${s.subtitle?' · '+esc(s.subtitle):''} · ${esc(s.desc||'')}${s.locationNote?' · 地點說明：'+esc(s.locationNote):''}</div></div>
+    <div class="settings-item"><div><b>${esc(s.name)}</b><div class="d">${s.isFree?'免費':'NT$'+Number(s.price).toLocaleString()}${s.subtitle?' · '+esc(s.subtitle):''} · ${esc(s.desc||'')}${s.locationNote?' · 地點說明：'+esc(s.locationNote):''}</div></div>
       <div style="display:flex; gap:6px;">
         <button style="color:var(--gold-text); border-color:var(--gold-border);" onclick="openServiceEdit('${s.id}')">編輯</button>
         <button onclick="removeService('${s.id}')">刪除</button>
@@ -1807,7 +1837,7 @@ function renderServiceSettings(){
 }
 function renderAddonSettings(){
   document.getElementById('addonSettingsList').innerHTML = addons.map(a=>`
-    <div class="settings-item"><div><b>${esc(a.name)}</b><div class="d">NT$${Number(a.price).toLocaleString()}${a.desc?' · '+esc(a.desc):''}</div></div>
+    <div class="settings-item"><div><b>${esc(a.name)}</b><div class="d">${a.isFree?'免費':'NT$'+Number(a.price).toLocaleString()}${a.desc?' · '+esc(a.desc):''}</div></div>
       <div style="display:flex; gap:6px;">
         <button style="color:var(--gold-text); border-color:var(--gold-border);" onclick="openAddonEdit('${a.id}')">編輯</button>
         <button onclick="removeAddon('${a.id}')">刪除</button>
@@ -1947,7 +1977,14 @@ function openServiceEdit(id){
   document.getElementById('svcModalTitle').textContent = '編輯服務項目';
   document.getElementById('svcModalFields').innerHTML = `
     <div class="field full"><label>服務名稱（含時長）</label><input id="svc_name" value="${esc(s.name)}"></div>
-    <div class="field"><label>價格 (NT$)</label><input id="svc_price" type="number" value="${s.price}"></div>
+    <div class="field">
+      <label>價格 (NT$)</label>
+      <input id="svc_price" type="number" value="${s.price}" ${s.isFree?'disabled':''}>
+      <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:500; color:var(--muted); margin-top:6px; cursor:pointer;">
+        <input type="checkbox" id="svc_isFree" ${s.isFree?'checked':''} style="width:14px; height:14px; accent-color:var(--gold-border);" onchange="document.getElementById('svc_price').disabled=this.checked; if(this.checked) document.getElementById('svc_price').value=0;">
+        🆓 設為免費（客戶看到的地方會顯示「免費」，不顯示金額；名稱本身不會被改動）
+      </label>
+    </div>
     <div class="field"><label>地點／形式（選填，例如：遠程／台南面對面）</label><input id="svc_subtitle" value="${esc(s.subtitle||'')}"></div>
     <div class="field full"><label>服務說明</label><input id="svc_desc" value="${esc(s.desc||'')}"></div>
     <div class="field full"><label>地點說明（選填，可寫更詳細的地點/形式補充）</label><textarea id="svc_locationNote" style="min-height:60px;">${esc(s.locationNote||'')}</textarea></div>
@@ -1979,7 +2016,14 @@ function openAddonEdit(id){
   document.getElementById('svcModalTitle').textContent = '編輯加購選項';
   document.getElementById('svcModalFields').innerHTML = `
     <div class="field full"><label>加購名稱</label><input id="svc_name" value="${esc(a.name)}"></div>
-    <div class="field"><label>價格 (NT$)</label><input id="svc_price" type="number" value="${a.price}"></div>
+    <div class="field">
+      <label>價格 (NT$)</label>
+      <input id="svc_price" type="number" value="${a.price}" ${a.isFree?'disabled':''}>
+      <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:500; color:var(--muted); margin-top:6px; cursor:pointer;">
+        <input type="checkbox" id="svc_isFree" ${a.isFree?'checked':''} style="width:14px; height:14px; accent-color:var(--gold-border);" onchange="document.getElementById('svc_price').disabled=this.checked; if(this.checked) document.getElementById('svc_price').value=0;">
+        🆓 設為免費加購
+      </label>
+    </div>
     <div class="field full"><label>說明</label><input id="svc_desc" value="${esc(a.desc||'')}"></div>
   `;
   document.getElementById('svcModalOverlay').classList.add('open');
@@ -1989,10 +2033,12 @@ function saveSvcModal(){
   const name = document.getElementById('svc_name').value.trim();
   const priceEl = document.getElementById('svc_price');
   const price = priceEl ? (Number(priceEl.value)||0) : 0;
+  const freeEl = document.getElementById('svc_isFree');
+  const isFree = freeEl ? freeEl.checked : false;
   if(!name){ toast('請輸入名稱'); return; }
   if(svcEditMode==='service'){
     const s = services.find(x=>x.id===svcEditId); if(!s) return;
-    s.name = name; s.price = price; s.subtitle = document.getElementById('svc_subtitle').value.trim(); s.desc = document.getElementById('svc_desc').value.trim();
+    s.name = name; s.price = price; s.isFree = isFree; s.subtitle = document.getElementById('svc_subtitle').value.trim(); s.desc = document.getElementById('svc_desc').value.trim();
     const locEl = document.getElementById('svc_locationNote');
     if(locEl) s.locationNote = locEl.value.trim();
     const tiersEl = document.getElementById('svc_tiers');
@@ -2016,7 +2062,7 @@ function saveSvcModal(){
     saveServices(services); renderServiceSettings();
   } else if(svcEditMode==='addon'){
     const a = addons.find(x=>x.id===svcEditId); if(!a) return;
-    a.name = name; a.price = price; a.desc = document.getElementById('svc_desc').value.trim();
+    a.name = name; a.price = price; a.isFree = isFree; a.desc = document.getElementById('svc_desc').value.trim();
     saveAddons(addons); renderAddonSettings();
   } else if(svcEditMode==='method'){
     if(methods[svcEditId]!==undefined){ methods[svcEditId] = name; saveMethods(methods); renderMethodSettings(); }
