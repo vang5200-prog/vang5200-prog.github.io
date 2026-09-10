@@ -234,8 +234,36 @@ p {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   font-size: 14px; font-weight: 700; color: #D98CA0;
   text-decoration: none; margin: 10px auto 0; padding: 0 24px;
+  width: fit-content;
 }
 .social-link svg{ width: 17px; height: 17px; flex-shrink: 0; }
+
+/* 最上方的IG連結：跟下方"目前採預約制..."提示文字對齊（同色系），並加上跟按鈕一樣的彈跳感 */
+#igLinkTopBtn{
+  color: #A67C2E;
+  animation: pulse 2s infinite;
+}
+
+/* 「或直接私訊詢問」：文字改回黑色、LINE圖示改成白色（搭配綠色底），下方加一條線提示可點擊 */
+#quietLineBtn{
+  color: var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: 4px;
+}
+#quietLineBtn svg{
+  fill: #fff;
+  background: #06C755;
+  border-radius: 6px;
+  padding: 3px;
+  width: 20px; height: 20px;
+  box-sizing: border-box;
+}
+
+/* 最下方的IG連結：加一條線提示可點擊（最上方那個不加） */
+#igLinkBtn{
+  border-bottom: 1.5px solid #D98CA0;
+  padding-bottom: 4px;
+}
 .sub {
   font-size: 12px;
   opacity: 0.75;
