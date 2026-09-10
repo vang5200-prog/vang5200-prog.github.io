@@ -230,6 +230,12 @@ p {
   text-align: center;
   padding: 0 24px;
 }
+.social-link{
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 14px; font-weight: 700; color: #D98CA0;
+  text-decoration: none; margin: 10px auto 0; padding: 0 24px;
+}
+.social-link svg{ width: 17px; height: 17px; flex-shrink: 0; }
 .sub {
   font-size: 12px;
   opacity: 0.75;
@@ -378,6 +384,10 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <h1 id="heroTitle"></h1>
   <p id="heroSubtitle"></p>
 
+  <a class="social-link" id="igLinkTopBtn" href="#" target="_blank" rel="noopener" style="display:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+    追蹤Instagram看更多影片
+  </a>
   <a class="btn" id="heroCta" href="https://lin.ee/5VQ5gbz">想確認他的想法</a>
   <p class="sub" id="heroFeatures"></p>
   <p class="notice" id="heroNotice"></p>
@@ -397,8 +407,14 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <!-- 立即預約按鈕：捲動到下方預約表單 -->
   <button class="btn" style="margin-top:32px;" onclick="scrollToBooking()">線上預約諮詢</button>
   <p class="sub">填寫下方表單即可完成預約，不用自己整理訊息</p>
-  <a class="btn btn-quiet" id="quietLineBtn" href="https://lin.ee/5VQ5gbz">或直接私訊詢問 →</a>
-  <a class="btn btn-quiet" id="igLinkBtn" href="#" target="_blank" rel="noopener" style="display:none;">📸 追蹤我的 Instagram →</a>
+  <a class="social-link" id="quietLineBtn" href="https://lin.ee/5VQ5gbz">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.94 2 10.8c0 3.4 2.24 6.35 5.5 7.85-.24.87-.87 3.15-.99 3.64 0 0-.02.16.09.23.11.06.24.01.24.01.32-.04 3.65-2.4 4.23-2.83.63.09 1.27.14 1.93.14 5.52 0 10-3.94 10-8.8S17.52 2 12 2z"/></svg>
+    或直接私訊詢問 →
+  </a>
+  <a class="social-link" id="igLinkBtn" href="#" target="_blank" rel="noopener" style="display:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+    追蹤Instagram看更多影片
+  </a>
 
   <div id="bookingAnchor"></div>
 
@@ -958,7 +974,14 @@ function renderHeroContent(){
   document.getElementById('heroCta').href = lineLink;
   document.getElementById('quietLineBtn').href = lineLink;
   const igBtn = document.getElementById('igLinkBtn');
-  if(igLink){ igBtn.href = igLink; igBtn.style.display='table'; } else { igBtn.style.display='none'; }
+  const igBtnTop = document.getElementById('igLinkTopBtn');
+  if(igLink){
+    igBtn.href = igLink; igBtn.style.display='flex';
+    igBtnTop.href = igLink; igBtnTop.style.display='flex';
+  } else {
+    igBtn.style.display='none';
+    igBtnTop.style.display='none';
+  }
 }
 
 /* ============================================================
@@ -1155,8 +1178,10 @@ async function loadSlotsForDate(){
   const selSvc = services.find(s=>s.id===document.getElementById('pf_service').value);
   if(selSvc && selSvc.isCharity && Number(selSvc.charityWeekday)!==weekday){
     grid.innerHTML = '';
+    wrap.style.display='none';
     const wLabels=['日','一','二','三','四','五','六'];
-    hint.textContent = `「${esc(selSvc.name.split('/')[0].trim())}」只在每週${wLabels[selSvc.charityWeekday]}開放，請重新選擇日期。`;
+    document.getElementById('pf_date').value = '';
+    toast(`「${selSvc.name.split('/')[0].trim()}」只在每週${wLabels[selSvc.charityWeekday]}開放，請重新選擇日期`);
     return;
   }
 
