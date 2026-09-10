@@ -1162,7 +1162,35 @@ async function onServiceChange(){
   updatePricePreview();
   updateQuestionField();
   updateMethodField();
+  applyCharityDateConstraint();
   if(document.getElementById('pf_date').value) loadSlotsForDate();
+}
+/* 選到「善的力量」義診名額時，日期欄位只開放它指定的那個星期可選，
+   其他星期在日期選擇器上直接反白、點不了；換回一般項目時就恢復全部可選 */
+function applyCharityDateConstraint(){
+  const dateEl = document.getElementById('pf_date');
+  if(!dateEl) return;
+  const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
+  const earliest = earliestBookableDate();
+  if(svc && svc.isCharity && svc.charityWeekday!==undefined && svc.charityWeekday!==null && svc.charityWeekday!==''){
+    const targetWeekday = Number(svc.charityWeekday);
+    let d = new Date(earliest+'T00:00:00');
+    while(d.getDay()!==targetWeekday){ d.setDate(d.getDate()+1); }
+    const minStr = d.toISOString().slice(0,10);
+    dateEl.min = minStr;
+    dateEl.step = 7;
+    if(dateEl.value){
+      const cur = new Date(dateEl.value+'T00:00:00');
+      if(cur.getDay()!==targetWeekday || dateEl.value < minStr){
+        dateEl.value = '';
+        const wrap = document.getElementById('slotFieldWrap');
+        if(wrap) wrap.style.display='none';
+      }
+    }
+  } else {
+    dateEl.min = earliest;
+    dateEl.removeAttribute('step');
+  }
 }
 function selectedTierPrice(svc){
   if(!svc) return 0;
