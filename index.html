@@ -1500,7 +1500,8 @@ async function loadSlotsForDate(){
     const isPast = isToday && t<=nowMinutes;
     const overlapsConfirmed = busy.some(b=> t < b[1] && (t+duration) > b[0]);
     const overlapsPending = pending.some(b=> t < b[1] && (t+duration) > b[0]);
-    const isFull = dayFull || overlapsConfirmed;
+    // 善的力量是免費名額，不開放「候補」：只要已經有人登記（哪怕對方還沒付款），直接視為額滿
+    const isFull = dayFull || overlapsConfirmed || (selSvc && selSvc.isCharity && overlapsPending);
     const isPendingSlot = !isFull && overlapsPending;
     let cls = 'slot-btn';
     if(isPast) cls += ' past';
