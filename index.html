@@ -398,6 +398,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <button class="btn" style="margin-top:32px;" onclick="scrollToBooking()">線上預約諮詢</button>
   <p class="sub">填寫下方表單即可完成預約，不用自己整理訊息</p>
   <a class="btn btn-quiet" id="quietLineBtn" href="https://lin.ee/5VQ5gbz">或直接私訊詢問 →</a>
+  <a class="btn btn-quiet" id="igLinkBtn" href="#" target="_blank" rel="noopener" style="display:none;">📸 追蹤我的 Instagram →</a>
 
   <div id="bookingAnchor"></div>
 
@@ -413,6 +414,18 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <div style="height:20px;"></div>
 
 </div>
+</div>
+
+<!-- 公益名額說明彈窗（取代原生confirm，樣式跟網站一致） -->
+<div class="modal-overlay" id="charityModalOverlay">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head"><h3 id="charityModalTitle">說明</h3></div>
+    <p id="charityModalText" style="white-space:pre-line; font-size:13.5px; line-height:1.9; color:var(--brown);"></p>
+    <div style="display:flex; gap:10px; margin-top:18px;">
+      <button class="btn btn-outline" style="flex:1; margin:0;" id="charityModalCancel">取消</button>
+      <button class="btn" style="flex:1; margin:0;" id="charityModalOk">確定</button>
+    </div>
+  </div>
 </div>
 
 <!-- =========================================================
@@ -537,6 +550,13 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
           <div class="field"><label>「我會幫妳直接看清」— 每一行是一項</label><textarea id="setBenefits" style="min-height:80px;"></textarea></div>
           <div class="field"><label>服務方案前的說明文字（要換行按 Enter）</label><textarea id="setPreServicesNote" style="min-height:80px;"></textarea></div>
           <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveHeroContent()">儲存文案</button>
+        </div>
+
+        <div class="panel">
+          <h3>📸 Instagram 連結</h3>
+          <p style="font-size:12px; color:#999; margin-bottom:12px; line-height:1.7;">填了之後，前台按鈕下方會多一個「追蹤我的 Instagram」的連結，方便舊客戶轉介紹時也能找到妳的IG。留空則不顯示。</p>
+          <div class="field"><input id="setIGLink" placeholder="https://www.instagram.com/lovetalker_tw"></div>
+          <button class="btn btn-outline" style="margin:12px 0 0; width:auto; padding:9px 16px; font-size:12.5px;" onclick="saveIGLink()">儲存</button>
         </div>
 
         <div class="panel">
@@ -750,6 +770,9 @@ function loadHeroContent(){ const h=loadJSON(K_HERO,null); return h?{...defaultH
 function saveHeroContentLocal(h){ localStorage.setItem(K_HERO, JSON.stringify(h)); }
 function loadLine(){ return localStorage.getItem(K_LINE) || DEFAULT_LINE; }
 function saveLine(){ const v=document.getElementById('setLine').value.trim()||DEFAULT_LINE; localStorage.setItem(K_LINE, v); lineLink=v; renderHeroContent(); pushRemoteSettings(); toast('LINE 連結已儲存'); }
+const K_IG='rt_ig_link';
+function loadIGLink(){ return localStorage.getItem(K_IG) || ''; }
+function saveIGLink(){ const v=document.getElementById('setIGLink').value.trim(); localStorage.setItem(K_IG, v); igLink=v; renderHeroContent(); pushRemoteSettings(); toast('Instagram連結已儲存'); }
 const K_PAYMENT='rt_payment_info';
 function loadPaymentInfo(){ return localStorage.getItem(K_PAYMENT) || ''; }
 function savePaymentInfo(){ const v=document.getElementById('setPaymentInfo').value.trim(); localStorage.setItem(K_PAYMENT, v); paymentInfo=v; pushRemoteSettings(); toast('匯款資訊已儲存'); }
@@ -859,6 +882,7 @@ async function pullRemoteSettings(){
     if(data && data.methods && data.methods.length){ methods = data.methods; saveMethods(methods); changed = true; }
     if(data && data.line){ lineLink = data.line; localStorage.setItem(K_LINE, lineLink); changed = true; }
     if(data && typeof data.paymentInfo === 'string'){ paymentInfo = data.paymentInfo; localStorage.setItem(K_PAYMENT, paymentInfo); changed = true; }
+    if(data && typeof data.igLink === 'string'){ igLink = data.igLink; localStorage.setItem(K_IG, igLink); changed = true; }
     if(data && typeof data.welcomeMsg === 'string' && data.welcomeMsg){ welcomeMsg = data.welcomeMsg; localStorage.setItem(K_WELCOME, welcomeMsg); changed = true; }
     if(data && typeof data.bookingPolicy === 'string' && data.bookingPolicy){ bookingPolicy = data.bookingPolicy; localStorage.setItem(K_POLICY, bookingPolicy); changed = true; }
     if(data && data.hero){ heroContent = {...defaultHeroContent(), ...data.hero}; saveHeroContentLocal(heroContent); changed = true; }
@@ -877,7 +901,7 @@ function pushRemoteSettings(){
     fetch(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo, welcomeMsg, bookingPolicy })
+      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo, welcomeMsg, bookingPolicy, igLink })
     }).catch(err=>console.warn('雲端設定同步失敗', err));
   }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
@@ -887,6 +911,7 @@ let services = loadServices();
 let addons = loadAddons();
 let lineLink = loadLine();
 let paymentInfo = loadPaymentInfo();
+let igLink = loadIGLink();
 let welcomeMsg = loadWelcomeMsg();
 let bookingPolicy = loadBookingPolicy();
 let webhookUrl = loadWebhook();
@@ -932,6 +957,8 @@ function renderHeroContent(){
   document.getElementById('heroCta').textContent = heroContent.ctaText || '想聽聽真正的答案';
   document.getElementById('heroCta').href = lineLink;
   document.getElementById('quietLineBtn').href = lineLink;
+  const igBtn = document.getElementById('igLinkBtn');
+  if(igLink){ igBtn.href = igLink; igBtn.style.display='table'; } else { igBtn.style.display='none'; }
 }
 
 /* ============================================================
@@ -1034,12 +1061,22 @@ function updateMethodField(){
   methodEl.innerHTML = allowed.map(m=>`<option value="${m}">${m}</option>`).join('');
   if(allowed.includes(current)) methodEl.value = current;
 }
+function showStyledConfirm(title, message){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('charityModalOverlay');
+    document.getElementById('charityModalTitle').textContent = title;
+    document.getElementById('charityModalText').textContent = message;
+    overlay.classList.add('open');
+    document.getElementById('charityModalOk').onclick = ()=>{ overlay.classList.remove('open'); resolve(true); };
+    document.getElementById('charityModalCancel').onclick = ()=>{ overlay.classList.remove('open'); resolve(false); };
+  });
+}
 let lastNonCharityServiceId = null;
-function onServiceChange(){
+async function onServiceChange(){
   const sel = document.getElementById('pf_service');
   const svc = services.find(s=>s.id===sel.value);
   if(svc && svc.isCharity){
-    const proceed = confirm(svc.charityNotice || defaultCharityNotice());
+    const proceed = await showStyledConfirm(svc.name.split('/')[0].trim(), svc.charityNotice || defaultCharityNotice());
     if(!proceed){
       sel.value = lastNonCharityServiceId || (services.find(s=>!s.isCharity)||{}).id || sel.value;
     }
@@ -1091,6 +1128,7 @@ function getTotalDurationMinutes(){
   const addonMinutes = currentSelectedAddons().reduce((sum,a)=>sum+getDurationMinutes(a.name),0);
   return base + addonMinutes;
 }
+let slotRequestSeq = 0;
 async function loadSlotsForDate(){
   selectedSlotHour = null;
   const dateStr = document.getElementById('pf_date').value;
@@ -1099,6 +1137,8 @@ async function loadSlotsForDate(){
   const hint = document.getElementById('slotHint');
   if(!dateStr){ wrap.style.display='none'; return; }
   wrap.style.display='block';
+
+  const mySeq = ++slotRequestSeq; // 這次查詢的序號，等一下非同步查詢回來時要核對，日期若已經被改掉就直接放棄這次結果
 
   const d = new Date(dateStr+'T00:00:00');
   const weekday = d.getDay();
@@ -1116,7 +1156,7 @@ async function loadSlotsForDate(){
   if(selSvc && selSvc.isCharity && Number(selSvc.charityWeekday)!==weekday){
     grid.innerHTML = '';
     const wLabels=['日','一','二','三','四','五','六'];
-    hint.textContent = `義診名額只在每週${wLabels[selSvc.charityWeekday]}開放，請重新選擇日期。`;
+    hint.textContent = `「${esc(selSvc.name.split('/')[0].trim())}」只在每週${wLabels[selSvc.charityWeekday]}開放，請重新選擇日期。`;
     return;
   }
 
@@ -1147,6 +1187,9 @@ async function loadSlotsForDate(){
       });
     }
   }
+  // 這段查詢等待期間，如果日期或服務已經被改掉，這次結果就整個放棄，避免用舊資料畫出不該出現的時段
+  if(mySeq !== slotRequestSeq) return;
+  if(document.getElementById('pf_date').value !== dateStr) return;
   // 手動封鎖的時段，也當作忙碌區間處理（每個封鎖時段視為佔用1小時）
   availability.blockedSlots.forEach(s=>{
     const [d2,hh] = s.split('|');
@@ -1181,7 +1224,7 @@ async function loadSlotsForDate(){
     else if(isFull) cls += ' full';
     else if(isPendingSlot) cls += ' pending-slot';
     else if(selSvc && selSvc.isCharity) cls += ' charity-slot';
-    html += `<button type="button" class="${cls}" ${(isPast||isFull)?'disabled':''} onclick="selectSlot('${hh}', ${isPendingSlot})" id="slotBtn_${t}">${hh}${(!isPast&&isFull)?'<br><span style="font-size:10px;">額滿</span>':''}${isPendingSlot?'<br><span style="font-size:10px;">可候補</span>':''}${(selSvc&&selSvc.isCharity&&!isFull&&!isPendingSlot)?'<br><span style="font-size:10px;">💛義診</span>':''}</button>`;
+    html += `<button type="button" class="${cls}" ${(isPast||isFull)?'disabled':''} onclick="selectSlot('${hh}', ${isPendingSlot})" id="slotBtn_${t}">${hh}${(!isPast&&isFull)?'<br><span style="font-size:10px;">額滿</span>':''}${isPendingSlot?'<br><span style="font-size:10px;">可候補</span>':''}${(selSvc&&selSvc.isCharity&&!isFull&&!isPendingSlot)?'<br><span style="font-size:10px;">💛善的力量</span>':''}</button>`;
   }
   grid.innerHTML = html;
   if(!anySlot) hint.textContent = '這個服務時長超過開放時段，請聯繫我另外安排。';
@@ -1213,16 +1256,24 @@ async function reviewBooking(){
   if(!selectedSlotHour){ toast('請選擇預約時段'); return; }
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast('請輸入正確的 Email 格式'); return; }
   const svc = services.find(s=>s.id===serviceId);
+  if(svc && svc.isCharity){
+    const d = new Date(dateStr+'T00:00:00');
+    if(d.getDay() !== Number(svc.charityWeekday)){
+      const wLabels=['日','一','二','三','四','五','六'];
+      toast(`「${svc.name.split('/')[0].trim()}」只在每週${wLabels[svc.charityWeekday]}開放，請重新選擇日期`);
+      return;
+    }
+  }
   if(svc && svc.isCharity && webhookUrl){
     try{
       const sep = webhookUrl.includes('?') ? '&' : '?';
       const res = await fetch(webhookUrl + sep + 'action=charityCheck&email=' + encodeURIComponent(email) + '&service=' + encodeURIComponent(svc.name));
       const data = await res.json();
       if(data && data.lastUsed){
-        alert(`很抱歉，你已經在 ${data.lastUsed} 使用過義診名額，每半年僅限使用一次，需要再等待一段時間才能再次預約這個名額。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
+        alert(`很抱歉，你已經在 ${data.lastUsed} 使用過這個名額，每半年僅限使用一次，需要再等待一段時間才能再次預約。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
         return;
       }
-    }catch(err){ console.warn('義診資格檢查失敗', err); }
+    }catch(err){ console.warn('資格檢查失敗', err); }
   }
   const datetime = dateStr + 'T' + selectedSlotHour;
   const tierWrap = document.getElementById('tierFieldWrap');
@@ -1282,8 +1333,17 @@ async function confirmAndSubmit(){
   const btn = document.querySelector('#bookingReviewBox .btn:not(.btn-outline)');
   if(btn){ btn.disabled = true; btn.textContent = '送出中…'; }
   const rec = { id:uid(), code:generateBookingCode(), status:'待確認', createdAt:Date.now(), ...pendingBooking };
+  const result = await notifyWebhook(rec);
+  if(result && result.ok===false){
+    if(btn){ btn.disabled=false; btn.textContent='確認無誤，送出'; }
+    if(result.error==='charity_weekday_invalid'){
+      alert('很抱歉，這個名額只能在指定的星期預約，你選的日期不符合，請回上一步重新選擇日期。');
+    } else {
+      alert('很抱歉，送出時發生問題，請稍後再試一次，或直接透過LINE聯繫我。');
+    }
+    return;
+  }
   records.push(rec); saveRecords(records);
-  notifyWebhook(rec);
   document.getElementById('bookingReviewBox').style.display='none';
   showConfirm(rec);
   pendingBooking = null;
@@ -1612,6 +1672,7 @@ function saveAdminForm(){
 function renderSettings(){
   document.getElementById('setLine').value = lineLink;
   document.getElementById('setPaymentInfo').value = paymentInfo;
+  document.getElementById('setIGLink').value = igLink;
   document.getElementById('setWelcomeMsg').value = welcomeMsg;
   document.getElementById('setBookingPolicy').value = bookingPolicy;
   document.getElementById('setWebhook').value = webhookUrl;
