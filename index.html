@@ -1511,7 +1511,9 @@ async function loadSlotsForDate(){
   }
   grid.innerHTML = html;
   if(!anySlot) hint.textContent = '這個服務時長超過開放時段，請聯繫我另外安排。';
-  else hint.textContent = dayFull ? '這天預約已滿，請選擇其他日期。' : `請選擇一個時段（本項目約需 ${duration} 分鐘）。綠色「可候補」時段表示已有人登記但尚未付款確認。`;
+  else if(dayFull) hint.textContent = '這天預約已滿，請選擇其他日期。';
+  else if(selSvc && selSvc.isCharity) hint.textContent = `請選擇一個時段（本項目約需 ${duration} 分鐘）`;
+  else hint.textContent = `請選擇一個時段（本項目約需 ${duration} 分鐘）。綠色「可候補」時段表示已有人登記但尚未付款確認。`;
 }
 function selectSlot(hh, isPendingSlot){
   if(isPendingSlot){
