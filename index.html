@@ -1500,6 +1500,20 @@ function updatePricePreview(){
   document.getElementById('pricePreview').textContent = (svc && total>0) ? `本次預估費用：NT$ ${total.toLocaleString()}` : '';
 }
 let selectedSlotHour = null;
+/* 善的力量若設定了「固定預約時段」，這段時間在它開放的那個星期幾，要整段保留給善的力量，
+   不管當天實際上有沒有人真的預約善的力量，其他方案一律不能預約這段時間（顯示額滿）。
+   回傳含緩衝時間的保留區間 [start,end]（分鐘），沒有保留時段就回傳 null。 */
+function getCharityReservedWindow(weekday){
+  const buf = availability.bufferMinutes ?? 15;
+  for(const s of services){
+    if(s.isCharity && s.charityFixedStart && Number(s.charityWeekday)===weekday){
+      const start = Number(s.charityFixedStart.slice(0,2))*60 + Number(s.charityFixedStart.slice(3,5));
+      const dur = getDurationMinutes(s.name);
+      return { start: start-buf, end: start+dur+buf };
+    }
+  }
+  return null;
+}
 function getDurationMinutes(text){
   const m = String(text||'').match(/(\d+)\s*分鐘/);
   return m ? Number(m[1]) : 60; // 抓不到時長時，保守預設佔用60分鐘
@@ -1626,6 +1640,10 @@ async function loadSlotsForDate(){
     for(let t=openStart; t+duration<=openEnd; t+=interval) slotStarts.push(t);
   }
 
+  // 如果現在選的不是善的力量本身，而這一天剛好是善的力量開放的星期，
+  // 就把善的力量固定時段（含緩衝）整段當成保留區，不管當天有沒有人真的登記善的力量都算額滿
+  const charityReserved = (!(selSvc && selSvc.isCharity)) ? getCharityReservedWindow(weekday) : null;
+
   let html = '';
   let anySlot = false;
   for(const t of slotStarts){
@@ -1635,9 +1653,11 @@ async function loadSlotsForDate(){
     const overlapsConfirmed = busy.some(b=> t < b[1] && (t+duration) > b[0]);
     const overlapsPending = pending.some(b=> t < b[1] && (t+duration) > b[0]);
     const overlapsPendingCharity = pendingCharity.some(b=> t < b[1] && (t+duration) > b[0]);
+    const overlapsCharityReserved = charityReserved ? (t < charityReserved.end && (t+duration) > charityReserved.start) : false;
     // 善的力量是免費名額，不開放「候補」：只要已經有人登記（哪怕對方還沒付款），這個時段對「所有項目」
     // 都要直接視為額滿——不是只有現在選善的力量的人才看得到額滿，因為老師只有一位，不可能同時段服務兩個人
-    const isFull = dayFull || overlapsConfirmed || overlapsPendingCharity;
+    // 另外善的力量固定時段整段都保留給它，不管當天有沒有人真的預約善的力量，其他方案一律視為額滿
+    const isFull = dayFull || overlapsConfirmed || overlapsPendingCharity || overlapsCharityReserved;
     const isPendingSlot = !isFull && overlapsPending;
     let cls = 'slot-btn';
     if(isPast) cls += ' past';
@@ -1776,6 +1796,8 @@ async function confirmAndSubmit(){
       alert('很抱歉，這個月的善的力量名額已經額滿，請回上一步選擇其他月份，或選擇其他一般預約項目。');
     } else if(result.error==='charity_time_invalid'){
       alert('很抱歉，這個名額固定只在特定時間開放，請回上一步重新整理頁面後再選擇時段。');
+    } else if(result.error==='charity_reserved_slot'){
+      alert('很抱歉，這個時段已保留給善的力量名額，無法預約，請回上一步重新選擇時段。');
     } else {
       alert('很抱歉，送出時發生問題，請稍後再試一次，或直接透過LINE聯繫我。');
     }
