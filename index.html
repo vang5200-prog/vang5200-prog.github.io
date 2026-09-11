@@ -805,6 +805,13 @@ const DEFAULT_LINE='https://lin.ee/5VQ5gbz';
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+/* 把「⭐...⭐」這種前後成對的星星裝飾，包成不會被自動換行拆開的一個整體，
+   避免手機、電腦寬度不同時，這段裝飾文字被硬生生分成兩行（例如「⭐」自己一行、「完全免費⭐」下一行） */
+function protectStarPairs(escapedText){
+  return escapedText.replace(/⭐([^⭐\n]*)⭐/g, '<span style="white-space:nowrap;">⭐$1⭐</span>');
+}
+/* 給客戶看的多行說明文字用：先跳脫HTML特殊字元、保護星星裝飾不被拆行，最後把手動按的Enter換行轉成<br> */
+function richText(s){ return protectStarPairs(esc(s)).replace(/\n/g,'<br>'); }
 function parseTiers(tiers){
   return (tiers||[]).map(t=>{
     const parts = t.split('→').map(p=>p.trim());
@@ -1056,10 +1063,10 @@ function renderServiceCards(){
       <div class="card-title">${esc(s.name)}</div>
       ${servicePriceLabel(s)?`<div class="card-price">${servicePriceLabel(s)}</div>`:''}
       ${s.subtitle?`<div class="card-subtitle">${esc(s.subtitle)}</div>`:''}
-      <p class="card-desc">${esc(s.desc||'')}</p>
-      ${s.locationNote?`<p class="card-desc" style="margin-top:6px; opacity:.8;">${esc(s.locationNote)}</p>`:''}
-      ${(s.tiers&&s.tiers.length)?`<div class="tier-list">${parseTiers(s.tiers).map(t=>`<div class="tier-row${t.label.includes('⭐')?' recommended':''}">${esc(t.label)}</div>`).join('')}</div>`:''}
-      ${s.note?`<p class="card-note">${esc(s.note)}</p>`:''}
+      <p class="card-desc">${richText(s.desc||'')}</p>
+      ${s.locationNote?`<p class="card-desc" style="margin-top:6px; opacity:.8;">${richText(s.locationNote)}</p>`:''}
+      ${(s.tiers&&s.tiers.length)?`<div class="tier-list">${parseTiers(s.tiers).map(t=>`<div class="tier-row${t.label.includes('⭐')?' recommended':''}">${protectStarPairs(esc(t.label))}</div>`).join('')}</div>`:''}
+      ${s.note?`<p class="card-note">${richText(s.note)}</p>`:''}
     </div>`).join('');
   document.getElementById('addonCardWrap').innerHTML = addons.length ? `
     <div class="addon-card">
@@ -2271,7 +2278,7 @@ function openServiceEdit(id){
       </label>
     </div>
     <div class="field"><label>地點／形式（選填，例如：遠程／台南面對面）</label><input id="svc_subtitle" value="${esc(s.subtitle||'')}"></div>
-    <div class="field full"><label>服務說明</label><input id="svc_desc" value="${esc(s.desc||'')}"></div>
+    <div class="field full"><label>服務說明（可按 Enter 換行，手動控制斷行位置）</label><textarea id="svc_desc" style="min-height:80px;">${esc(s.desc||'')}</textarea></div>
     <div class="field full"><label>地點說明（選填，可寫更詳細的地點/形式補充）</label><textarea id="svc_locationNote" style="min-height:60px;">${esc(s.locationNote||'')}</textarea></div>
     <div class="field full"><label>展開選項（選填，每一行一項，例如：單一脈輪療癒｜15分鐘｜NT$900，想標示推薦選項可加上 ⭐。若想讓這個方案顯示專屬的預約問題，在同一行後面加上 → 問題標題 → 提示文字，例如：三脈輪組合療癒｜30分鐘｜NT$1,500 → 目前想進行療癒的原因（選填） → 可以簡單告訴我目前的狀況或想調整的方向。）</label><textarea id="svc_tiers" style="min-height:100px;">${esc((s.tiers||[]).join('\n'))}</textarea></div>
     <div class="field full"><label>結尾補充說明（選填，顯示在展開選項下方）</label><textarea id="svc_note" style="min-height:70px;">${esc(s.note||'')}</textarea></div>
