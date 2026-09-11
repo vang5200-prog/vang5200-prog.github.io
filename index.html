@@ -1114,13 +1114,14 @@ function publicFieldsHTML(){
           <div class="dp-header">
             <button type="button" id="dpPrevBtn" onclick="shiftCalendarMonth(-1)">‹</button>
             <span id="dpMonthLabel"></span>
-            <button type="button" onclick="shiftCalendarMonth(1)">›</button>
+            <button type="button" id="dpNextBtn" onclick="shiftCalendarMonth(1)">›</button>
           </div>
           <div class="dp-weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
           <div class="dp-grid" id="dpGrid"></div>
           <div class="dp-legend" id="dpLegend"></div>
         </div>
       </div>
+      <p class="sub" style="margin:6px 0 0; padding:0; text-align:left; opacity:1;">📅 每個月10號中午12點，會開放下個月的預約時段</p>
     </div>
     <div class="field full" id="slotFieldWrap" style="display:none;">
       <label>預約時段 <span class="req">*</span></label>
@@ -1187,16 +1188,42 @@ function initDatePicker(){
   if(trigger){ trigger.textContent = '請選擇日期'; trigger.classList.add('placeholder'); }
   renderDatePicker();
 }
+// 每個月10號中午12點，下個月的時段就會自動開放（在這之前，下個月都還鎖著）
+function isNextMonthOpenNow(){
+  const now = new Date();
+  const day = now.getDate();
+  const hour = now.getHours();
+  return day>10 || (day===10 && hour>=12);
+}
+// 判斷某個「年-月」是不是目前開放預約的月份：當月一定開放，下個月要等10號中午12點過後才開放
+function isMonthOpenForBooking(year, month){
+  const now = new Date();
+  if(year===now.getFullYear() && month===now.getMonth()) return true;
+  let nextM = now.getMonth()+1, nextY = now.getFullYear();
+  if(nextM>11){ nextM=0; nextY++; }
+  if(year===nextY && month===nextM) return isNextMonthOpenNow();
+  return false;
+}
 // 判斷某一天為什麼不能選：不能選回傳原因字串，可以選回傳 null
 function isDateDisabledReason(dateStr){
   if(dateStr < earliestBookableDate()) return 'past';
   const d = new Date(dateStr+'T00:00:00');
   const weekday = d.getDay();
+  // 每次只開放「當月」（以及10號中午12點後開放的下個月）可以預約
+  if(!isMonthOpenForBooking(d.getFullYear(), d.getMonth())) return 'otherMonth';
   if(availability.blockedDates.includes(dateStr)) return 'blocked';
   if(!availability.days.includes(weekday)) return 'closed';
   const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
   if(svc && svc.isCharity && svc.charityWeekday!==undefined && svc.charityWeekday!==null && svc.charityWeekday!=='' && Number(svc.charityWeekday)!==weekday){
     return 'charity';
+  }
+  if(svc && svc.isCharity){
+    const ym = dateStr.slice(0,7);
+    if(charityMonthInfo.yearMonth===ym && charityMonthInfo.serviceId===svc.id){
+      if(charityMonthInfo.bookedDates.includes(dateStr)) return 'charityDayTaken';
+      const cap = Number(svc.charityMonthlyCap)||4;
+      if(charityMonthInfo.count>=cap) return 'charityMonthFull';
+    }
   }
   return null;
 }
@@ -1252,8 +1279,34 @@ function renderDatePicker(){
   grid.innerHTML = html;
   const earliest = new Date(earliestBookableDate()+'T00:00:00');
   const prevBtn = document.getElementById('dpPrevBtn');
+  const nextBtn = document.getElementById('dpNextBtn');
   if(prevBtn) prevBtn.disabled = (y < earliest.getFullYear()) || (y===earliest.getFullYear() && m<=earliest.getMonth());
-  if(legend) legend.textContent = (svc && svc.isCharity) ? '灰色的日期目前無法預約（非開放時段，或非義診開放的星期）' : '灰色的日期目前無法預約（已過期或當天不開放）';
+  // 下個月要等10號中午12點後才開放，所以月曆最多只能往後翻到「目前開放的最後一個月」
+  let maxY = earliest.getFullYear(), maxM = earliest.getMonth();
+  if(isNextMonthOpenNow()){ maxM++; if(maxM>11){ maxM=0; maxY++; } }
+  if(nextBtn) nextBtn.disabled = (y > maxY) || (y===maxY && m>=maxM);
+  if(legend) legend.textContent = (svc && svc.isCharity) ? '灰色的日期目前無法預約（非開放時段、非義診開放的星期、當月名額已滿，或還沒到可預約的月份）' : '灰色的日期目前無法預約（已過期、當天不開放，或還沒到可預約的月份）';
+  // 選的是善的力量，要另外去查這個月已經被登記掉哪些天、總共用了幾個名額，才能正確反白
+  if(svc && svc.isCharity){
+    const ym = `${y}-${String(m+1).padStart(2,'0')}`;
+    if(charityMonthInfo.yearMonth!==ym || charityMonthInfo.serviceId!==svc.id) refreshCharityMonthInfo(svc, ym);
+  }
+}
+let charityMonthInfo = { serviceId:null, yearMonth:null, bookedDates:[], count:0 };
+let charityMonthSeq = 0;
+/* 查詢某個義診服務在指定「年-月」裡，已經有哪幾天被登記過、總共用了幾個名額，
+   用來判斷「這天已經有人用掉了」和「這個月的名額是不是已經滿了」 */
+async function refreshCharityMonthInfo(svc, yearMonth){
+  if(!webhookUrl) return;
+  const mySeq = ++charityMonthSeq;
+  try{
+    const sep = webhookUrl.includes('?') ? '&' : '?';
+    const res = await fetch(webhookUrl + sep + 'action=charityMonthStatus&service=' + encodeURIComponent(svc.name) + '&yearMonth=' + encodeURIComponent(yearMonth));
+    const data = await res.json();
+    if(mySeq !== charityMonthSeq) return; // 查詢期間如果又換了月份/項目，這次結果就放棄
+    charityMonthInfo = { serviceId: svc.id, yearMonth, bookedDates: data.bookedDates||[], count: data.count||0 };
+  }catch(err){ console.warn('查詢義診名額使用狀況失敗', err); return; }
+  renderDatePicker();
 }
 function pickDate(dateStr){
   if(isDateDisabledReason(dateStr)) return;
@@ -1658,6 +1711,10 @@ async function confirmAndSubmit(){
     if(btn){ btn.disabled=false; btn.textContent='確認無誤，送出'; }
     if(result.error==='charity_weekday_invalid'){
       alert('很抱歉，這個名額只能在指定的星期預約，你選的日期不符合，請回上一步重新選擇日期。');
+    } else if(result.error==='charity_day_taken'){
+      alert('很抱歉，你選的這一天剛好被別人搶先一步登記了（同一天只服務一位），請回上一步重新選擇日期。');
+    } else if(result.error==='charity_month_full'){
+      alert('很抱歉，這個月的善的力量名額已經額滿，請回上一步選擇其他月份，或選擇其他一般預約項目。');
     } else {
       alert('很抱歉，送出時發生問題，請稍後再試一次，或直接透過LINE聯繫我。');
     }
@@ -2190,6 +2247,7 @@ function openServiceEdit(id){
           ${['日','一','二','三','四','五','六'].map((label,i)=>`<option value="${i}" ${Number(s.charityWeekday)===i?'selected':''}>星期${label}</option>`).join('')}
         </select>
       </div>
+      <div class="field"><label>每個月最多幾個名額（同一天只服務一位，一天用掉一個名額）</label><input id="svc_charityMonthlyCap" type="number" min="1" value="${Number(s.charityMonthlyCap)||4}"></div>
       <div class="field full"><label>客戶選擇此名額時，彈出的說明文字</label><textarea id="svc_charityNotice" style="min-height:100px;">${esc(s.charityNotice||defaultCharityNotice())}</textarea></div>
       <div class="field full"><label>預約表單上一直顯示的「善的力量名額須知」文字（前面固定會加上「💛 善的力量名額須知：」，這裡只需要填後面的內容）</label><textarea id="svc_charityRulesNotice" style="min-height:80px;">${esc(s.charityRulesNotice||defaultCharityRulesNotice())}</textarea></div>
       <div class="field full"><label>此名額專屬的「取消與爽約規範」（顯示在客戶送出預約前的確認畫面，會取代一般的取消規範）</label><textarea id="svc_charityBookingPolicy" style="min-height:120px;">${esc(s.charityBookingPolicy||defaultCharityBookingPolicy())}</textarea></div>
@@ -2243,6 +2301,8 @@ function saveSvcModal(){
       s.isCharity = charityEl.checked;
       if(s.isCharity){
         s.charityWeekday = Number(document.getElementById('svc_charityWeekday').value);
+        const cmcEl = document.getElementById('svc_charityMonthlyCap');
+        if(cmcEl) s.charityMonthlyCap = Math.max(1, Number(cmcEl.value)||4);
         s.charityNotice = document.getElementById('svc_charityNotice').value.trim() || defaultCharityNotice();
         const crnEl = document.getElementById('svc_charityRulesNotice');
         if(crnEl) s.charityRulesNotice = crnEl.value.trim() || defaultCharityRulesNotice();
