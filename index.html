@@ -890,6 +890,10 @@ function defaultCharityNotice(){
 function defaultBookingPolicy(){
   return '【取消與爽約規範】\n系統都會提前一天溫馨小提醒預約時間，如需改期請務必提前告知，若:\n・無故爽約（預約時間已到未出現）：累計若達3次，半年內將無法再預約。\n・預約時間前24小時告知取消：可協助改期。\n・預約時間24小時內告知取消：可協助改期，但視同無故爽約。';
 }
+/* 善的力量（義診）名額專屬的須知文字，選到這個項目時會一直顯示在預約表單上（前面固定會加上「💛 善的力量名額須知：」） */
+function defaultCharityRulesNotice(){
+  return '這個名額保留給經濟上暫時無法負擔諮詢的朋友，每人使用過一次後，需間隔至少半年才能再次申請；若確定預約後又取消，一年內將無法再申請這個名額，還請斟酌後再送出預約。';
+}
 /* 善的力量（義診）名額專屬的取消與爽約規範，送出預約前的確認畫面上會取代一般規範顯示 */
 function defaultCharityBookingPolicy(){
   return '【取消與爽約規範】\n系統都會提前一天溫馨小提醒預約時間，如需改期請務必提前告知，此為善的力量免費公益活動，若:\n・無故爽約（預約時間未出現）：則一年內將無法再預約。\n・預約時間前24小時告知取消：可協助改期。\n・預約時間24小時內告知取消：不協助改期，且視同無故爽約。';
@@ -1098,7 +1102,7 @@ function publicFieldsHTML(){
       <p class="sub" id="addonFreeNotice" style="display:none; text-align:left; opacity:1; margin:6px 0 0; padding:0;">💛 此項目為免費服務，暫不提供加購延長諮詢方案</p>
     </div>`:''}
     <div class="field full" id="charityRulesNotice" style="display:none; background:#FFF7E8; border:1px solid #F0D9A8; border-radius:10px; padding:12px 14px; margin-top:2px;">
-      <p class="sub" style="margin:0; padding:0; text-align:left; opacity:1; color:#8a6d3b; line-height:1.8;">💛 <strong>善的力量名額須知</strong>：這個名額保留給經濟上暫時無法負擔諮詢的朋友，每人使用過一次後，需間隔至少半年才能再次申請；<strong>若確定預約後又取消，一年內將無法再申請這個名額</strong>，還請斟酌後再送出預約。</p>
+      <p class="sub" style="margin:0; padding:0; text-align:left; opacity:1; color:#8a6d3b; line-height:1.8; white-space:pre-line;">💛 <strong>善的力量名額須知</strong>：<span id="charityRulesNoticeText"></span></p>
     </div>
     <div class="field price-preview" id="pricePreview"></div>
     <div class="field">
@@ -1351,6 +1355,8 @@ function applyCharityAddonConstraint(){
   const notice = document.getElementById('addonFreeNotice');
   const rulesNotice = document.getElementById('charityRulesNotice');
   if(rulesNotice) rulesNotice.style.display = (svc && svc.isCharity) ? 'block' : 'none';
+  const rulesNoticeText = document.getElementById('charityRulesNoticeText');
+  if(rulesNoticeText && svc && svc.isCharity) rulesNoticeText.textContent = svc.charityRulesNotice || defaultCharityRulesNotice();
   if(!checksWrap || !notice) return;
   if(svc && svc.isCharity){
     document.querySelectorAll('.pf-addon:checked').forEach(el=>{ el.checked = false; });
@@ -2185,6 +2191,7 @@ function openServiceEdit(id){
         </select>
       </div>
       <div class="field full"><label>客戶選擇此名額時，彈出的說明文字</label><textarea id="svc_charityNotice" style="min-height:100px;">${esc(s.charityNotice||defaultCharityNotice())}</textarea></div>
+      <div class="field full"><label>預約表單上一直顯示的「善的力量名額須知」文字（前面固定會加上「💛 善的力量名額須知：」，這裡只需要填後面的內容）</label><textarea id="svc_charityRulesNotice" style="min-height:80px;">${esc(s.charityRulesNotice||defaultCharityRulesNotice())}</textarea></div>
       <div class="field full"><label>此名額專屬的「取消與爽約規範」（顯示在客戶送出預約前的確認畫面，會取代一般的取消規範）</label><textarea id="svc_charityBookingPolicy" style="min-height:120px;">${esc(s.charityBookingPolicy||defaultCharityBookingPolicy())}</textarea></div>
     </div>
   `;
@@ -2237,6 +2244,8 @@ function saveSvcModal(){
       if(s.isCharity){
         s.charityWeekday = Number(document.getElementById('svc_charityWeekday').value);
         s.charityNotice = document.getElementById('svc_charityNotice').value.trim() || defaultCharityNotice();
+        const crnEl = document.getElementById('svc_charityRulesNotice');
+        if(crnEl) s.charityRulesNotice = crnEl.value.trim() || defaultCharityRulesNotice();
         const cbpEl = document.getElementById('svc_charityBookingPolicy');
         if(cbpEl) s.charityBookingPolicy = cbpEl.value.trim() || defaultCharityBookingPolicy();
       }
