@@ -29,6 +29,7 @@ h1 {
   line-height: 1.4;
   padding: 0 24px;
   margin-top: 8px;
+  text-align: center;
 }
 h2 {
   padding: 0 24px;
@@ -38,6 +39,7 @@ p {
   line-height: 1.6;
   padding: 0 24px;
 }
+#heroSubtitle{ font-size:17px; }
 
 /* ===== HERO PHOTO ===== */
 .hero-photo {
@@ -125,6 +127,7 @@ p {
   padding: 0;
   margin: 0;
   color: var(--soft-pink);
+  font-size: 17px;
 }
 
 /* ===== 服務卡片 ===== */
@@ -149,15 +152,17 @@ p {
   transform: translateY(-4px);
   box-shadow: 0 12px 30px rgba(0,0,0,0.12);
 }
+.card-title-row{ display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
+.card-title-row .card-title{ flex:1; min-width:0; }
 .card-number {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #C9A84C;
   letter-spacing: 1px;
-  margin-bottom: 4px;
+  flex-shrink: 0;
 }
 .card-title {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 900;
   color: #4A3728;
   line-height: 1.4;
@@ -165,7 +170,7 @@ p {
 }
 .card-price {
   display: inline-block;
-  font-size: 15.5px;
+  font-size: 17px;
   font-weight: 700;
   color: #FFFFFF;
   background: linear-gradient(135deg, #C9A84C, #E5C97A);
@@ -174,23 +179,23 @@ p {
   margin: 6px 0 8px;
 }
 .card-subtitle {
-  font-size: 15px;
+  font-size: 16.5px;
   color: #A67C2E;
   font-weight: 700;
   margin: 0 0 8px;
 }
 .card-desc {
-  font-size: 15.5px;
+  font-size: 17px;
   color: var(--ink);
   line-height: 1.6;
   padding: 0;
   margin: 0;
 }
 .tier-list{ margin-top:12px; border-top:1px dashed #EADFC8; padding-top:10px; }
-.tier-row{ font-size:16px; color:#4A3728; padding:6px 0; border-bottom:1px solid #F5EFE6; }
+.tier-row{ font-size:17px; color:#4A3728; padding:6px 0; border-bottom:1px solid #F5EFE6; }
 .tier-row:last-child{ border-bottom:none; }
 .tier-row.recommended{ font-weight:700; color:#A67C2E; background:#FFF8E8; margin:0 -8px; padding:6px 8px; border-radius:8px; border-bottom:none; }
-.card-note{ font-size:15px; color:var(--ink); line-height:1.7; margin-top:12px; padding-top:10px; border-top:1px dashed #EADFC8; }
+.card-note{ font-size:16.5px; color:var(--ink); line-height:1.7; margin-top:12px; padding-top:10px; border-top:1px dashed #EADFC8; }
 
 /* ===== 加購區 ===== */
 .addon-card {
@@ -309,10 +314,10 @@ p {
 }
 .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--gold-border); background:#fff;}
 .field textarea{resize:vertical; min-height:64px;}
-.price-preview{font-size:15px; color:var(--gold-text); font-weight:700; margin-top:6px;}
-.conflict-warning{background:#FBEDE9; color:var(--soft-pink); border-radius:10px; padding:10px 12px; font-size:15px; margin-top:6px; display:none;}
+.price-preview{font-size:16.5px; color:var(--gold-text); font-weight:700; margin-top:6px;}
+.conflict-warning{background:#FBEDE9; color:var(--soft-pink); border-radius:10px; padding:10px 12px; font-size:16.5px; margin-top:6px; display:none;}
 .slot-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(78px,1fr)); gap:8px; margin-top:8px; }
-.slot-btn{ font-family:inherit; cursor:pointer; border:1.5px solid #EADFC8; background:#FBF7EF; color:var(--ink); font-size:16px; font-weight:700; padding:10px 4px; border-radius:10px; text-align:center; }
+.slot-btn{ font-family:inherit; cursor:pointer; border:1.5px solid #EADFC8; background:#FBF7EF; color:var(--ink); font-size:17px; font-weight:700; padding:10px 4px; border-radius:10px; text-align:center; }
 .slot-btn.selected{ background:linear-gradient(135deg,#C6A85A,#E5C97A); color:#2C2C2C; border-color:var(--gold-border); }
 .slot-btn.full{ background:#FBEDE9; color:#D9A9A0; border-color:#F0DAD5; cursor:not-allowed; }
 .slot-btn.pending-slot{ background:#EAF3EA; color:#6F8770; border-color:#C9DFC9; }
@@ -320,8 +325,15 @@ p {
 .slot-btn.charity-slot{ background:#FFF3D6; color:#A67C2E; border-color:var(--gold-border); font-weight:900; }
 .slot-btn.charity-slot.selected{ background:linear-gradient(135deg,#C6A85A,#E5C97A); color:#2C2C2C; }
 .slot-btn.past{ background:#F0EDE6; color:#C7C2B6; border-color:#E8E4D9; cursor:not-allowed; }
-.slot-hint{ font-size:14.5px; color:#999; margin-top:6px; }
+.slot-hint{ font-size:16px; color:#999; margin-top:6px; }
 #bookingAnchor{scroll-margin-top:20px;}
+/* 預約表單（含審核、確認畫面）文字放大，只影響客戶前台這幾個區塊，不影響後台管理介面 */
+#bookingFormBox .field label{ font-size:16.5px; }
+#bookingFormBox .field input, #bookingFormBox .field select, #bookingFormBox .field textarea{ font-size:18px; }
+#bookingFormBox .sub{ font-size:16px; }
+#bookingFormBox .btn, #bookingReviewBox .btn, #bookingConfirmBox .btn{ font-size:18px; }
+#bookingConfirmBox .btn.btn-quiet{ font-size:17px; }
+.addon-item{ font-size:17.5px; }
 
 /* ===== 自訂日期選擇器（取代手機原生日期選單，避免 iOS 不會反白、也避免格子超出畫面） ===== */
 .date-picker-wrap{ position:relative; }
@@ -339,33 +351,33 @@ p {
 .dp-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
 .dp-header button{
   border:none; background:var(--cream); color:var(--brown); width:30px; height:30px; border-radius:8px;
-  font-size:18px; font-weight:700; cursor:pointer; font-family:inherit; flex-shrink:0;
+  font-size:19px; font-weight:700; cursor:pointer; font-family:inherit; flex-shrink:0;
 }
 .dp-header button:disabled{ opacity:.35; cursor:not-allowed; }
-.dp-header span{ font-size:16.5px; font-weight:700; color:var(--brown); }
+.dp-header span{ font-size:17.5px; font-weight:700; color:var(--brown); }
 .dp-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:6px; }
-.dp-weekdays span{ text-align:center; font-size:14.5px; color:#999; font-weight:700; }
+.dp-weekdays span{ text-align:center; font-size:16px; color:#999; font-weight:700; }
 .dp-grid{ position:relative; display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
 .dp-cell{ aspect-ratio:1/1; }
 .dp-day{
   width:100%; height:100%; font-family:inherit; cursor:pointer; border:1.5px solid #EADFC8;
-  background:#FBF7EF; color:var(--ink); font-size:15.5px; font-weight:700; border-radius:8px; padding:0;
+  background:#FBF7EF; color:var(--ink); font-size:17px; font-weight:700; border-radius:8px; padding:0;
   box-sizing:border-box;
 }
 .dp-day.dp-today{ border-color:var(--gold-border); }
 .dp-day.dp-selected{ background:linear-gradient(135deg,#C6A85A,#E5C97A); color:#2C2C2C; border-color:var(--gold-border); }
 .dp-day.dp-disabled{ background:#F0EDE6; color:#C7C2B6; border-color:#E8E4D9; cursor:not-allowed; }
-.dp-legend{ font-size:14.5px; color:#999; margin-top:10px; padding-top:8px; border-top:1px dashed #EADFC8; }
+.dp-legend{ font-size:16px; color:#999; margin-top:10px; padding-top:8px; border-top:1px dashed #EADFC8; }
 .dp-empty-month-box{
   position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2;
   background:#fff; border:1.5px solid #DDD6C4; border-radius:12px; padding:12px 16px;
-  font-size:15px; font-weight:700; color:var(--soft-pink); text-align:center; line-height:1.7;
+  font-size:16.5px; font-weight:700; color:var(--soft-pink); text-align:center; line-height:1.7;
   box-shadow:0 4px 14px rgba(0,0,0,.06); max-width:85%; box-sizing:border-box;
 }
 
 /* 送出後確認畫面 */
 .confirm-icon{width:52px; height:52px; border-radius:50%; background:#F3F0E4; color:#8FA089; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:26px;}
-.confirm-summary{text-align:left; background:var(--cream); border-radius:10px; padding:14px; margin:14px 0; font-size:16px; line-height:2; color:var(--soft-pink);}
+.confirm-summary{text-align:left; background:var(--cream); border-radius:10px; padding:14px; margin:14px 0; font-size:17px; line-height:2; color:var(--soft-pink);}
 .confirm-summary b{color:var(--brown);}
 
 /* =====================================================
@@ -499,7 +511,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 
   <!-- 立即預約按鈕：捲動到下方預約表單 -->
   <button class="btn" style="margin-top:32px;" onclick="scrollToBooking()">線上預約諮詢</button>
-  <p class="sub">填寫下方表單即可完成預約，不用自己整理訊息</p>
+  <p class="sub" style="font-size:16px;">填寫下方表單即可完成預約，不用自己整理訊息</p>
   <div class="social-link-group">
     <a class="social-link" id="quietLineBtn" href="https://lin.ee/5VQ5gbz">
       <span class="link-inline">
@@ -1059,8 +1071,7 @@ let editingId = null;
 function renderServiceCards(){
   document.getElementById('serviceCardsWrap').innerHTML = services.map((s,i)=>`
     <div class="service-card" style="cursor:pointer;" onclick="selectServiceAndScroll('${s.id}')">
-      <div class="card-number">${String(i+1).padStart(2,'0')}</div>
-      <div class="card-title">${esc(s.name)}</div>
+      <div class="card-title-row"><span class="card-number">${String(i+1).padStart(2,'0')}</span><span class="card-title">${esc(s.name)}</span></div>
       ${servicePriceLabel(s)?`<div class="card-price">${servicePriceLabel(s)}</div>`:''}
       ${s.subtitle?`<div class="card-subtitle">${esc(s.subtitle)}</div>`:''}
       <p class="card-desc">${richText(s.desc||'')}</p>
@@ -1737,8 +1748,8 @@ function showBookingReview(b){
       ${b.question?`<div><b>想諮詢的問題：</b>${esc(b.question)}</div>`:''}
       ${b.other?`<div><b>其他備註：</b>${esc(b.other)}</div>`:''}
     </div>
-    ${policyText?`<p style="padding:0; color:var(--soft-pink); font-size:14.5px; margin-top:12px; line-height:1.8; white-space:pre-line;">${esc(policyText)}</p>`:''}
-    <p style="padding:0; color:#999; font-size:14.5px; margin-top:8px;">請確認以上內容無誤。送出後將無法自行修改，如果之後想更改預約內容，請直接透過LINE聯繫我調整。</p>
+    ${policyText?`<p style="padding:0; color:var(--soft-pink); font-size:16px; margin-top:12px; line-height:1.8; white-space:pre-line;">${esc(policyText)}</p>`:''}
+    <p style="padding:0; color:#999; font-size:16px; margin-top:8px;">請確認以上內容無誤。送出後將無法自行修改，如果之後想更改預約內容，請直接透過LINE聯繫我調整。</p>
     <div style="display:flex; gap:10px; margin-top:14px;">
       <button class="btn btn-outline" style="flex:1; margin:0;" onclick="backToEditForm()">← 修改</button>
       <button class="btn" style="flex:1; margin:0;" onclick="confirmAndSubmit()">確認無誤，送出</button>
@@ -1790,7 +1801,7 @@ function showConfirm(rec){
   const dtStr = isNaN(dt) ? rec.datetime : dt.toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
   box.innerHTML = `
     <h2 style="padding:0; margin-bottom:6px;">✓ 已收到預約申請</h2>
-    <p style="padding:0; color:var(--soft-pink); font-size:16px; line-height:1.8;">請先加官方LINE好友並傳送下方預約代碼，我會回覆匯款資訊；完成匯款後，這個時段才會正式保留給妳。<br>若同一時段有多人登記，將以完成匯款的先後順序為準 🌙<br>【註:❤️善的力量則不需匯款，請加官方LINE好友並傳送下方預約代碼。】</p>
+    <p style="padding:0; color:var(--soft-pink); font-size:17px; line-height:1.8;">請先加官方LINE好友並傳送下方預約代碼，我會回覆匯款資訊；完成匯款後，這個時段才會正式保留給妳。<br>若同一時段有多人登記，將以完成匯款的先後順序為準 🌙<br>【註:❤️善的力量則不需匯款，請加官方LINE好友並傳送下方預約代碼。】</p>
     <div class="confirm-summary">
       <div><b>姓名：</b>${esc(rec.name)}</div>
       <div><b>項目：</b>${esc(rec.serviceName)}${rec.addonNames.length?'＋'+rec.addonNames.map(esc).join('、'):''}</div>
@@ -1798,10 +1809,10 @@ function showConfirm(rec){
       <div><b>費用：</b>NT$${Number(rec.price).toLocaleString()}</div>
     </div>
     <div style="background:#FFF8E8; border:1.5px dashed var(--gold-border); border-radius:12px; padding:16px; margin:16px 0; text-align:center;">
-      <div style="font-size:14.5px; color:var(--soft-pink); margin-bottom:6px;">妳的預約代碼</div>
+      <div style="font-size:16px; color:var(--soft-pink); margin-bottom:6px;">妳的預約代碼</div>
       <div style="font-size:28px; font-weight:900; letter-spacing:4px; color:var(--gold-text);">${esc(rec.code)}</div>
-      <div style="font-size:14.5px; color:#A67C2E; margin-top:8px; line-height:1.7;">加官方LINE好友後，請把這組代碼傳過去，我會立刻協助妳完成預約！</div>
-      <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:8px 18px; font-size:15px;" onclick="copyBookingCode('${esc(rec.code)}')">📋 複製代碼</button>
+      <div style="font-size:16px; color:#A67C2E; margin-top:8px; line-height:1.7;">加官方LINE好友後，請把這組代碼傳過去，我會立刻協助妳完成預約！</div>
+      <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:8px 18px; font-size:16.5px;" onclick="copyBookingCode('${esc(rec.code)}')">📋 複製代碼</button>
     </div>
     <a class="btn" href="${esc(lineLink)}" target="_blank" rel="noopener" style="margin:0; width:100%;">💬 加入官方 LINE，完成付款與預約 →</a>
     <button class="btn btn-outline" style="margin:10px 0 0; width:100%;" onclick="downloadIcs('${rec.id}')">📅 下載行事曆提醒</button>
