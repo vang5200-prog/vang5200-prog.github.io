@@ -1593,9 +1593,20 @@ async function loadSlotsForDate(){
   const openStart = availability.startHour*60;
   const openEnd = availability.endHour*60;
 
+  // 善的力量若有設定「固定預約時段」，就不開放整排時段給客戶挑，只會顯示這一個固定時間
+  const fixedStart = (selSvc && selSvc.isCharity && selSvc.charityFixedStart)
+    ? (Number(selSvc.charityFixedStart.slice(0,2))*60 + Number(selSvc.charityFixedStart.slice(3,5)))
+    : null;
+  const slotStarts = [];
+  if(fixedStart!==null){
+    if(fixedStart>=openStart && fixedStart+duration<=openEnd) slotStarts.push(fixedStart);
+  } else {
+    for(let t=openStart; t+duration<=openEnd; t+=interval) slotStarts.push(t);
+  }
+
   let html = '';
   let anySlot = false;
-  for(let t=openStart; t+duration<=openEnd; t+=interval){
+  for(const t of slotStarts){
     anySlot = true;
     const hh = String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
     const isPast = isToday && t<=nowMinutes;
@@ -1616,6 +1627,7 @@ async function loadSlotsForDate(){
   grid.innerHTML = html;
   if(!anySlot) hint.textContent = '這個服務時長超過開放時段，請聯繫我另外安排。';
   else if(dayFull) hint.textContent = '這天預約已滿，請選擇其他日期。';
+  else if(fixedStart!==null) hint.textContent = `善的力量固定於 ${selSvc.charityFixedStart} 開始（約需 ${duration} 分鐘），若已顯示額滿請選擇其他日期。`;
   else if(selSvc && selSvc.isCharity) hint.textContent = `請選擇一個時段（本項目約需 ${duration} 分鐘）`;
   else hint.textContent = `請選擇一個時段（本項目約需 ${duration} 分鐘）。綠色「可候補」時段表示已有人登記但尚未付款確認。`;
 }
@@ -1740,6 +1752,8 @@ async function confirmAndSubmit(){
       alert('很抱歉，妳選的這一天剛好被別人搶先一步登記了（同一天只服務一位），請回上一步重新選擇日期。');
     } else if(result.error==='charity_month_full'){
       alert('很抱歉，這個月的善的力量名額已經額滿，請回上一步選擇其他月份，或選擇其他一般預約項目。');
+    } else if(result.error==='charity_time_invalid'){
+      alert('很抱歉，這個名額固定只在特定時間開放，請回上一步重新整理頁面後再選擇時段。');
     } else {
       alert('很抱歉，送出時發生問題，請稍後再試一次，或直接透過LINE聯繫我。');
     }
@@ -2273,6 +2287,7 @@ function openServiceEdit(id){
         </select>
       </div>
       <div class="field"><label>每個月最多幾個名額（同一天只服務一位，一天用掉一個名額）</label><input id="svc_charityMonthlyCap" type="number" min="1" value="${Number(s.charityMonthlyCap)||4}"></div>
+      <div class="field"><label>固定預約時段（客戶只能選這個時間，不會再出現一整排時段可選）</label><input id="svc_charityFixedStart" type="time" value="${s.charityFixedStart||'15:00'}"></div>
       <div class="field full"><label>客戶選擇此名額時，彈出的說明文字</label><textarea id="svc_charityNotice" style="min-height:100px;">${esc(s.charityNotice||defaultCharityNotice())}</textarea></div>
       <div class="field full"><label>預約表單上一直顯示的「善的力量名額須知」文字（前面固定會加上「💛 善的力量名額須知：」，這裡只需要填後面的內容）</label><textarea id="svc_charityRulesNotice" style="min-height:80px;">${esc(s.charityRulesNotice||defaultCharityRulesNotice())}</textarea></div>
       <div class="field full"><label>此名額專屬的「取消與爽約規範」（顯示在客戶送出預約前的確認畫面，會取代一般的取消規範）</label><textarea id="svc_charityBookingPolicy" style="min-height:120px;">${esc(s.charityBookingPolicy||defaultCharityBookingPolicy())}</textarea></div>
@@ -2333,6 +2348,8 @@ function saveSvcModal(){
         if(crnEl) s.charityRulesNotice = crnEl.value.trim() || defaultCharityRulesNotice();
         const cbpEl = document.getElementById('svc_charityBookingPolicy');
         if(cbpEl) s.charityBookingPolicy = cbpEl.value.trim() || defaultCharityBookingPolicy();
+        const cfsEl = document.getElementById('svc_charityFixedStart');
+        if(cfsEl) s.charityFixedStart = cfsEl.value || '15:00';
       }
     }
     saveServices(services); renderServiceSettings();
