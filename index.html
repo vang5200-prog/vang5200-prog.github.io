@@ -8,6 +8,8 @@
 :root{
   --gold-1:#C6A85A; --gold-2:#E5C97A; --gold-3:#FFF1B0; --gold-border:#D4AF37;
   --cream:#F5EFE6; --ink:#2C2C2C; --muted:#666; --brown:#4A3728; --gold-text:#A67C2E;
+  /* 柔和粉色系：專門用在「框框」裡面的說明文字，比純黑柔和好讀，但對比度仍足夠（35-55歲、可能老花的讀者也能看清楚） */
+  --soft-pink:#7A3B52;
 }
 body {
   margin: 0;
@@ -177,7 +179,7 @@ p {
 }
 .card-desc {
   font-size: 15.5px;
-  color: #666;
+  color: var(--soft-pink);
   line-height: 1.6;
   padding: 0;
   margin: 0;
@@ -186,7 +188,7 @@ p {
 .tier-row{ font-size:16px; color:#4A3728; padding:6px 0; border-bottom:1px solid #F5EFE6; }
 .tier-row:last-child{ border-bottom:none; }
 .tier-row.recommended{ font-weight:700; color:#A67C2E; background:#FFF8E8; margin:0 -8px; padding:6px 8px; border-radius:8px; border-bottom:none; }
-.card-note{ font-size:15px; color:#999; line-height:1.7; margin-top:12px; padding-top:10px; border-top:1px dashed #EADFC8; }
+.card-note{ font-size:15px; color:var(--soft-pink); line-height:1.7; margin-top:12px; padding-top:10px; border-top:1px dashed #EADFC8; }
 
 /* ===== 加購區 ===== */
 .addon-card {
@@ -211,7 +213,7 @@ p {
 .addon-item {
   font-size: 16.5px;
   line-height: 1.8;
-  color: #444;
+  color: var(--soft-pink);
   padding: 4px 0;
   border-bottom: 1px solid #F0E8D8;
   display:flex; align-items:center; gap:8px; cursor:pointer;
@@ -280,6 +282,7 @@ p {
   width: 20px; height: 20px;
   box-sizing: border-box;
 }
+.hero-features-list{ display:flex; flex-direction:column; align-items:center; gap:4px; }
 .sub {
   font-size: 14.5px;
   opacity: 0.75;
@@ -303,7 +306,7 @@ p {
 .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--gold-border); background:#fff;}
 .field textarea{resize:vertical; min-height:64px;}
 .price-preview{font-size:15px; color:var(--gold-text); font-weight:700; margin-top:6px;}
-.conflict-warning{background:#FBEDE9; color:#B4756A; border-radius:10px; padding:10px 12px; font-size:15px; margin-top:6px; display:none;}
+.conflict-warning{background:#FBEDE9; color:var(--soft-pink); border-radius:10px; padding:10px 12px; font-size:15px; margin-top:6px; display:none;}
 .slot-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(78px,1fr)); gap:8px; margin-top:8px; }
 .slot-btn{ font-family:inherit; cursor:pointer; border:1.5px solid #EADFC8; background:#FBF7EF; color:var(--ink); font-size:16px; font-weight:700; padding:10px 4px; border-radius:10px; text-align:center; }
 .slot-btn.selected{ background:linear-gradient(135deg,#C6A85A,#E5C97A); color:#2C2C2C; border-color:var(--gold-border); }
@@ -352,13 +355,13 @@ p {
 .dp-empty-month-box{
   position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2;
   background:#fff; border:1.5px solid #DDD6C4; border-radius:12px; padding:12px 16px;
-  font-size:15px; font-weight:700; color:#8a7a55; text-align:center; line-height:1.7;
+  font-size:15px; font-weight:700; color:var(--soft-pink); text-align:center; line-height:1.7;
   box-shadow:0 4px 14px rgba(0,0,0,.06); max-width:85%; box-sizing:border-box;
 }
 
 /* 送出後確認畫面 */
 .confirm-icon{width:52px; height:52px; border-radius:50%; background:#F3F0E4; color:#8FA089; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:26px;}
-.confirm-summary{text-align:left; background:var(--cream); border-radius:10px; padding:14px; margin:14px 0; font-size:16px; line-height:2;}
+.confirm-summary{text-align:left; background:var(--cream); border-radius:10px; padding:14px; margin:14px 0; font-size:16px; line-height:2; color:var(--soft-pink);}
 .confirm-summary b{color:var(--brown);}
 
 /* =====================================================
@@ -475,7 +478,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
     </span>
   </a>
   <a class="btn" id="heroCta" href="https://lin.ee/5VQ5gbz">想確認他的想法</a>
-  <p class="sub" id="heroFeatures"></p>
+  <div class="sub hero-features-list" id="heroFeatures"></div>
   <p class="notice" id="heroNotice"></p>
 
   <h2 id="painPointsTitle"></h2>
@@ -638,7 +641,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 
         <div class="panel">
           <h3>⚠️ 預約注意事項（顯示在確認畫面）</h3>
-          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">客戶按「送出預約」後、看到的「請確認你的預約內容」畫面上，會用粉色小字顯示這段文字，例如取消與爽約規範。</p>
+          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">客戶按「送出預約」後、看到的「請確認妳的預約內容」畫面上，會用粉色小字顯示這段文字，例如取消與爽約規範。</p>
           <textarea id="setBookingPolicy" style="min-height:110px;"></textarea>
           <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveBookingPolicy()">儲存注意事項</button>
         </div>
@@ -651,7 +654,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
           <div class="field"><label>金色按鈕文字（主要行動呼籲）</label><input id="setHeroCta" placeholder="例如：想聽聽真正的答案"></div>
           <div class="field"><label>按鈕下方三個特色（每一行是一項）</label><textarea id="setHeroFeatures" style="min-height:70px;"></textarea></div>
           <div class="field"><label>按鈕下方的小提醒文字</label><input id="setHeroNotice" placeholder="例如：目前採預約制，近期可安排時段有限"></div>
-          <div class="field"><label>「妳可能正在經歷」區塊標題</label><input id="setPainPointsTitle" placeholder="例如：你先把事情告訴我"></div>
+          <div class="field"><label>「妳可能正在經歷」區塊標題</label><input id="setPainPointsTitle" placeholder="例如：妳先把事情告訴我"></div>
           <div class="field"><label>該標題下方的說明文字（要換行按 Enter）</label><textarea id="setPainPointsNote" style="min-height:70px;"></textarea></div>
           <div class="field"><label>「妳可能正在經歷」— 每一行是一項</label><textarea id="setPainPoints" style="min-height:80px;"></textarea></div>
           <div class="field"><label>「我會幫妳直接看清」區塊標題</label><input id="setBenefitsTitle" placeholder="例如：我會幫妳直接看清"></div>
@@ -725,7 +728,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
         <div class="panel">
           <h3>👋 加入好友歡迎詞</h3>
           <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">因為開啟了 Messaging API，LINE 原本內建的歡迎詞功能會失效，改由這裡設定的文字自動回覆給新加入的好友。</p>
-          <textarea id="setWelcomeMsg" style="min-height:90px;" placeholder="例如：謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說你的狀況。"></textarea>
+          <textarea id="setWelcomeMsg" style="min-height:90px;" placeholder="例如：謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說妳的狀況。"></textarea>
           <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveWelcomeMsg()">儲存歡迎詞</button>
         </div>
 
@@ -860,11 +863,11 @@ function defaultHeroContent(){
     features: ['一對一深入了解','依個人情況提供方向','可針對問題提問'],
     notice: '目前採預約制，近期可安排時段有限',
     painPoints: ['他回覆變慢，妳開始焦慮','他忽冷忽熱，妳一直幫他找理由','妳很累，但卻停不下來'],
-    painPointsTitle: '你先把事情告訴我',
-    painPointsNote: '有些事情，不只是聽你怎麼說。\n我也會從事情的發展、你和人的互動，以及你當下呈現出的狀態，一起去看這件事。',
+    painPointsTitle: '妳先把事情告訴我',
+    painPointsNote: '有些事情，不只是聽妳怎麼說。\n我也會從事情的發展、妳和人的互動，以及妳當下呈現出的狀態，一起去看這件事。',
     benefitsTitle: '我會幫妳直接看清',
     benefits: ['他現在對妳的真實想法','為什麼會變成現在這樣','妳在他心中的真實位置'],
-    preServicesNote: '我會先從你說的內容、事情的發展和人與人之間的關係去理解。\n而有些時候，在這個過程裡，我也會接收到一些你沒有直接告訴我的感受或畫面。\n這些資訊，會成為我理解整件事情的一部分。'
+    preServicesNote: '我會先從妳說的內容、事情的發展和人與人之間的關係去理解。\n而有些時候，在這個過程裡，我也會接收到一些妳沒有直接告訴我的感受或畫面。\n這些資訊，會成為我理解整件事情的一部分。'
   };
 }
 function loadJSON(key, fallback){ try{ const v=JSON.parse(localStorage.getItem(key)); return v??fallback; }catch(e){ return fallback; } }
@@ -886,12 +889,12 @@ const K_PAYMENT='rt_payment_info';
 function loadPaymentInfo(){ return localStorage.getItem(K_PAYMENT) || ''; }
 function savePaymentInfo(){ const v=document.getElementById('setPaymentInfo').value.trim(); localStorage.setItem(K_PAYMENT, v); paymentInfo=v; pushRemoteSettings(); toast('匯款資訊已儲存'); }
 const K_WELCOME='rt_welcome_msg';
-function defaultWelcomeMsg(){ return '謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說你的狀況。'; }
+function defaultWelcomeMsg(){ return '謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說妳的狀況。'; }
 function loadWelcomeMsg(){ return localStorage.getItem(K_WELCOME) || defaultWelcomeMsg(); }
 function saveWelcomeMsg(){ const v=document.getElementById('setWelcomeMsg').value.trim()||defaultWelcomeMsg(); localStorage.setItem(K_WELCOME, v); welcomeMsg=v; pushRemoteSettings(); toast('歡迎詞已儲存'); }
 const K_POLICY='rt_booking_policy';
 function defaultCharityNotice(){
-  return '這個名額，是保留給「真心想諮詢、但目前經濟上暫時無法負擔」的朋友，並不是每個人都適用的福利。如果你目前有能力負擔，也想把機會留給更需要的人，歡迎選擇其他一般預約項目，這對我來說也是很大的支持 🙏\n\n選擇這個名額，需要請你完成以下兩件事：\n1. 兩天內做一件善事（形式不拘，例如：到便利商店捐零錢、扶老人家過馬路都可以）\n2. 到我的 Instagram 留言分享這次諮詢的感受，作為我未來調整服務的參考\n\n每人使用過一次後，需間隔至少半年才能再次申請這個名額；若確定預約後又取消，一年內將無法再申請。也請把這個珍貴的名額，留給更需要的人。\n\n要繼續選擇這個名額嗎？';
+  return '這個名額，是保留給「真心想諮詢、但目前經濟上暫時無法負擔」的朋友，並不是每個人都適用的福利。如果妳目前有能力負擔，也想把機會留給更需要的人，歡迎選擇其他一般預約項目，這對我來說也是很大的支持 🙏\n\n選擇這個名額，需要請妳完成以下兩件事：\n1. 兩天內做一件善事（形式不拘，例如：到便利商店捐零錢、扶老人家過馬路都可以）\n2. 到我的 Instagram 留言分享這次諮詢的感受，作為我未來調整服務的參考\n\n每人使用過一次後，需間隔至少半年才能再次申請這個名額；若確定預約後又取消，一年內將無法再申請。也請把這個珍貴的名額，留給更需要的人。\n\n要繼續選擇這個名額嗎？';
 }
 function defaultBookingPolicy(){
   return '【取消與爽約規範】\n系統都會提前一天溫馨小提醒預約時間，如需改期請務必提前告知，若:\n・無故爽約（預約時間已到未出現）：累計若達3次，半年內將無法再預約。\n・預約時間前24小時告知取消：可協助改期。\n・預約時間24小時內告知取消：可協助改期，但視同無故爽約。';
@@ -1044,13 +1047,13 @@ let editingId = null;
 ============================================================ */
 function renderServiceCards(){
   document.getElementById('serviceCardsWrap').innerHTML = services.map((s,i)=>`
-    <div class="service-card">
+    <div class="service-card" style="cursor:pointer;" onclick="selectServiceAndScroll('${s.id}')">
       <div class="card-number">${String(i+1).padStart(2,'0')}</div>
       <div class="card-title">${esc(s.name)}</div>
       ${servicePriceLabel(s)?`<div class="card-price">${servicePriceLabel(s)}</div>`:''}
       ${s.subtitle?`<div class="card-subtitle">${esc(s.subtitle)}</div>`:''}
       <p class="card-desc">${esc(s.desc||'')}</p>
-      ${s.locationNote?`<p class="card-desc" style="margin-top:6px; color:#999;">${esc(s.locationNote)}</p>`:''}
+      ${s.locationNote?`<p class="card-desc" style="margin-top:6px; opacity:.8;">${esc(s.locationNote)}</p>`:''}
       ${(s.tiers&&s.tiers.length)?`<div class="tier-list">${parseTiers(s.tiers).map(t=>`<div class="tier-row${t.label.includes('⭐')?' recommended':''}">${esc(t.label)}</div>`).join('')}</div>`:''}
       ${s.note?`<p class="card-note">${esc(s.note)}</p>`:''}
     </div>`).join('');
@@ -1064,7 +1067,8 @@ function renderHeroContent(){
   document.getElementById('heroTitle').innerHTML = esc(heroContent.title).replace(/\n/g,'<br>');
   document.getElementById('heroSubtitle').innerHTML = esc(heroContent.subtitle).replace(/\n/g,'<br>');
   document.getElementById('heroNotice').textContent = heroContent.notice || '';
-  document.getElementById('heroFeatures').innerHTML = (heroContent.features||[]).map(t=>`✔️ ${esc(t)}`).join(' &nbsp;');
+  // 每一項獨立成一行，手機上才不會被硬擠成一行後又亂折成兩行
+  document.getElementById('heroFeatures').innerHTML = (heroContent.features||[]).map(t=>`<div>✔️ ${esc(t)}</div>`).join('');
   document.getElementById('painPointsTitle').textContent = heroContent.painPointsTitle || '妳可能正在經歷';
   document.getElementById('painPointsNote').innerHTML = esc(heroContent.painPointsNote||'').replace(/\n/g,'<br>');
   document.getElementById('painPointsWrap').innerHTML = (heroContent.painPoints||[]).map(t=>`<p>${esc(t)}</p>`).join('');
@@ -1089,6 +1093,13 @@ function renderHeroContent(){
    客戶前台：預約表單
 ============================================================ */
 function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoView({behavior:'smooth'}); }
+/* 點擊上方的服務方案卡片時：直接幫客戶把預約表單的項目換成這一個，並捲動到預約表單，
+   避免客戶點了卡片卻沒有任何反應、誤以為網站壞掉 */
+function selectServiceAndScroll(id){
+  const sel = document.getElementById('pf_service');
+  if(sel){ sel.value = id; onServiceChange(); }
+  scrollToBooking();
+}
 
 function publicFieldsHTML(){
   const svcOptions = services.map(s=>{ const pl=servicePriceLabel(s); return `<option value="${s.id}">${esc(s.name)}${pl?`（${pl}）`:''}</option>`; }).join('');
@@ -1108,7 +1119,7 @@ function publicFieldsHTML(){
       <p class="sub" id="addonFreeNotice" style="display:none; text-align:left; opacity:1; margin:6px 0 0; padding:0;">💛 此項目為免費服務，暫不提供加購延長諮詢方案</p>
     </div>`:''}
     <div class="field full" id="charityRulesNotice" style="display:none; background:#FFF7E8; border:1px solid #F0D9A8; border-radius:10px; padding:12px 14px; margin-top:2px;">
-      <p class="sub" style="margin:0; padding:0; text-align:left; opacity:1; color:#8a6d3b; line-height:1.8; white-space:pre-line;">💛 <strong>善的力量名額須知</strong>：<span id="charityRulesNoticeText"></span></p>
+      <p class="sub" style="margin:0; padding:0; text-align:left; opacity:1; color:var(--soft-pink); line-height:1.8; white-space:pre-line;">💛 <strong>善的力量名額須知</strong>：<span id="charityRulesNoticeText"></span></p>
     </div>
     <div class="field price-preview" id="pricePreview"></div>
     <div class="field">
@@ -1153,7 +1164,7 @@ function applyPrefillFromUrl(){
   const email = params.get('prefill_email');
   if(name) document.getElementById('pf_name').value = name;
   if(email) document.getElementById('pf_email').value = email;
-  if(name || email) toast('已幫你帶入上次填寫的姓名與Email，只需要重新選項目跟時間');
+  if(name || email) toast('已幫妳帶入上次填寫的姓名與Email，只需要重新選項目跟時間');
 }
 // 把 Date 物件轉成「當地時間」的 YYYY-MM-DD 字串。
 // 注意：不能用 .toISOString()，那個是轉成 UTC 時間，台灣是 UTC+8，
@@ -1610,7 +1621,7 @@ async function loadSlotsForDate(){
 }
 function selectSlot(hh, isPendingSlot){
   if(isPendingSlot){
-    const proceed = confirm('這個時段已經有其他客戶搶先登記，但對方尚未完成匯款確認。\n\n你可以選擇「候補」這個時段——如果對方最後沒有完成付款，這個時段就會優先保留給你；如果不想候補，可以改選其他時段。\n\n要候補這個時段嗎？');
+    const proceed = confirm('這個時段已經有其他客戶搶先登記，但對方尚未完成匯款確認。\n\n妳可以選擇「候補」這個時段——如果對方最後沒有完成付款，這個時段就會優先保留給妳；如果不想候補，可以改選其他時段。\n\n要候補這個時段嗎？');
     if(!proceed) return;
   }
   selectedSlotHour = hh;
@@ -1648,11 +1659,11 @@ async function reviewBooking(){
       const res = await fetch(webhookUrl + sep + 'action=charityCheck&email=' + encodeURIComponent(email) + '&service=' + encodeURIComponent(svc.name));
       const data = await res.json();
       if(data && data.lastUsed){
-        alert(`很抱歉，你已經在 ${data.lastUsed} 使用過這個名額，每半年僅限使用一次，需要再等待一段時間才能再次預約。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
+        alert(`很抱歉，妳已經在 ${data.lastUsed} 使用過這個名額，每半年僅限使用一次，需要再等待一段時間才能再次預約。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
         return;
       }
       if(data && data.lastCancelled){
-        alert(`很抱歉，你在 ${data.lastCancelled} 曾經預約這個名額後取消，取消後一年內無法再申請。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
+        alert(`很抱歉，妳在 ${data.lastCancelled} 曾經預約這個名額後取消，取消後一年內無法再申請。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
         return;
       }
     }catch(err){ console.warn('資格檢查失敗', err); }
@@ -1692,7 +1703,7 @@ function showBookingReview(b){
     ? (svcForPolicy.charityBookingPolicy || defaultCharityBookingPolicy())
     : bookingPolicy;
   box.innerHTML = `
-    <h2 style="padding:0; margin-bottom:10px;">請確認你的預約內容</h2>
+    <h2 style="padding:0; margin-bottom:10px;">請確認妳的預約內容</h2>
     <div class="confirm-summary">
       <div><b>姓名：</b>${esc(b.name)}</div>
       <div><b>Email：</b>${esc(b.email)}</div>
@@ -1703,7 +1714,7 @@ function showBookingReview(b){
       ${b.question?`<div><b>想諮詢的問題：</b>${esc(b.question)}</div>`:''}
       ${b.other?`<div><b>其他備註：</b>${esc(b.other)}</div>`:''}
     </div>
-    ${policyText?`<p style="padding:0; color:#B4756A; font-size:14.5px; margin-top:12px; line-height:1.8; white-space:pre-line;">${esc(policyText)}</p>`:''}
+    ${policyText?`<p style="padding:0; color:var(--soft-pink); font-size:14.5px; margin-top:12px; line-height:1.8; white-space:pre-line;">${esc(policyText)}</p>`:''}
     <p style="padding:0; color:#999; font-size:14.5px; margin-top:8px;">請確認以上內容無誤。送出後將無法自行修改，如果之後想更改預約內容，請直接透過LINE聯繫我調整。</p>
     <div style="display:flex; gap:10px; margin-top:14px;">
       <button class="btn btn-outline" style="flex:1; margin:0;" onclick="backToEditForm()">← 修改</button>
@@ -1724,9 +1735,9 @@ async function confirmAndSubmit(){
   if(result && result.ok===false){
     if(btn){ btn.disabled=false; btn.textContent='確認無誤，送出'; }
     if(result.error==='charity_weekday_invalid'){
-      alert('很抱歉，這個名額只能在指定的星期預約，你選的日期不符合，請回上一步重新選擇日期。');
+      alert('很抱歉，這個名額只能在指定的星期預約，妳選的日期不符合，請回上一步重新選擇日期。');
     } else if(result.error==='charity_day_taken'){
-      alert('很抱歉，你選的這一天剛好被別人搶先一步登記了（同一天只服務一位），請回上一步重新選擇日期。');
+      alert('很抱歉，妳選的這一天剛好被別人搶先一步登記了（同一天只服務一位），請回上一步重新選擇日期。');
     } else if(result.error==='charity_month_full'){
       alert('很抱歉，這個月的善的力量名額已經額滿，請回上一步選擇其他月份，或選擇其他一般預約項目。');
     } else {
@@ -1754,7 +1765,7 @@ function showConfirm(rec){
   const dtStr = isNaN(dt) ? rec.datetime : dt.toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
   box.innerHTML = `
     <h2 style="padding:0; margin-bottom:6px;">✓ 已收到預約申請</h2>
-    <p style="padding:0; color:#666; font-size:16px; line-height:1.8;">請先加官方LINE好友並傳送下方預約代碼，我會回覆匯款資訊；完成匯款後，這個時段才會正式保留給你。<br>若同一時段有多人登記，將以完成匯款的先後順序為準 🌙</p>
+    <p style="padding:0; color:var(--soft-pink); font-size:16px; line-height:1.8;">請先加官方LINE好友並傳送下方預約代碼，我會回覆匯款資訊；完成匯款後，這個時段才會正式保留給妳。<br>若同一時段有多人登記，將以完成匯款的先後順序為準 🌙<br>【註:❤️善的力量則不需匯款，請加官方LINE好友並傳送下方預約代碼。】</p>
     <div class="confirm-summary">
       <div><b>姓名：</b>${esc(rec.name)}</div>
       <div><b>項目：</b>${esc(rec.serviceName)}${rec.addonNames.length?'＋'+rec.addonNames.map(esc).join('、'):''}</div>
@@ -1762,9 +1773,9 @@ function showConfirm(rec){
       <div><b>費用：</b>NT$${Number(rec.price).toLocaleString()}</div>
     </div>
     <div style="background:#FFF8E8; border:1.5px dashed var(--gold-border); border-radius:12px; padding:16px; margin:16px 0; text-align:center;">
-      <div style="font-size:14.5px; color:#999; margin-bottom:6px;">你的預約代碼</div>
+      <div style="font-size:14.5px; color:var(--soft-pink); margin-bottom:6px;">妳的預約代碼</div>
       <div style="font-size:28px; font-weight:900; letter-spacing:4px; color:var(--gold-text);">${esc(rec.code)}</div>
-      <div style="font-size:14.5px; color:#A67C2E; margin-top:8px; line-height:1.7;">加官方LINE好友後，請把這組代碼傳過去，我會立刻回覆你匯款金額與方式！</div>
+      <div style="font-size:14.5px; color:#A67C2E; margin-top:8px; line-height:1.7;">加官方LINE好友後，請把這組代碼傳過去，我會立刻協助妳完成預約！</div>
       <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:8px 18px; font-size:15px;" onclick="copyBookingCode('${esc(rec.code)}')">📋 複製代碼</button>
     </div>
     <a class="btn" href="${esc(lineLink)}" target="_blank" rel="noopener" style="margin:0; width:100%;">💬 加入官方 LINE，完成付款與預約 →</a>
