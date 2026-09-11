@@ -885,10 +885,14 @@ function loadWelcomeMsg(){ return localStorage.getItem(K_WELCOME) || defaultWelc
 function saveWelcomeMsg(){ const v=document.getElementById('setWelcomeMsg').value.trim()||defaultWelcomeMsg(); localStorage.setItem(K_WELCOME, v); welcomeMsg=v; pushRemoteSettings(); toast('歡迎詞已儲存'); }
 const K_POLICY='rt_booking_policy';
 function defaultCharityNotice(){
-  return '選擇這個名額，需要請你完成以下兩件事：\n1. 兩天內做一件善事（形式不拘，例如：到便利商店捐零錢、扶老人家過馬路都可以）\n2. 到我的 Instagram 留言分享這次諮詢的感受，作為我未來調整服務的參考\n\n每半年僅限使用一次這個名額。也請把這個珍貴的名額，留給更需要的人。\n\n要繼續選擇這個名額嗎？';
+  return '這個名額，是保留給「真心想諮詢、但目前經濟上暫時無法負擔」的朋友，並不是每個人都適用的福利。如果你目前有能力負擔，也想把機會留給更需要的人，歡迎選擇其他一般預約項目，這對我來說也是很大的支持 🙏\n\n選擇這個名額，需要請你完成以下兩件事：\n1. 兩天內做一件善事（形式不拘，例如：到便利商店捐零錢、扶老人家過馬路都可以）\n2. 到我的 Instagram 留言分享這次諮詢的感受，作為我未來調整服務的參考\n\n每人使用過一次後，需間隔至少半年才能再次申請這個名額；若確定預約後又取消，一年內將無法再申請。也請把這個珍貴的名額，留給更需要的人。\n\n要繼續選擇這個名額嗎？';
 }
 function defaultBookingPolicy(){
   return '【取消與爽約規範】\n系統都會提前一天溫馨小提醒預約時間，如需改期請務必提前告知，若:\n・無故爽約（預約時間已到未出現）：累計若達3次，半年內將無法再預約。\n・預約時間前24小時告知取消：可協助改期。\n・預約時間24小時內告知取消：可協助改期，但視同無故爽約。';
+}
+/* 善的力量（義診）名額專屬的取消與爽約規範，送出預約前的確認畫面上會取代一般規範顯示 */
+function defaultCharityBookingPolicy(){
+  return '【取消與爽約規範】\n系統都會提前一天溫馨小提醒預約時間，如需改期請務必提前告知，此為善的力量免費公益活動，若:\n・無故爽約（預約時間未出現）：則一年內將無法再預約。\n・預約時間前24小時告知取消：可協助改期。\n・預約時間24小時內告知取消：不協助改期，且視同無故爽約。';
 }
 function loadBookingPolicy(){ return localStorage.getItem(K_POLICY) || defaultBookingPolicy(); }
 function saveBookingPolicy(){ const v=document.getElementById('setBookingPolicy').value.trim()||defaultBookingPolicy(); localStorage.setItem(K_POLICY, v); bookingPolicy=v; pushRemoteSettings(); toast('預約注意事項已儲存'); }
@@ -1093,6 +1097,9 @@ function publicFieldsHTML(){
       <div id="addonChecksWrap">${addonChecks}</div>
       <p class="sub" id="addonFreeNotice" style="display:none; text-align:left; opacity:1; margin:6px 0 0; padding:0;">💛 此項目為免費服務，暫不提供加購延長諮詢方案</p>
     </div>`:''}
+    <div class="field full" id="charityRulesNotice" style="display:none; background:#FFF7E8; border:1px solid #F0D9A8; border-radius:10px; padding:12px 14px; margin-top:2px;">
+      <p class="sub" style="margin:0; padding:0; text-align:left; opacity:1; color:#8a6d3b; line-height:1.8;">💛 <strong>善的力量名額須知</strong>：這個名額保留給經濟上暫時無法負擔諮詢的朋友，每人使用過一次後，需間隔至少半年才能再次申請；<strong>若確定預約後又取消，一年內將無法再申請這個名額</strong>，還請斟酌後再送出預約。</p>
+    </div>
     <div class="field price-preview" id="pricePreview"></div>
     <div class="field">
       <label>預約日期 <span class="req">*</span></label>
@@ -1342,6 +1349,8 @@ function applyCharityAddonConstraint(){
   const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
   const checksWrap = document.getElementById('addonChecksWrap');
   const notice = document.getElementById('addonFreeNotice');
+  const rulesNotice = document.getElementById('charityRulesNotice');
+  if(rulesNotice) rulesNotice.style.display = (svc && svc.isCharity) ? 'block' : 'none';
   if(!checksWrap || !notice) return;
   if(svc && svc.isCharity){
     document.querySelectorAll('.pf-addon:checked').forEach(el=>{ el.checked = false; });
@@ -1446,8 +1455,9 @@ async function loadSlotsForDate(){
   hint.textContent = '讀取空位中…';
   grid.innerHTML = '';
 
-  let busy = []; // [[startMin,endMin], ...] 已確認，真正鎖住
-  let pending = []; // [[startMin,endMin], ...] 待確認，可候補
+  let busy = []; // [[startMin,endMin], ...] 已確認，真正鎖住（任何項目都算）
+  let pending = []; // [[startMin,endMin], ...] 待確認、非善的力量 → 顯示「可候補」
+  let pendingCharity = []; // [[startMin,endMin], ...] 待確認、善的力量 → 因為免費不需付款，直接視為「額滿」（不管現在選的是哪個項目）
   let dailyTotal = 0;
   if(webhookUrl){
     try{
@@ -1456,6 +1466,7 @@ async function loadSlotsForDate(){
       const data = await res.json();
       busy = data.busy || [];
       pending = data.pending || [];
+      pendingCharity = data.pendingCharity || [];
       dailyTotal = data.total || 0;
     }catch(err){
       records.forEach(r=>{
@@ -1464,8 +1475,14 @@ async function loadSlotsForDate(){
           const start = h*60+mi;
           const addonMin = (r.addonNames||[]).reduce((sum,n)=>sum+getDurationMinutes(n),0);
           const dur = getDurationMinutes(r.serviceName) + addonMin;
-          if(r.status==='已確認'){ busy.push([start, start+dur+(availability.bufferMinutes??15)]); dailyTotal++; }
-          else if(r.status==='待確認'){ pending.push([start, start+dur]); }
+          const buf = availability.bufferMinutes ?? 15;
+          // 緩衝時間前後都要留，避免新預約緊貼著別人預約的「開始前」完全不留間隔
+          const rSvc = services.find(s=> r.serviceName && r.serviceName.indexOf(s.name)===0);
+          if(r.status==='已確認'){ busy.push([start-buf, start+dur+buf]); dailyTotal++; }
+          else if(r.status==='待確認'){
+            if(rSvc && rSvc.isCharity) pendingCharity.push([start-buf, start+dur+buf]);
+            else pending.push([start-buf, start+dur+buf]);
+          }
         }
       });
     }
@@ -1483,7 +1500,7 @@ async function loadSlotsForDate(){
   });
 
   const now = new Date();
-  const isToday = dateStr === now.toISOString().slice(0,10);
+  const isToday = dateStr === toLocalDateStr(now);
   const nowMinutes = now.getHours()*60 + now.getMinutes();
   const dayFull = dailyTotal >= availability.dailyCapacity;
 
@@ -1500,8 +1517,10 @@ async function loadSlotsForDate(){
     const isPast = isToday && t<=nowMinutes;
     const overlapsConfirmed = busy.some(b=> t < b[1] && (t+duration) > b[0]);
     const overlapsPending = pending.some(b=> t < b[1] && (t+duration) > b[0]);
-    // 善的力量是免費名額，不開放「候補」：只要已經有人登記（哪怕對方還沒付款），直接視為額滿
-    const isFull = dayFull || overlapsConfirmed || (selSvc && selSvc.isCharity && overlapsPending);
+    const overlapsPendingCharity = pendingCharity.some(b=> t < b[1] && (t+duration) > b[0]);
+    // 善的力量是免費名額，不開放「候補」：只要已經有人登記（哪怕對方還沒付款），這個時段對「所有項目」
+    // 都要直接視為額滿——不是只有現在選善的力量的人才看得到額滿，因為老師只有一位，不可能同時段服務兩個人
+    const isFull = dayFull || overlapsConfirmed || overlapsPendingCharity;
     const isPendingSlot = !isFull && overlapsPending;
     let cls = 'slot-btn';
     if(isPast) cls += ' past';
@@ -1559,6 +1578,10 @@ async function reviewBooking(){
         alert(`很抱歉，你已經在 ${data.lastUsed} 使用過這個名額，每半年僅限使用一次，需要再等待一段時間才能再次預約。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
         return;
       }
+      if(data && data.lastCancelled){
+        alert(`很抱歉，你在 ${data.lastCancelled} 曾經預約這個名額後取消，取消後一年內無法再申請。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
+        return;
+      }
     }catch(err){ console.warn('資格檢查失敗', err); }
   }
   const datetime = dateStr + 'T' + selectedSlotHour;
@@ -1590,6 +1613,11 @@ function showBookingReview(b){
   box.style.display='block';
   const dt = new Date(b.datetime);
   const dtStr = isNaN(dt) ? b.datetime : dt.toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',weekday:'short',hour:'2-digit',minute:'2-digit'});
+  // 善的力量（義診）名額用專屬的取消/爽約規範，取代一般規範顯示
+  const svcForPolicy = services.find(s=>s.id===b.serviceId);
+  const policyText = (svcForPolicy && svcForPolicy.isCharity)
+    ? (svcForPolicy.charityBookingPolicy || defaultCharityBookingPolicy())
+    : bookingPolicy;
   box.innerHTML = `
     <h2 style="padding:0; margin-bottom:10px;">請確認你的預約內容</h2>
     <div class="confirm-summary">
@@ -1602,7 +1630,7 @@ function showBookingReview(b){
       ${b.question?`<div><b>想諮詢的問題：</b>${esc(b.question)}</div>`:''}
       ${b.other?`<div><b>其他備註：</b>${esc(b.other)}</div>`:''}
     </div>
-    ${bookingPolicy?`<p style="padding:0; color:#B4756A; font-size:13px; margin-top:12px; line-height:1.8; white-space:pre-line;">${esc(bookingPolicy)}</p>`:''}
+    ${policyText?`<p style="padding:0; color:#B4756A; font-size:13px; margin-top:12px; line-height:1.8; white-space:pre-line;">${esc(policyText)}</p>`:''}
     <p style="padding:0; color:#999; font-size:13px; margin-top:8px;">請確認以上內容無誤。送出後將無法自行修改，如果之後想更改預約內容，請直接透過LINE聯繫我調整。</p>
     <div style="display:flex; gap:10px; margin-top:14px;">
       <button class="btn btn-outline" style="flex:1; margin:0;" onclick="backToEditForm()">← 修改</button>
@@ -2157,6 +2185,7 @@ function openServiceEdit(id){
         </select>
       </div>
       <div class="field full"><label>客戶選擇此名額時，彈出的說明文字</label><textarea id="svc_charityNotice" style="min-height:100px;">${esc(s.charityNotice||defaultCharityNotice())}</textarea></div>
+      <div class="field full"><label>此名額專屬的「取消與爽約規範」（顯示在客戶送出預約前的確認畫面，會取代一般的取消規範）</label><textarea id="svc_charityBookingPolicy" style="min-height:120px;">${esc(s.charityBookingPolicy||defaultCharityBookingPolicy())}</textarea></div>
     </div>
   `;
   document.getElementById('svcModalOverlay').classList.add('open');
@@ -2208,6 +2237,8 @@ function saveSvcModal(){
       if(s.isCharity){
         s.charityWeekday = Number(document.getElementById('svc_charityWeekday').value);
         s.charityNotice = document.getElementById('svc_charityNotice').value.trim() || defaultCharityNotice();
+        const cbpEl = document.getElementById('svc_charityBookingPolicy');
+        if(cbpEl) s.charityBookingPolicy = cbpEl.value.trim() || defaultCharityBookingPolicy();
       }
     }
     saveServices(services); renderServiceSettings();
