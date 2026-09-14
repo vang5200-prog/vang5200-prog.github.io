@@ -1253,7 +1253,7 @@ function isDateDisabledReason(dateStr){
   if(availability.blockedDates.includes(dateStr)) return 'blocked';
   if(!availability.days.includes(weekday)) return 'closed';
   const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
-  if(svc && svc.isCharity && svc.charityWeekday!==undefined && svc.charityWeekday!==null && svc.charityWeekday!=='' && Number(svc.charityWeekday)!==weekday){
+  if(svc && svc.isCharity && !isCharityDayForService(svc, dateStr)){
     return 'charity';
   }
   if(svc && svc.isCharity){
@@ -1500,13 +1500,32 @@ function updatePricePreview(){
   document.getElementById('pricePreview').textContent = (svc && total>0) ? `本次預估費用：NT$ ${total.toLocaleString()}` : '';
 }
 let selectedSlotHour = null;
-/* 善的力量若設定了「固定預約時段」，這段時間在它開放的那個星期幾，要整段保留給善的力量，
+/* 星期日為每週開頭，算出某一天所在那一週的星期日日期字串，用來判斷兩個日期是不是同一週 */
+function getWeekStartDateStr(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  d.setDate(d.getDate() - d.getDay());
+  return toLocalDateStr(d);
+}
+/* 判斷某一天，對這個善的力量服務來說是不是「這一週」實際開放的那一天：
+   預設是每週固定的星期幾，但如果這一週有設定「本週改期」，就以改期的那天為準，
+   原本預設星期幾那一天，當週會自動變成不開放，改由指定的那天開放 */
+function isCharityDayForService(svc, dateStr){
+  const overrides = svc.charityDateOverrides || [];
+  if(overrides.includes(dateStr)) return true;
+  if(svc.charityWeekday===undefined || svc.charityWeekday===null || svc.charityWeekday==='') return true;
+  const d = new Date(dateStr+'T00:00:00');
+  if(Number(svc.charityWeekday)!==d.getDay()) return false;
+  const wk = getWeekStartDateStr(dateStr);
+  const overridden = overrides.some(o=>getWeekStartDateStr(o)===wk);
+  return !overridden;
+}
+/* 善的力量若設定了「固定預約時段」，這段時間在它這一週實際開放的那一天，要整段保留給善的力量，
    不管當天實際上有沒有人真的預約善的力量，其他方案一律不能預約這段時間（顯示額滿）。
    回傳含緩衝時間的保留區間 [start,end]（分鐘），沒有保留時段就回傳 null。 */
-function getCharityReservedWindow(weekday){
+function getCharityReservedWindowForDate(dateStr){
   const buf = availability.bufferMinutes ?? 15;
   for(const s of services){
-    if(s.isCharity && s.charityFixedStart && Number(s.charityWeekday)===weekday){
+    if(s.isCharity && s.charityFixedStart && isCharityDayForService(s, dateStr)){
       const start = Number(s.charityFixedStart.slice(0,2))*60 + Number(s.charityFixedStart.slice(3,5));
       const dur = getDurationMinutes(s.name);
       return { start: start-buf, end: start+dur+buf };
@@ -1560,15 +1579,14 @@ async function loadSlotsForDate(){
     return;
   }
   const selSvc = services.find(s=>s.id===document.getElementById('pf_service').value);
-  if(selSvc && selSvc.isCharity && Number(selSvc.charityWeekday)!==weekday){
+  if(selSvc && selSvc.isCharity && !isCharityDayForService(selSvc, dateStr)){
     grid.innerHTML = '';
     wrap.style.display='none';
-    const wLabels=['日','一','二','三','四','五','六'];
     document.getElementById('pf_date').value = '';
     const trigger = document.getElementById('pf_date_trigger');
     if(trigger){ trigger.textContent = '請選擇日期'; trigger.classList.add('placeholder'); }
     renderDatePicker();
-    toast(`「${selSvc.name.split('/')[0].trim()}」只在每週${wLabels[selSvc.charityWeekday]}開放，請重新選擇日期`);
+    toast(`「${selSvc.name.split('/')[0].trim()}」這一天沒有開放，請重新選擇日期`);
     return;
   }
 
@@ -1642,7 +1660,7 @@ async function loadSlotsForDate(){
 
   // 如果現在選的不是善的力量本身，而這一天剛好是善的力量開放的星期，
   // 就把善的力量固定時段（含緩衝）整段當成保留區，不管當天有沒有人真的登記善的力量都算額滿
-  const charityReserved = (!(selSvc && selSvc.isCharity)) ? getCharityReservedWindow(weekday) : null;
+  const charityReserved = (!(selSvc && selSvc.isCharity)) ? getCharityReservedWindowForDate(dateStr) : null;
 
   let html = '';
   let anySlot = false;
@@ -1700,10 +1718,8 @@ async function reviewBooking(){
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast('請輸入正確的 Email 格式'); return; }
   const svc = services.find(s=>s.id===serviceId);
   if(svc && svc.isCharity){
-    const d = new Date(dateStr+'T00:00:00');
-    if(d.getDay() !== Number(svc.charityWeekday)){
-      const wLabels=['日','一','二','三','四','五','六'];
-      toast(`「${svc.name.split('/')[0].trim()}」只在每週${wLabels[svc.charityWeekday]}開放，請重新選擇日期`);
+    if(!isCharityDayForService(svc, dateStr)){
+      toast(`「${svc.name.split('/')[0].trim()}」這一天沒有開放，請重新選擇日期`);
       return;
     }
   }
@@ -2332,6 +2348,7 @@ function openServiceEdit(id){
       </div>
       <div class="field"><label>每個月最多幾個名額（同一天只服務一位，一天用掉一個名額）</label><input id="svc_charityMonthlyCap" type="number" min="1" value="${Number(s.charityMonthlyCap)||4}"></div>
       <div class="field"><label>固定預約時段（客戶只能選這個時間，不會再出現一整排時段可選）</label><input id="svc_charityFixedStart" type="time" value="${s.charityFixedStart||'15:00'}"></div>
+      <div class="field full"><label>本週改期（選填，想把某一週的善的力量改到別天時使用。每行填一個日期 YYYY-MM-DD，例如 2026-09-16，代表那一週改到這一天開放，原本預設星期幾那天當週會自動關閉；時間仍然是上面設定的固定時段）</label><textarea id="svc_charityDateOverrides" style="min-height:60px;" placeholder="例如：&#10;2026-09-16">${esc((s.charityDateOverrides||[]).join('\n'))}</textarea></div>
       <div class="field full"><label>客戶選擇此名額時，彈出的說明文字</label><textarea id="svc_charityNotice" style="min-height:100px;">${esc(s.charityNotice||defaultCharityNotice())}</textarea></div>
       <div class="field full"><label>預約表單上一直顯示的「善的力量名額須知」文字（前面固定會加上「💛 善的力量名額須知：」，這裡只需要填後面的內容）</label><textarea id="svc_charityRulesNotice" style="min-height:80px;">${esc(s.charityRulesNotice||defaultCharityRulesNotice())}</textarea></div>
       <div class="field full"><label>此名額專屬的「取消與爽約規範」（顯示在客戶送出預約前的確認畫面，會取代一般的取消規範）</label><textarea id="svc_charityBookingPolicy" style="min-height:120px;">${esc(s.charityBookingPolicy||defaultCharityBookingPolicy())}</textarea></div>
@@ -2394,6 +2411,8 @@ function saveSvcModal(){
         if(cbpEl) s.charityBookingPolicy = cbpEl.value.trim() || defaultCharityBookingPolicy();
         const cfsEl = document.getElementById('svc_charityFixedStart');
         if(cfsEl) s.charityFixedStart = cfsEl.value || '15:00';
+        const cdoEl = document.getElementById('svc_charityDateOverrides');
+        if(cdoEl) s.charityDateOverrides = cdoEl.value.split('\n').map(x=>x.trim()).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));
       }
     }
     saveServices(services); renderServiceSettings();
