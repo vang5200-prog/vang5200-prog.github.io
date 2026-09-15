@@ -1135,7 +1135,7 @@ function publicFieldsHTML(){
     <div class="field"><label>預約項目 <span class="req">*</span></label>
       <select id="pf_service" onchange="onServiceChange()">${svcOptions}</select>
     </div>
-    <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview(); updateQuestionField(); if(document.getElementById('pf_date').value) loadSlotsForDate();"></select></div>
+    <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview(); updateQuestionField(); checkChakraTierNotice(); if(document.getElementById('pf_date').value) loadSlotsForDate();"></select></div>
     ${addons.length? `<div class="field" id="addonFieldWrap"><label>加購選項（可複選）</label>
       <div id="addonChecksWrap">${addonChecks}</div>
       <p class="sub" id="addonFreeNotice" style="display:none; text-align:left; opacity:1; margin:6px 0 0; padding:0;">💛 此項目為免費服務，暫不提供加購延長諮詢方案</p>
@@ -1408,6 +1408,20 @@ function updateQuestionField(){
   const inputEl = document.getElementById('pf_question');
   if(labelEl) labelEl.textContent = qLabel;
   if(inputEl) inputEl.placeholder = qPlaceholder;
+}
+/* 選到「單一脈輪」相關方案時，跳出提醒視窗，請客戶務必在問題欄清楚寫下想療癒的是哪一個脈輪，
+   避免預約送出後才發現沒講清楚，還要來回確認 */
+function checkChakraTierNotice(){
+  const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
+  const tierEl = document.getElementById('pf_tier');
+  if(!svc || !tierEl || !tierEl.value) return;
+  const tiers = parseTiers(svc.tiers);
+  const t = tiers[Number(tierEl.value)];
+  if(t && t.label.includes('單一') && t.label.includes('脈輪')){
+    alert('提醒妳：選擇這個方案時，請務必在下方問題欄清楚寫下妳想療癒的是「哪一個脈輪」（例如：海底輪、臍輪、太陽神經叢輪、心輪、喉輪、眉心輪、頂輪），這樣我才能確認方向唷 🙏');
+    const qInput = document.getElementById('pf_question');
+    if(qInput) setTimeout(()=>qInput.focus(), 300);
+  }
 }
 function updateMethodField(){
   const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
@@ -1745,7 +1759,18 @@ async function reviewBooking(){
   if(tierWrap.style.display!=='none'){
     if(!tierEl.value){ toast('請選擇方案'); return; }
     const tiers = parseTiers(svc.tiers);
-    tierLabel = tiers[Number(tierEl.value)] ? tiers[Number(tierEl.value)].label : '';
+    const tierObj = tiers[Number(tierEl.value)];
+    tierLabel = tierObj ? tierObj.label : '';
+    // 單一脈輪療癒一定要請客戶說清楚是哪一個脈輪，不然無法直接繼續送出
+    if(tierObj && tierObj.label.includes('單一') && tierObj.label.includes('脈輪')){
+      const qVal = document.getElementById('pf_question').value.trim();
+      if(!qVal){
+        toast('請先在下方問題欄填寫想療癒的脈輪，才能繼續送出');
+        const qInput = document.getElementById('pf_question');
+        if(qInput) qInput.focus();
+        return;
+      }
+    }
   }
   const sel = currentSelectedAddons();
   const basePrice = selectedTierPrice(svc);
@@ -1819,9 +1844,13 @@ async function confirmAndSubmit(){
     }
     return;
   }
+  // 如果後端判斷這是同一人（同Email）在同一個時段的重複送出，
+  // 就不再當成一筆新預約，改用原本那筆的代碼顯示，避免出現兩筆一樣的預約
+  const isDuplicate = !!(result && result.duplicate);
+  if(isDuplicate && result.code){ rec.code = result.code; }
   records.push(rec); saveRecords(records);
   document.getElementById('bookingReviewBox').style.display='none';
-  showConfirm(rec);
+  showConfirm(rec, isDuplicate);
   pendingBooking = null;
 }
 function copyBookingCode(code){
@@ -1831,15 +1860,19 @@ function copyBookingCode(code){
     toast('請手動選取代碼複製');
   }
 }
-function showConfirm(rec){
+function showConfirm(rec, isDuplicate){
   document.getElementById('bookingFormBox').style.display='none';
   const box = document.getElementById('bookingConfirmBox');
   box.style.display='block';
   const dt = new Date(rec.datetime);
   const dtStr = isNaN(dt) ? rec.datetime : dt.toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const titleText = isDuplicate ? '✓ 這個時段妳先前已經預約過了' : '✓ 已收到預約申請';
+  const introText = isDuplicate
+    ? '系統偵測到妳先前已經用同一個Email送出過這個時段的預約，所以這裡顯示的是妳原本那筆的預約代碼，不會重複建立唷。請直接加官方LINE好友並傳送下方代碼即可，不需要再重新預約一次 🌙'
+    : '請先加官方LINE好友並傳送下方預約代碼，我會回覆匯款資訊；完成匯款後，這個時段才會正式保留給妳。<br>若同一時段有多人登記，將以完成匯款的先後順序為準 🌙<br>【註:❤️善的力量則不需匯款，請加官方LINE好友並傳送下方預約代碼。】';
   box.innerHTML = `
-    <h2 style="padding:0; margin-bottom:6px;">✓ 已收到預約申請</h2>
-    <p style="padding:0; color:var(--soft-pink); font-size:17px; line-height:1.8;">請先加官方LINE好友並傳送下方預約代碼，我會回覆匯款資訊；完成匯款後，這個時段才會正式保留給妳。<br>若同一時段有多人登記，將以完成匯款的先後順序為準 🌙<br>【註:❤️善的力量則不需匯款，請加官方LINE好友並傳送下方預約代碼。】</p>
+    <h2 style="padding:0; margin-bottom:6px;">${titleText}</h2>
+    <p style="padding:0; color:var(--soft-pink); font-size:17px; line-height:1.8;">${introText}</p>
     <div class="confirm-summary">
       <div><b>姓名：</b>${esc(rec.name)}</div>
       <div><b>項目：</b>${esc(rec.serviceName)}${rec.addonNames.length?'＋'+rec.addonNames.map(esc).join('、'):''}</div>
