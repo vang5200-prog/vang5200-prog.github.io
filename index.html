@@ -109,6 +109,18 @@ p {
   50% { transform: scale(1.04); }
   100% { transform: scale(1); }
 }
+/* 加LINE好友提醒彈窗專用：比一般按鈕的pulse更明顯，抓住注意力用 */
+@keyframes pulseBig {
+  0% { transform: scale(1); box-shadow:0 4px 14px rgba(212,175,55,0.35); }
+  50% { transform: scale(1.07); box-shadow:0 8px 22px rgba(212,175,55,0.55); }
+  100% { transform: scale(1); box-shadow:0 4px 14px rgba(212,175,55,0.35); }
+}
+@keyframes modalPop {
+  0% { transform: scale(0.85); opacity:0; }
+  60% { transform: scale(1.03); opacity:1; }
+  100% { transform: scale(1); opacity:1; }
+}
+#lineReminderModalOverlay .modal{ animation: modalPop 0.35s ease-out; }
 
 /* ===== 卡片（金邊） ===== */
 .box {
@@ -552,6 +564,21 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
       <button class="btn btn-outline" style="flex:1; margin:0;" id="charityModalCancel">取消</button>
       <button class="btn" style="flex:1; margin:0;" id="charityModalOk">確定</button>
     </div>
+  </div>
+</div>
+
+<!-- 預約完成後的「加LINE好友」提醒彈窗：很多客戶送出預約後忘記加LINE，所以獨立跳出來，比放在頁面裡的按鈕更顯眼 -->
+<div class="modal-overlay" id="lineReminderModalOverlay">
+  <div class="modal" style="max-width:420px; text-align:center;">
+    <div style="font-size:38px; margin-bottom:4px;">⚠️</div>
+    <h3 style="margin:0 0 10px; font-size:19px; color:var(--brown);">最後一步別忘記！</h3>
+    <p style="font-size:16.5px; line-height:1.8; color:var(--soft-pink); margin:0 0 14px;">預約還沒完成唷，請務必加官方LINE好友並傳送妳的預約代碼，我才會收到通知幫妳安排 🙏</p>
+    <div style="background:#FFF8E8; border:1.5px dashed var(--gold-border); border-radius:12px; padding:12px; margin-bottom:16px;">
+      <div style="font-size:14.5px; color:var(--soft-pink); margin-bottom:4px;">妳的預約代碼</div>
+      <div id="lineReminderCode" style="font-size:24px; font-weight:900; letter-spacing:3px; color:var(--gold-text);"></div>
+    </div>
+    <a class="btn" id="lineReminderBtn" href="#" target="_blank" rel="noopener" style="margin:0; width:100%; animation: pulseBig 1.1s infinite;">💬 立即加入官方 LINE 好友 →</a>
+    <button class="btn btn-quiet" id="lineReminderDismiss" style="margin:12px auto 0;">我知道了，稍後再加</button>
   </div>
 </div>
 
@@ -1821,12 +1848,13 @@ function backToEditForm(){
   document.getElementById('bookingReviewBox').style.display='none';
   document.getElementById('bookingFormBox').style.display='block';
 }
-async function confirmAndSubmit(){
+async function confirmAndSubmit(confirmPlanChange){
   if(!pendingBooking) return;
   const btn = document.querySelector('#bookingReviewBox .btn:not(.btn-outline)');
   if(btn){ btn.disabled = true; btn.textContent = '送出中…'; }
   const rec = { id:uid(), code:generateBookingCode(), status:'待確認', createdAt:Date.now(), ...pendingBooking };
-  const result = await notifyWebhook(rec);
+  const payload = confirmPlanChange ? { ...rec, confirmPlanChange:true } : rec;
+  const result = await notifyWebhook(payload);
   if(result && result.ok===false){
     if(btn){ btn.disabled=false; btn.textContent='確認無誤，送出'; }
     if(result.error==='charity_weekday_invalid'){
@@ -1844,13 +1872,34 @@ async function confirmAndSubmit(){
     }
     return;
   }
+  // 同一人、同一個時段，但這次選的方案跟原本那筆不一樣，而且原本那筆客戶已經加LINE、核對過代碼了：
+  // 先跳出視窗問過客戶要不要真的換，答應了才真正送出（帶上confirmPlanChange再送一次），
+  // 這樣才不會客戶還在猶豫、前台一直重送，就一直通知到妳
+  if(result && result.requireConfirm){
+    if(btn){ btn.disabled=false; btn.textContent='確認無誤，送出'; }
+    const proceed = confirm(`妳先前已經預約過這個時段了（原方案：${result.oldServiceName}）。\n\n這次選的是「${result.newServiceName}」，要把這個時段改成這次的方案嗎？原本的方案將會被取消。`);
+    if(proceed){
+      await confirmAndSubmit(true);
+    } else {
+      rec.code = result.code;
+      records.push(rec); saveRecords(records);
+      document.getElementById('bookingReviewBox').style.display='none';
+      showConfirm(rec, true, false, true);
+      pendingBooking = null;
+    }
+    return;
+  }
   // 如果後端判斷這是同一人（同Email）在同一個時段的重複送出，
   // 就不再當成一筆新預約，改用原本那筆的代碼顯示，避免出現兩筆一樣的預約
   const isDuplicate = !!(result && result.duplicate);
-  if(isDuplicate && result.code){ rec.code = result.code; }
+  // 同一時段換了方案，後端已經直接套用最新選擇（原本沒加LINE，或是客戶剛剛已經確認要換）
+  const isPlanChanged = !!(result && result.planChanged);
+  if((isDuplicate || isPlanChanged) && result.code){ rec.code = result.code; }
+  // 已經加過LINE好友、核對過代碼的情況下，不用再跳出「加LINE」提醒
+  const alreadyLinked = !!(result && result.alreadyLinked);
   records.push(rec); saveRecords(records);
   document.getElementById('bookingReviewBox').style.display='none';
-  showConfirm(rec, isDuplicate);
+  showConfirm(rec, isDuplicate, isPlanChanged, alreadyLinked);
   pendingBooking = null;
 }
 function copyBookingCode(code){
@@ -1860,16 +1909,23 @@ function copyBookingCode(code){
     toast('請手動選取代碼複製');
   }
 }
-function showConfirm(rec, isDuplicate){
+function showConfirm(rec, isDuplicate, isPlanChanged, alreadyLinked){
   document.getElementById('bookingFormBox').style.display='none';
   const box = document.getElementById('bookingConfirmBox');
   box.style.display='block';
   const dt = new Date(rec.datetime);
   const dtStr = isNaN(dt) ? rec.datetime : dt.toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-  const titleText = isDuplicate ? '✓ 這個時段妳先前已經預約過了' : '✓ 已收到預約申請';
-  const introText = isDuplicate
-    ? '系統偵測到妳先前已經用同一個Email送出過這個時段的預約，所以這裡顯示的是妳原本那筆的預約代碼，不會重複建立唷。請直接加官方LINE好友並傳送下方代碼即可，不需要再重新預約一次 🌙'
-    : '請先加官方LINE好友並傳送下方預約代碼，我會回覆匯款資訊；完成匯款後，這個時段才會正式保留給妳。<br>若同一時段有多人登記，將以完成匯款的先後順序為準 🌙<br>【註:❤️善的力量則不需匯款，請加官方LINE好友並傳送下方預約代碼。】';
+  let titleText, introText;
+  if(isPlanChanged){
+    titleText = '✓ 已經幫妳更新這個時段的預約方案';
+    introText = '原本這個時段的方案已經取消，改成這次選的方案，預約代碼不變。如果還沒加官方LINE好友，請加好友後傳送下方代碼；如果已經加過好友，我會直接在後台為妳確認，不需要再重新傳送代碼 🌙';
+  } else if(isDuplicate){
+    titleText = '✓ 這個時段妳先前已經預約過了';
+    introText = '系統偵測到妳先前已經用同一個Email送出過這個時段的預約，所以這裡顯示的是妳原本那筆的預約代碼，不會重複建立唷。請直接加官方LINE好友並傳送下方代碼即可，不需要再重新預約一次 🌙';
+  } else {
+    titleText = '✓ 已收到預約申請';
+    introText = '請先加官方LINE好友並傳送下方預約代碼，我會回覆匯款資訊；完成匯款後，這個時段才會正式保留給妳。<br>若同一時段有多人登記，將以完成匯款的先後順序為準 🌙<br>【註:❤️善的力量則不需匯款，請加官方LINE好友並傳送下方預約代碼。】';
+  }
   box.innerHTML = `
     <h2 style="padding:0; margin-bottom:6px;">${titleText}</h2>
     <p style="padding:0; color:var(--soft-pink); font-size:17px; line-height:1.8;">${introText}</p>
@@ -1889,6 +1945,20 @@ function showConfirm(rec, isDuplicate){
     <button class="btn btn-outline" style="margin:10px 0 0; width:100%;" onclick="downloadIcs('${rec.id}')">📅 下載行事曆提醒</button>
     <button class="btn btn-quiet" style="margin:14px auto 0;" onclick="backToHome()">← 返回首頁</button>
   `;
+  // 已經加過LINE好友、核對過代碼的情況（例如換方案已確認），就不用再跳出「加LINE」提醒彈窗
+  if(!alreadyLinked){
+    showLineReminderModal(rec.code);
+  }
+}
+/* 預約完成後，跳出比頁面內按鈕更顯眼的「加LINE好友」提醒彈窗，
+   因為發現很多客戶送出預約後忘記加官方LINE、也忘記回傳代碼 */
+function showLineReminderModal(code){
+  const overlay = document.getElementById('lineReminderModalOverlay');
+  document.getElementById('lineReminderCode').textContent = code;
+  document.getElementById('lineReminderBtn').href = lineLink;
+  overlay.classList.add('open');
+  document.getElementById('lineReminderDismiss').onclick = ()=>{ overlay.classList.remove('open'); };
+  document.getElementById('lineReminderBtn').onclick = ()=>{ overlay.classList.remove('open'); };
 }
 function backToHome(){
   document.getElementById('bookingConfirmBox').style.display='none';
