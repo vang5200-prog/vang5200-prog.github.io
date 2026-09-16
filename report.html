@@ -363,6 +363,11 @@
   .backup-text{
     width:100%; min-height:130px; border:1px solid var(--border); border-radius:var(--radius-s);
     background:var(--surface-2); padding:10px; font-size:.74rem; font-family:ui-monospace,monospace; color:var(--text-2);
+    margin-top:8px;
+  }
+  .text-toggle-btn{
+    display:inline; border:none; background:none; padding:0; margin-left:4px;
+    color:var(--pink); font-size:inherit; font-weight:600; text-decoration:underline; cursor:pointer;
   }
 
   /* ================= Toast ================= */
@@ -1709,8 +1714,8 @@ function openSettings(){
         <button class="btn btn-secondary btn-sm" onclick="app.exportBackup()">${ICON.download}<span>匯出備份檔</span></button>
         <button class="btn btn-secondary btn-sm file-btn"><input type="file" accept="application/json" onchange="app.importBackup(this.files[0])">${ICON.upload}<span>匯入備份檔</span></button>
       </div>
-      <div class="hint">若下載按鈕無法使用，可用下方文字框整段複製備份，需要時再貼回匯入欄位。</div>
-      <textarea class="backup-text" readonly onclick="this.select()">${escapeHtml(JSON.stringify({records:state.records, settings:backupSafeSettings()}))}</textarea>
+      <div class="hint">若下載按鈕沒反應，可以改用文字複製備份，需要時再貼回匯入欄位。<button type="button" class="text-toggle-btn" id="backupTextToggle" onclick="app.toggleBackupText()">顯示文字備份</button></div>
+      <textarea class="backup-text" id="backupTextArea" readonly onclick="this.select()" style="display:none;">${escapeHtml(JSON.stringify({records:state.records, settings:backupSafeSettings()}))}</textarea>
       <div class="hint">為了安全，備份不會包含 Claude API Key 跟預約系統密碼，換裝置後這兩個要重新到設定裡貼一次。</div>
 
       <div class="danger-zone">
@@ -1767,6 +1772,14 @@ function backupSafeSettings(){
   delete s.bookingPassword;
   delete s.cloudSyncPassword;
   return s;
+}
+function toggleBackupText(){
+  const ta = document.getElementById('backupTextArea');
+  const btn = document.getElementById('backupTextToggle');
+  if(!ta) return;
+  const showing = ta.style.display !== 'none';
+  ta.style.display = showing ? 'none' : 'block';
+  if(btn) btn.textContent = showing ? '顯示文字備份' : '隱藏文字備份';
 }
 function exportBackup(){
   const payload = JSON.stringify({records:state.records, settings:backupSafeSettings(), exportedAt:new Date().toISOString()}, null, 2);
@@ -1867,7 +1880,7 @@ window.app = {
   go, showForm, editRecord, deleteRecord, clearExamples, viewReport,
   copyReportText, exportImage, submitForm, saveDraft, updateChakraPreview,
   setSearch, setFilterProgram, setFilterChakra, toggleSort,
-  openSettings, saveSettingsForm, exportBackup, importBackup, wipeAll,
+  openSettings, saveSettingsForm, exportBackup, importBackup, wipeAll, toggleBackupText,
   closeModal, cycleTheme, runAiSummarize, clearAiFresh, toggleApiKeyVisible,
   addProgramInline, addProgramFromSettings, removeProgram,
   openBookingImport, closeBookingImport, applyBookingImport, toggleBookingPwVisible,
