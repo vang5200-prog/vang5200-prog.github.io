@@ -3086,7 +3086,14 @@ if(isAdmin && sessionStorage.getItem('rt_admin_unlocked')!=='1'){
 renderServiceCards();
 renderHeroContent();
 if(isAdmin){
-  if(!document.body.classList.contains('admin-locked')) renderDashboard();
+  if(!document.body.classList.contains('admin-locked')){
+    renderDashboard();
+    // 找到問題：如果這個分頁本來就已經是解鎖狀態（例如手機瀏覽器重新整理頁面），
+    // 之前的邏輯不會再跟雲端重新同步一次，畫面顯示的只是手機上舊的本機快取，
+    // 導致「重新整理後還是看不到最新資料」。改成每次頁面載入、只要後台是解鎖狀態，
+    // 就一定會主動跟雲端重新抓一次最新的預約清單。
+    syncRecordsFromCloud();
+  }
 } else {
   resetPublicForm();
 }
