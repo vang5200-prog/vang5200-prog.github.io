@@ -1275,6 +1275,11 @@ function publicFieldsHTML(){
       <select id="pf_service" onchange="onServiceChange()">${svcOptions}</select>
     </div>
     <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview(); updateQuestionField(); checkChakraTierNotice(); if(document.getElementById('pf_date').value) loadSlotsForDate();"></select></div>
+    <div class="field full" id="chakraCheckWrap" style="display:none;">
+      <label id="chakraCheckLabel">請勾選妳想療癒的脈輪 <span class="req">*</span></label>
+      <div id="chakraCheckList" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px;"></div>
+      <p class="sub" id="chakraCheckHint" style="margin:6px 0 0; padding:0; text-align:left; opacity:1;"></p>
+    </div>
     ${addons.length? `<div class="field" id="addonFieldWrap"><label>加購選項（可複選）</label>
       <div id="addonChecksWrap">${addonChecks}</div>
       <p class="sub" id="addonFreeNotice" style="display:none; text-align:left; opacity:1; margin:6px 0 0; padding:0;">💛 此項目為免費服務，暫不提供加購延長諮詢方案</p>
@@ -1519,6 +1524,7 @@ document.addEventListener('click', function(e){
 function updateTierField(){
   const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
   const wrap = document.getElementById('tierFieldWrap');
+  hideChakraCheckWrap();
   const hasTiers = svc && svc.tiers && svc.tiers.length && Number(svc.price)<=0;
   if(!hasTiers){ wrap.style.display='none'; document.getElementById('pf_tier').innerHTML=''; return; }
   const tiers = parseTiers(svc.tiers);
@@ -1566,22 +1572,76 @@ function countDistinctChakras(text){
 function isValidChakraAnswer(text){
   return countDistinctChakras(text) >= 1;
 }
-/* 選到「單一脈輪」或「三脈輪組合」相關方案時，跳出提醒視窗，請客戶務必在問題欄清楚寫下想療癒的是哪(幾)個脈輪，
-   避免預約送出後才發現沒講清楚，還要來回確認 */
+/* 客戶用勾選的方式選擇脈輪（取代原本要自己打字寫脈輪名稱），每個脈輪只取代表名稱 */
+const CHAKRA_CANONICAL = CHAKRA_GROUPS.map(g=>g[0]);
+let chakraCheckMax = 0;
+function hideChakraCheckWrap(){
+  const wrap = document.getElementById('chakraCheckWrap');
+  if(wrap) wrap.style.display = 'none';
+  const listEl = document.getElementById('chakraCheckList');
+  if(listEl) listEl.innerHTML = '';
+  chakraCheckMax = 0;
+}
+function renderChakraCheckboxes(max, labelText){
+  chakraCheckMax = max;
+  const wrap = document.getElementById('chakraCheckWrap');
+  const labelEl = document.getElementById('chakraCheckLabel');
+  const listEl = document.getElementById('chakraCheckList');
+  if(!wrap || !listEl) return;
+  if(labelEl) labelEl.innerHTML = labelText + ' <span class="req">*</span>';
+  listEl.innerHTML = CHAKRA_CANONICAL.map(c=>`
+    <label style="display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid #EADFC8; border-radius:10px; cursor:pointer; font-size:15px;">
+      <input type="checkbox" class="chakraPickBox" value="${c}" onchange="enforceChakraMax()" style="width:17px; height:17px; margin:0;">${c}
+    </label>`).join('');
+  wrap.style.display = 'block';
+  updateChakraCheckHint();
+}
+function enforceChakraMax(){
+  const boxes = Array.from(document.querySelectorAll('.chakraPickBox'));
+  const checked = boxes.filter(b=>b.checked);
+  if(checked.length > chakraCheckMax){
+    checked[checked.length-1].checked = false;
+    toast(chakraCheckMax===1 ? '這個方案只能勾選1個脈輪唷' : `這個方案需要勾選${chakraCheckMax}個脈輪，最多勾選${chakraCheckMax}個`);
+  }
+  updateChakraCheckHint();
+}
+function updateChakraCheckHint(){
+  const boxes = Array.from(document.querySelectorAll('.chakraPickBox'));
+  const n = boxes.filter(b=>b.checked).length;
+  const hintEl = document.getElementById('chakraCheckHint');
+  if(hintEl) hintEl.textContent = `已勾選 ${n} / ${chakraCheckMax} 個`;
+}
+function getCheckedChakras(){
+  return Array.from(document.querySelectorAll('.chakraPickBox:checked')).map(b=>b.value);
+}
+function prependChakraToQuestion(picked){
+  const qInput = document.getElementById('pf_question');
+  if(!qInput) return;
+  const prefix = `【想療癒的脈輪】${picked.join('、')}`;
+  const cleaned = qInput.value.trim().replace(/^【想療癒的脈輪】[^\n]*\n*/,'').trim();
+  qInput.value = cleaned ? (prefix + '\n\n' + cleaned) : prefix;
+}
+/* 選到「單一脈輪」或「三脈輪組合」相關方案時，跳出提醒視窗，接著呈現勾選脈輪的區塊，
+   讓客戶直接勾選要療癒的脈輪，不用再自己打字寫脈輪名稱 */
 function checkChakraTierNotice(){
   const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
   const tierEl = document.getElementById('pf_tier');
-  if(!svc || !tierEl || !tierEl.value) return;
+  if(!svc || !tierEl || !tierEl.value){ hideChakraCheckWrap(); return; }
   const tiers = parseTiers(svc.tiers);
   const t = tiers[Number(tierEl.value)];
-  if(!t) return;
-  const qInput = document.getElementById('pf_question');
+  if(!t){ hideChakraCheckWrap(); return; }
   if(t.label.includes('單一') && t.label.includes('脈輪')){
-    alert('提醒妳：選擇這個方案時，請務必在下方問題欄清楚寫下妳想療癒的是「哪一個脈輪」（例如：海底輪、臍輪、太陽神經叢輪、心輪、喉輪、眉心輪、頂輪）。\n\n如果還不確定想療癒哪一個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
-    if(qInput) setTimeout(()=>qInput.focus(), 300);
+    alert('提醒妳：選擇這個方案時，請在下方勾選妳想療癒的是「哪一個脈輪」。\n\n如果還不確定想療癒哪一個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
+    renderChakraCheckboxes(1, '請勾選妳想療癒的脈輪');
+    const wrap = document.getElementById('chakraCheckWrap');
+    if(wrap) setTimeout(()=>wrap.scrollIntoView({behavior:'smooth', block:'center'}), 300);
   } else if(t.label.includes('三') && t.label.includes('脈輪')){
-    alert('提醒妳：選擇這個方案時，請務必在下方問題欄清楚寫下妳想療癒的是「哪三個脈輪」，需要寫出3個不同的脈輪名稱（例如：海底輪、心輪、頂輪；可從海底輪、臍輪、太陽神經叢輪、心輪、喉輪、眉心輪、頂輪這七個裡面選3個）。\n\n如果還不確定想療癒哪三個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
-    if(qInput) setTimeout(()=>qInput.focus(), 300);
+    alert('提醒妳：選擇這個方案時，請在下方勾選妳想療癒的「三個脈輪」（需勾選3個）。\n\n如果還不確定想療癒哪三個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
+    renderChakraCheckboxes(3, '請勾選妳想療癒的三個脈輪');
+    const wrap = document.getElementById('chakraCheckWrap');
+    if(wrap) setTimeout(()=>wrap.scrollIntoView({behavior:'smooth', block:'center'}), 300);
+  } else {
+    hideChakraCheckWrap();
   }
 }
 function updateMethodField(){
@@ -1922,25 +1982,27 @@ async function reviewBooking(){
     const tiers = parseTiers(svc.tiers);
     const tierObj = tiers[Number(tierEl.value)];
     tierLabel = tierObj ? tierObj.label : '';
-    // 單一脈輪療癒一定要請客戶說清楚是哪一個脈輪（要真的寫出脈輪名稱），不然無法直接繼續送出
+    // 單一脈輪療癒一定要請客戶勾選是哪一個脈輪，不然無法直接繼續送出
     if(tierObj && tierObj.label.includes('單一') && tierObj.label.includes('脈輪')){
-      const qVal = document.getElementById('pf_question').value.trim();
-      if(!isValidChakraAnswer(qVal)){
-        alert('請在下方問題欄清楚寫下妳想療癒的是「哪一個脈輪」（例如：海底輪、臍輪、太陽神經叢輪、心輪、喉輪、眉心輪、頂輪），才能繼續送出。\n\n如果還不確定想療癒哪一個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
-        const qInput = document.getElementById('pf_question');
-        if(qInput) qInput.focus();
+      const picked = getCheckedChakras();
+      if(picked.length < 1){
+        alert('請在上方勾選妳想療癒的「脈輪」，才能繼續送出。\n\n如果還不確定想療癒哪一個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
+        const wrap = document.getElementById('chakraCheckWrap');
+        if(wrap) wrap.scrollIntoView({behavior:'smooth', block:'center'});
         return;
       }
+      prependChakraToQuestion(picked);
     }
-    // 三脈輪組合療癒同樣要請客戶說清楚，而且要真的寫出3個不同的脈輪名稱，不然無法直接繼續送出
+    // 三脈輪組合療癒同樣要請客戶勾選，而且要勾滿3個不同的脈輪，不然無法直接繼續送出
     if(tierObj && tierObj.label.includes('三') && tierObj.label.includes('脈輪')){
-      const qVal = document.getElementById('pf_question').value.trim();
-      if(countDistinctChakras(qVal) < 3){
-        alert('請在下方問題欄清楚寫下妳想療癒的是「哪三個脈輪」，需要寫出3個不同的脈輪名稱才能繼續送出（可從海底輪、臍輪、太陽神經叢輪、心輪、喉輪、眉心輪、頂輪這七個裡面選3個）。\n\n如果還不確定想療癒哪三個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
-        const qInput = document.getElementById('pf_question');
-        if(qInput) qInput.focus();
+      const picked = getCheckedChakras();
+      if(picked.length !== 3){
+        alert('請在上方勾選妳想療癒的「三個脈輪」（需勾選3個），才能繼續送出。\n\n如果還不確定想療癒哪三個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
+        const wrap = document.getElementById('chakraCheckWrap');
+        if(wrap) wrap.scrollIntoView({behavior:'smooth', block:'center'});
         return;
       }
+      prependChakraToQuestion(picked);
     }
   }
   const sel = currentSelectedAddons();
