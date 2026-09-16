@@ -93,6 +93,7 @@
   }
   .icon-btn:hover{background:var(--tint-pink); color:var(--pink);}
   .icon-btn:active{transform:scale(.94);}
+  .icon-btn.sync-warn{color:#B5564A; border-color:#B5564A;}
 
   nav.tabs{
     max-width:840px; margin:0 auto; padding:12px 18px 0;
@@ -335,7 +336,11 @@
     box-shadow:var(--shadow-md);
   }
   @media (min-width:640px){ .modal{border-radius:var(--radius-l);} }
-  .modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:-24px; z-index:5;
+    background:var(--surface); margin:-24px -22px 16px; padding:24px 22px 12px;
+  }
   .modal-head h2{font-size:1.05rem; font-weight:900;}
   .modal .field:last-of-type{margin-bottom:12px;}
   .modal hr{border:none; border-top:1px solid var(--border); margin:18px 0;}
@@ -391,6 +396,7 @@
       <span class="sub">Consultation Report Studio</span>
     </div>
     <div class="top-actions">
+      <button class="icon-btn" id="syncBtn" title="立即同步" onclick="app.syncNow({manual:true})"></button>
       <button class="icon-btn" id="themeBtn" title="切換主題" onclick="app.cycleTheme()"></button>
       <button class="icon-btn" title="設定" onclick="app.openSettings()" id="settingsBtn"></button>
     </div>
@@ -436,7 +442,8 @@ const ICON = {
   eye:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
   eyeOff:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.2A10.4 10.4 0 0112 5c6.5 0 10 7 10 7a15.6 15.6 0 01-3.4 4.3M6.4 6.4C3.8 8.1 2 12 2 12s3.5 7 10 7a9.7 9.7 0 004.6-1.1"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg>',
   sync:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0115-6.7M21 12a9 9 0 01-15 6.7"/><polyline points="18 2 18 6 14 6"/><polyline points="6 22 6 18 10 18"/></svg>',
-  check:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+  check:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  mail:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>'
 };
 
 /* ============ Data ============ */
@@ -456,6 +463,7 @@ const CHAKRAS = [
 function chakraOf(id){ return CHAKRAS.find(c=>c.id===id) || CHAKRAS[3]; }
 
 const PROGRAMS_KEY = 'ltrs_programs_v1';
+const PROGRAMS_META_KEY = 'ltrs_programs_meta_v1';
 const DEFAULT_PROGRAMS = ['一對一諮詢','單一脈輪能量課程','全七脈輪能量課程','關係眼認證私塾','追蹤諮詢'];
 function loadPrograms(){
   try{
@@ -464,9 +472,38 @@ function loadPrograms(){
   }catch(e){ console.warn('loadPrograms failed', e); }
   return DEFAULT_PROGRAMS.slice();
 }
-function savePrograms(list){
+function loadProgramsUpdatedAt(){
+  try{ return Number(localStorage.getItem(PROGRAMS_META_KEY))||0; }catch(e){ return 0; }
+}
+function savePrograms(list, opts){
+  opts = opts || {};
   state.programs = list;
   try{ localStorage.setItem(PROGRAMS_KEY, JSON.stringify(list)); }catch(e){ console.warn(e); }
+  const ts = opts.updatedAt || Date.now();
+  try{ localStorage.setItem(PROGRAMS_META_KEY, String(ts)); }catch(e){ console.warn(e); }
+  if(!opts.skipPush) pushProgramsToCloud(list, ts);
+}
+function pushProgramsToCloud(list, ts){
+  if(!state.settings || !state.settings.cloudSyncUrl) return;
+  cloudRequest({type:'savePrograms', programs:list, updatedAt: ts}).catch(err=>{
+    console.warn('push programs failed', err);
+  });
+}
+function syncPrograms(){
+  if(!state.settings.cloudSyncUrl) return Promise.resolve();
+  return cloudRequest({type:'listPrograms'}).then(res=>{
+    const cloudTs = (res && res.updatedAt) || 0;
+    const localTs = loadProgramsUpdatedAt();
+    const cloudList = res && Array.isArray(res.programs) ? res.programs : null;
+    if(cloudList && cloudTs > localTs){
+      savePrograms(cloudList, {updatedAt:cloudTs, skipPush:true});
+      renderProgramChipsIfOpen();
+      if(state.view==='list' || state.view==='form') render();
+    }else if(cloudTs <= localTs){
+      const same = cloudList && JSON.stringify(cloudList)===JSON.stringify(state.programs);
+      if(!same) pushProgramsToCloud(state.programs, localTs || Date.now());
+    }
+  }).catch(err=>{ console.warn('syncPrograms failed', err); });
 }
 
 const DEFAULT_SETTINGS = {
@@ -519,9 +556,51 @@ function loadSettings(){
   }catch(e){ console.warn('loadSettings failed', e); }
   return Object.assign({}, DEFAULT_SETTINGS);
 }
-function saveSettings(s){
+const SETTINGS_META_KEY = 'ltrs_settings_meta_v1';
+function loadSettingsUpdatedAt(){
+  try{ return Number(localStorage.getItem(SETTINGS_META_KEY))||0; }catch(e){ return 0; }
+}
+function saveSettings(s, opts){
+  opts = opts || {};
   state.settings = s;
   try{ localStorage.setItem(SET_KEY, JSON.stringify(s)); }catch(e){ console.warn(e); }
+  let ts = loadSettingsUpdatedAt();
+  if(!opts.keepTimestamp){
+    ts = opts.updatedAt || Date.now();
+    try{ localStorage.setItem(SETTINGS_META_KEY, String(ts)); }catch(e){ console.warn(e); }
+  }
+  if(!opts.skipPush) pushSettingsToCloud(s, ts);
+}
+// 這幾項是「連到哪個雲端後台」本身需要的資訊，只能留在裝置本機手動填寫，不會被同步蓋掉
+const SETTINGS_LOCAL_ONLY_KEYS = ['cloudSyncUrl','cloudSyncPassword'];
+function syncableSettings(s){
+  const out = Object.assign({}, s);
+  SETTINGS_LOCAL_ONLY_KEYS.forEach(k=>delete out[k]);
+  return out;
+}
+function pushSettingsToCloud(s, ts){
+  if(!s.cloudSyncUrl) return;
+  cloudRequest({type:'saveSettings', settings: syncableSettings(s), updatedAt: ts}).catch(err=>{
+    console.warn('push settings failed', err);
+  });
+}
+function syncSettings(){
+  if(!state.settings.cloudSyncUrl) return Promise.resolve();
+  return cloudRequest({type:'listSettings'}).then(res=>{
+    const cloudTs = (res && res.updatedAt) || 0;
+    const localTs = loadSettingsUpdatedAt();
+    const cloudSettings = res && res.settings && typeof res.settings==='object' ? res.settings : null;
+    if(cloudSettings && cloudTs > localTs){
+      const merged = Object.assign({}, DEFAULT_SETTINGS, syncableSettings(cloudSettings), {
+        cloudSyncUrl: state.settings.cloudSyncUrl,
+        cloudSyncPassword: state.settings.cloudSyncPassword
+      });
+      saveSettings(merged, {updatedAt:cloudTs, skipPush:true});
+    }else if(cloudTs <= localTs){
+      const same = cloudSettings && JSON.stringify(syncableSettings(cloudSettings))===JSON.stringify(syncableSettings(state.settings));
+      if(!same) pushSettingsToCloud(state.settings, localTs || Date.now());
+    }
+  }).catch(err=>{ console.warn('syncSettings failed', err); });
 }
 
 /* ============ 雲端同步（電腦手機共用資料） ============ */
@@ -592,7 +671,8 @@ function syncNow(opts){
     return Promise.resolve();
   }
   state.syncStatus = 'syncing';
-  return pushPendingOps().then(()=>cloudRequest({type:'list'})).then(data=>{
+  updateSyncBtn();
+  return pushPendingOps().then(()=>syncPrograms()).then(()=>syncSettings()).then(()=>cloudRequest({type:'list'})).then(data=>{
     const cloudRecords = Array.isArray(data.records) ? data.records : [];
     const pendingIds = new Set(loadPending().map(o=>o.id));
     const localMap = new Map(state.records.filter(r=>!r.isExample).map(r=>[r.id, r]));
@@ -605,13 +685,22 @@ function syncNow(opts){
     saveRecords(examples.concat(Array.from(merged.values())));
     state.syncStatus = 'ok';
     state.lastSyncAt = Date.now();
+    updateSyncBtn();
     if(state.view==='dashboard' || state.view==='list' || state.view==='report') render();
     if(opts.manual) toast('已同步最新資料');
   }).catch(err=>{
     console.warn('syncNow failed', err);
     state.syncStatus = (err && err.message==='unauthorized') ? 'unauthorized' : 'error';
+    updateSyncBtn();
     if(opts.manual) toast(syncErrorMessage(err));
   });
+}
+function updateSyncBtn(){
+  const btn = document.getElementById('syncBtn');
+  if(!btn) return;
+  btn.innerHTML = state.syncStatus === 'syncing' ? ICON.spinner : ICON.sync;
+  btn.title = cloudStatusText();
+  btn.classList.toggle('sync-warn', state.syncStatus==='error' || state.syncStatus==='unauthorized');
 }
 function syncErrorMessage(err){
   const msg = err && err.message;
@@ -848,7 +937,7 @@ function renderList(){
 /* ============ Render: Form ============ */
 function renderForm(){
   const editing = state.editingId ? state.records.find(r=>r.id===state.editingId) : null;
-  const r = editing || {name:'', date:todayStr(), program:'', chakra:'heart', advice:'', notes:'', transcript:''};
+  const r = editing || {name:'', email:'', date:todayStr(), program:'', chakra:'heart', advice:'', notes:'', transcript:''};
   const c = chakraOf(r.chakra);
 
   let html = `<div class="view">
@@ -859,9 +948,15 @@ function renderForm(){
         ${editing ? '' : `<div class="field">
           <button type="button" class="ai-btn" style="width:100%; justify-content:center; padding:11px;" onclick="app.openBookingImport()">${ICON.sync}<span>從預約系統匯入客戶資料</span></button>
         </div>`}
-        <div class="field">
-          <label for="f_name">客戶姓名 *</label>
-          <input type="text" id="f_name" required value="${escapeHtml(r.name)}" placeholder="例如：陳小姐">
+        <div class="field grid2">
+          <div>
+            <label for="f_name">客戶姓名 *</label>
+            <input type="text" id="f_name" required value="${escapeHtml(r.name)}" placeholder="例如：陳小姐">
+          </div>
+          <div>
+            <label for="f_email">客戶 Email（選填，用於寄送報告）</label>
+            <input type="email" id="f_email" value="${escapeHtml(r.email||'')}" placeholder="例如：client@example.com">
+          </div>
         </div>
         <div class="field grid2">
           <div>
@@ -1030,6 +1125,7 @@ function collectFormPayload(requireDate){
   if(requireDate && !date){ toast('請填寫諮詢日期'); return null; }
   return {
     name,
+    email: document.getElementById('f_email').value.trim(),
     date: date || todayStr(),
     program: document.getElementById('f_program').value.trim(),
     chakra: document.getElementById('f_chakra').value,
@@ -1157,6 +1253,7 @@ function renderReportCard(r){
         <span class="n">${escapeHtml(r.name)}</span>
         <span class="tag">${escapeHtml(r.program||'未分類')}</span>
       </div>
+      ${r.email ? `<div class="meta" style="margin-top:2px;">${escapeHtml(r.email)}</div>` : ''}
     </div>
     <div class="r-chakra">
       <span class="chakra-dot dot ${c.dot}"></span>
@@ -1190,6 +1287,7 @@ function renderReport(){
       <div class="actions">
         <button class="btn btn-secondary btn-sm" onclick="app.copyReportText('${r.id}')">${ICON.copy}<span>複製文字</span></button>
         <button class="btn btn-secondary btn-sm" id="imgBtn" onclick="app.exportImage('${r.id}')">${ICON.download}<span>產生圖片</span></button>
+        <button class="btn btn-secondary btn-sm" onclick="app.sendReportEmail('${r.id}')">${ICON.mail}<span>寄送 Email</span></button>
         <button class="btn btn-secondary btn-sm" onclick="app.editRecord('${r.id}')">${ICON.pencil}<span>編輯</span></button>
       </div>
     </div>
@@ -1213,6 +1311,56 @@ function fallbackCopy(text, done){
   document.body.appendChild(ta); ta.select();
   try{ document.execCommand('copy'); done(); }catch(e){ toast('複製失敗，請手動選取文字'); }
   document.body.removeChild(ta);
+}
+function sendReportEmail(id){
+  const r = state.records.find(x=>x.id===id);
+  if(!r) return;
+  if(!r.email){
+    openEmailPrompt(r);
+    return;
+  }
+  openMailDraft(r);
+}
+function openEmailPrompt(r){
+  const holder = document.createElement('div');
+  holder.innerHTML = `<div class="overlay">
+    <div class="modal confirm-modal" style="text-align:left; max-width:380px;">
+      <div class="modal-head"><h2>填寫客戶 Email</h2><button type="button" class="icon-btn" id="em_close">${ICON.x}</button></div>
+      <p class="hint" style="margin-bottom:10px;">這筆紀錄還沒有 Email，請先輸入一次（會一併存到這筆紀錄，下次寄同一位客戶就不用再填）：</p>
+      <div class="field" style="margin-bottom:16px;">
+        <input type="email" id="em_input" placeholder="例如：client@example.com">
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" id="em_cancel">取消</button>
+        <button type="button" class="btn btn-primary" id="em_ok">下一步</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('modalRoot').appendChild(holder);
+  const input = holder.querySelector('#em_input');
+  input.focus();
+  const close = ()=>{ if(holder.parentNode) holder.parentNode.removeChild(holder); };
+  holder.querySelector('#em_close').onclick = close;
+  holder.querySelector('#em_cancel').onclick = close;
+  const commit = ()=>{
+    const val = input.value.trim();
+    if(!val){ input.focus(); return; }
+    const list = state.records.map(x=> x.id===r.id ? Object.assign({}, x, {email:val}) : x);
+    saveRecords(list);
+    const updated = list.find(x=>x.id===r.id);
+    if(updated && !updated.isExample) queueAndPush({type:'save', id:updated.id, record:updated});
+    close();
+    openMailDraft(updated);
+  };
+  holder.querySelector('#em_ok').onclick = commit;
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(); } });
+}
+function openMailDraft(r){
+  const subject = '您的諮詢報告書｜' + r.name;
+  const body = reportTextOf(r);
+  const url = 'mailto:' + encodeURIComponent(r.email||'') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  window.location.href = url;
+  toast('已開啟 Email 草稿，請在跳出的信箱視窗確認內容後按送出');
 }
 function exportImage(id){
   const r = state.records.find(x=>x.id===id);
@@ -1265,9 +1413,26 @@ function renderProgramChipsIfOpen(){
   if(el) el.innerHTML = programChipsHtml();
 }
 function removeProgram(name){
-  savePrograms(state.programs.filter(p=>p!==name));
-  renderProgramChipsIfOpen();
-  toast('已移除方案（既有紀錄不受影響）');
+  const used = state.records.filter(r=>r.program===name);
+  if(!used.length){
+    savePrograms(state.programs.filter(p=>p!==name));
+    renderProgramChipsIfOpen();
+    toast('已移除方案');
+    return;
+  }
+  confirmDialog(`「${escapeHtml(name)}」目前有 ${used.length} 筆紀錄使用中，移除後這些紀錄會改標示為「未分類」，客戶清單裡就不會再看到這個方案名稱了。確定要移除嗎？`, ()=>{
+    const list = state.records.map(r=> r.program===name ? Object.assign({}, r, {program:''}) : r);
+    saveRecords(list);
+    used.forEach(orig=>{
+      if(orig.isExample) return;
+      const updated = list.find(r=>r.id===orig.id);
+      if(updated) queueAndPush({type:'save', id:updated.id, record:updated});
+    });
+    savePrograms(state.programs.filter(p=>p!==name));
+    renderProgramChipsIfOpen();
+    if(document.getElementById('main')) render();
+    toast('已移除方案，相關紀錄已改為「未分類」');
+  });
 }
 function addProgramFromSettings(){
   const input = document.getElementById('s_newProgram');
@@ -1439,6 +1604,8 @@ function applyBookingImport(code){
   if(!b) return;
   const nameEl = document.getElementById('f_name');
   if(nameEl) nameEl.value = b.name || '';
+  const emailEl = document.getElementById('f_email');
+  if(emailEl && b.email) emailEl.value = b.email;
   if(b.datetime){
     const datePart = String(b.datetime).substring(0,10);
     const dateEl = document.getElementById('f_date');
@@ -1566,7 +1733,9 @@ function saveSettingsForm(){
     cloudSyncPassword: document.getElementById('s_cloudPassword').value
   };
   const cloudChanged = s.cloudSyncUrl !== state.settings.cloudSyncUrl || s.cloudSyncPassword !== state.settings.cloudSyncPassword;
-  saveSettings(s);
+  // 剛填/改雲端網址或密碼時，先不要把這台裝置目前的設定推上雲端，避免蓋掉雲端上已經有的真正資料，
+  // 交給接下來的 syncNow() 先拉一次雲端資料，用比較新的那份為準
+  saveSettings(s, {skipPush: cloudChanged, keepTimestamp: cloudChanged});
   toast('設定已儲存');
   closeModal();
   if(s.cloudSyncUrl && cloudChanged) syncNow({manual:true});
@@ -1688,6 +1857,7 @@ function render(){
 
 /* ============ Init ============ */
 document.getElementById('settingsBtn').innerHTML = ICON.gear;
+updateSyncBtn();
 applyTheme();
 render();
 if(state.settings.cloudSyncUrl) syncNow();
