@@ -881,10 +881,12 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 <div class="modal-overlay" id="reportModalOverlay">
   <div class="modal">
     <div class="modal-head"><h3 id="reportModalTitle">填寫報告書</h3><button class="modal-close" onclick="closeReportForm()">✕</button></div>
+    <div id="reportDraftBanner" style="display:none; background:#FFF6E0; border:1px dashed var(--gold-border); border-radius:10px; padding:10px 12px; font-size:13.5px; color:var(--soft-pink); margin-bottom:14px; line-height:1.6;">這是一筆<b>待補充的草稿</b>，內容還沒填完沒關係，可以先「暫存草稿」，之後再回來補完整。</div>
     <div class="admin-field-grid" id="reportModalFields"></div>
-    <div style="display:flex; gap:10px; margin-top:18px;">
-      <button class="btn btn-outline" style="flex:1; margin:0;" onclick="closeReportForm()">取消</button>
-      <button class="btn" style="flex:1; margin:0;" onclick="saveReportForm()">儲存報告書</button>
+    <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+      <button class="btn btn-outline" style="flex:1; margin:0; min-width:80px;" onclick="closeReportForm()">取消</button>
+      <button class="btn btn-outline" style="flex:1; margin:0; min-width:80px;" onclick="saveReportForm(true)">暫存草稿</button>
+      <button class="btn" style="flex:1; margin:0; min-width:80px;" onclick="saveReportForm(false)">儲存並完成</button>
     </div>
   </div>
 </div>
@@ -896,7 +898,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
     <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
       <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 14px; font-size:14px;" onclick="copyReportCardText()">📋 複製文字</button>
       <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 14px; font-size:14px;" id="reportImgBtn" onclick="exportReportCardImage()">🖼️ 產生圖片</button>
-      <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 14px; font-size:14px;" onclick="sendReportCardEmail()">✉️ 寄送 Email</button>
+      <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 14px; font-size:14px;" id="reportEmailBtn" onclick="sendReportCardEmail()">✉️ 寄送 Email</button>
     </div>
     <div style="display:flex; justify-content:center;"><div id="reportCardEl"></div></div>
     <div id="reportImgResult" style="display:none; margin-top:16px; text-align:center;">
@@ -2191,8 +2193,11 @@ function renderList(){
         ${r.status==='已確認'?`<button class="danger" onclick="quickStatus('${r.id}','無故爽約')">標記無故爽約</button>`:''}
         ${r.status==='已確認'?`<button onclick="quickStatus('${r.id}','臨時取消')">標記臨時取消</button>`:''}
         ${r.status==='待確認'?`<button class="danger" onclick="rejectBookingFull('${r.id}')">婉拒（時段已滿）</button>`:''}
-        <button onclick="openReportForm('${r.id}')">${reports.some(x=>x.bookingCode===r.code)?'📝 編輯報告書':'📝 填寫報告書'}</button>
-        ${reports.some(x=>x.bookingCode===r.code)?`<button onclick="openReportCard('${r.id}')">🪧 查看卡片</button>`:''}
+        ${(()=>{ const rep = reports.find(x=>x.bookingCode===r.code);
+          const label = !rep ? '📝 填寫報告書' : (rep.isDraft ? '📝 補完草稿' : '📝 編輯報告書');
+          let html = `<button onclick="openReportForm('${r.id}')">${label}</button>`;
+          if(rep) html += `<button onclick="openReportCard('${r.id}')">🪧 查看／發送</button>`;
+          return html; })()}
         <button onclick="openForm('${r.id}')">編輯</button>
         ${r.status!=='已取消'?`<button onclick="quickStatus('${r.id}','已取消')">取消</button>`:''}
         <button class="danger" onclick="deleteRecord('${r.id}')">刪除</button>
@@ -2340,7 +2345,8 @@ function openReportForm(id){
   editingReportId = id;
   const rep = reports.find(x=>x.bookingCode===rec.code) || {};
   const chakraOptions = REPORT_CHAKRA_OPTIONS.map(c=>`<option value="${esc(c)}" ${rep.chakra===c?'selected':''}>${esc(c)}</option>`).join('');
-  document.getElementById('reportModalTitle').textContent = rep.bookingCode ? '編輯報告書' : '填寫報告書';
+  document.getElementById('reportModalTitle').textContent = rep.bookingCode ? (rep.isDraft ? '補完草稿' : '編輯報告書') : '填寫報告書';
+  document.getElementById('reportDraftBanner').style.display = rep.isDraft ? 'block' : 'none';
   document.getElementById('reportModalFields').innerHTML = `
     <div class="field"><label>客戶姓名</label><input value="${esc(rec.name||'')}" disabled></div>
     <div class="field"><label>Email</label><input value="${esc(rec.email||'')}" disabled></div>
@@ -2387,7 +2393,7 @@ async function runReportAiSummarize(){
   }catch(err){ toast('AI整理失敗，請檢查網路連線'); }
   finally{ btn.disabled=false; btn.innerHTML=originalHtml; }
 }
-async function saveReportForm(){
+async function saveReportForm(asDraft){
   const bookingId = editingReportId;
   const rec = records.find(x=>x.id===bookingId); if(!rec || !rec.code){ toast('找不到對應的預約，請重新開啟'); return; }
   const report = {
@@ -2397,6 +2403,7 @@ async function saveReportForm(){
     advice: document.getElementById('rf_advice').value.trim(),
     notes: document.getElementById('rf_notes').value.trim(),
     transcript: document.getElementById('rf_transcript').value.trim(),
+    isDraft: !!asDraft,
   };
   if(!webhookUrl){ toast('尚未設定雲端網址，無法儲存報告書'); return; }
   try{
@@ -2409,8 +2416,12 @@ async function saveReportForm(){
       const idx = reports.findIndex(x=>x.bookingCode===rec.code);
       if(idx>=0) reports[idx]=data.report; else reports.push(data.report);
       closeReportForm(); renderList();
-      toast('報告書已儲存');
-      openReportCard(bookingId);
+      if(asDraft){
+        toast('已暫存草稿，之後可以回來補完整');
+      } else {
+        toast('報告書已儲存');
+        openReportCard(bookingId);
+      }
     } else {
       toast('儲存失敗，請檢查雲端設定');
     }
@@ -2535,15 +2546,32 @@ function exportReportCardImage(){
     toast('圖片產生失敗，請改用複製文字');
   });
 }
-function sendReportCardEmail(){
+async function sendReportCardEmail(){
   const rec = records.find(x=>x.id===currentReportCardId); if(!rec) return;
   const rep = reports.find(x=>x.bookingCode===rec.code); if(!rep) return;
   let email = rec.email || '';
   if(!email){ email = prompt('這位客戶尚未留下Email，請輸入要寄送的Email：')||''; if(!email) return; }
+  const draftNote = rep.isDraft ? '\n\n⚠️ 這份報告書目前還是「草稿」狀態，內容可能還沒填完整。' : '';
+  if(!confirm(`確定要把上面這份報告書直接寄給「${rec.name}」（${email}）嗎？\n送出後會立刻寄出，請先確認卡片內容都正確無誤。${draftNote}`)) return;
+  if(!webhookUrl){ toast('尚未設定雲端網址，無法寄送'); return; }
   const subject = '妳的諮詢報告書｜' + (rec.name||'');
   const body = reportCardTextOf(rec, rep);
-  window.location.href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-  toast('已開啟Email草稿，請在跳出的信箱視窗確認內容後按送出');
+  const btn = document.getElementById('reportEmailBtn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '寄送中...';
+  try{
+    const res = await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'sendReportEmail', password: sessionStorage.getItem('rt_admin_pw')||'', email, subject, body })
+    });
+    const data = await res.json();
+    if(data && data.ok){
+      toast('已成功寄出Email給客戶 🎉');
+    } else {
+      toast('寄送失敗：' + ((data&&data.error)||'請稍後再試，或改用「複製文字」自行傳送'));
+    }
+  }catch(err){ toast('寄送失敗，請檢查網路連線'); }
+  finally{ btn.disabled=false; btn.innerHTML=originalHtml; }
 }
 
 /* ============================================================
