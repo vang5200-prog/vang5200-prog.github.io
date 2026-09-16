@@ -1548,13 +1548,25 @@ function updateQuestionField(){
   if(labelEl) labelEl.textContent = qLabel;
   if(inputEl) inputEl.placeholder = qPlaceholder;
 }
-/* 七大脈輪的常見名稱（含慣用別名），用來檢查客戶在「單一脈輪療癒」問題欄寫的是不是真的有講出一個脈輪 */
-const CHAKRA_KEYWORDS = ['海底輪','海底','臍輪','生殖輪','薦骨輪','太陽神經叢輪','太陽輪','胃輪','心輪','喉輪','眉心輪','第三眼輪','印堂輪','頂輪'];
-function isValidChakraAnswer(text){
-  if(!text) return false;
-  return CHAKRA_KEYWORDS.some(k=>text.includes(k));
+/* 七大脈輪的常見名稱（含慣用別名，同一組陣列內的別名都算同一個脈輪），用來檢查客戶在問題欄
+   寫的是不是真的有講出脈輪、以及講了幾個「不同」的脈輪（避免同一個脈輪講兩種說法被誤算成2個） */
+const CHAKRA_GROUPS = [
+  ['海底輪','海底'],
+  ['臍輪','生殖輪','薦骨輪'],
+  ['太陽神經叢輪','太陽輪','胃輪'],
+  ['心輪'],
+  ['喉輪'],
+  ['眉心輪','第三眼輪','印堂輪'],
+  ['頂輪']
+];
+function countDistinctChakras(text){
+  if(!text) return 0;
+  return CHAKRA_GROUPS.filter(group=>group.some(k=>text.includes(k))).length;
 }
-/* 選到「單一脈輪」相關方案時，跳出提醒視窗，請客戶務必在問題欄清楚寫下想療癒的是哪一個脈輪，
+function isValidChakraAnswer(text){
+  return countDistinctChakras(text) >= 1;
+}
+/* 選到「單一脈輪」或「三脈輪組合」相關方案時，跳出提醒視窗，請客戶務必在問題欄清楚寫下想療癒的是哪(幾)個脈輪，
    避免預約送出後才發現沒講清楚，還要來回確認 */
 function checkChakraTierNotice(){
   const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
@@ -1562,9 +1574,13 @@ function checkChakraTierNotice(){
   if(!svc || !tierEl || !tierEl.value) return;
   const tiers = parseTiers(svc.tiers);
   const t = tiers[Number(tierEl.value)];
-  if(t && t.label.includes('單一') && t.label.includes('脈輪')){
+  if(!t) return;
+  const qInput = document.getElementById('pf_question');
+  if(t.label.includes('單一') && t.label.includes('脈輪')){
     alert('提醒妳：選擇這個方案時，請務必在下方問題欄清楚寫下妳想療癒的是「哪一個脈輪」（例如：海底輪、臍輪、太陽神經叢輪、心輪、喉輪、眉心輪、頂輪）。\n\n如果還不確定想療癒哪一個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
-    const qInput = document.getElementById('pf_question');
+    if(qInput) setTimeout(()=>qInput.focus(), 300);
+  } else if(t.label.includes('三') && t.label.includes('脈輪')){
+    alert('提醒妳：選擇這個方案時，請務必在下方問題欄清楚寫下妳想療癒的是「哪三個脈輪」，需要寫出3個不同的脈輪名稱（例如：海底輪、心輪、頂輪；可從海底輪、臍輪、太陽神經叢輪、心輪、喉輪、眉心輪、頂輪這七個裡面選3個）。\n\n如果還不確定想療癒哪三個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
     if(qInput) setTimeout(()=>qInput.focus(), 300);
   }
 }
@@ -1911,6 +1927,16 @@ async function reviewBooking(){
       const qVal = document.getElementById('pf_question').value.trim();
       if(!isValidChakraAnswer(qVal)){
         alert('請在下方問題欄清楚寫下妳想療癒的是「哪一個脈輪」（例如：海底輪、臍輪、太陽神經叢輪、心輪、喉輪、眉心輪、頂輪），才能繼續送出。\n\n如果還不確定想療癒哪一個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
+        const qInput = document.getElementById('pf_question');
+        if(qInput) qInput.focus();
+        return;
+      }
+    }
+    // 三脈輪組合療癒同樣要請客戶說清楚，而且要真的寫出3個不同的脈輪名稱，不然無法直接繼續送出
+    if(tierObj && tierObj.label.includes('三') && tierObj.label.includes('脈輪')){
+      const qVal = document.getElementById('pf_question').value.trim();
+      if(countDistinctChakras(qVal) < 3){
+        alert('請在下方問題欄清楚寫下妳想療癒的是「哪三個脈輪」，需要寫出3個不同的脈輪名稱才能繼續送出（可從海底輪、臍輪、太陽神經叢輪、心輪、喉輪、眉心輪、頂輪這七個裡面選3個）。\n\n如果還不確定想療癒哪三個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
         const qInput = document.getElementById('pf_question');
         if(qInput) qInput.focus();
         return;
