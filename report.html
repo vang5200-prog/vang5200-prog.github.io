@@ -574,7 +574,8 @@ function queueAndPush(op){
 function cloudStatusText(){
   if(!state.settings.cloudSyncUrl) return '尚未設定雲端同步網址';
   if(state.syncStatus==='syncing') return '同步中…';
-  if(state.syncStatus==='error') return '⚠️ 同步失敗，請確認網址、密碼與網路連線';
+  if(state.syncStatus==='unauthorized') return '⚠️ 密碼不正確，請確認「同步密碼」跟 Apps Script 裡的 ADMIN_PASSWORD 完全一致';
+  if(state.syncStatus==='error') return '⚠️ 連線失敗，請確認網址是否正確';
   if(state.lastSyncAt) return '✅ 最後同步時間：'+new Date(state.lastSyncAt).toLocaleString('zh-TW');
   return '尚未同步過，按下方「立即同步」試試看';
 }
@@ -603,9 +604,15 @@ function syncNow(opts){
     if(opts.manual) toast('已同步最新資料');
   }).catch(err=>{
     console.warn('syncNow failed', err);
-    state.syncStatus = 'error';
-    if(opts.manual) toast('同步失敗，請確認網址、密碼與網路連線');
+    state.syncStatus = (err && err.message==='unauthorized') ? 'unauthorized' : 'error';
+    if(opts.manual) toast(syncErrorMessage(err));
   });
+}
+function syncErrorMessage(err){
+  const msg = err && err.message;
+  if(msg === 'unauthorized') return '密碼不正確，請確認「同步密碼」跟 Apps Script 指令碼屬性裡的 ADMIN_PASSWORD 完全一致（含大小寫、不能有多餘空格）';
+  if(msg === 'not_configured') return '尚未設定雲端同步網址';
+  return '連線失敗，請確認網址是否正確，或稍後再試';
 }
 
 function seedIfEmpty(){
