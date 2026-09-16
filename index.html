@@ -2370,7 +2370,11 @@ function openReportForm(id){
   if(!rec.code){ toast('這筆預約尚未產生預約代碼，無法建立報告書'); return; }
   editingReportId = id;
   const rep = reports.find(x=>x.bookingCode===rec.code) || {};
-  const chakraOptions = REPORT_CHAKRA_OPTIONS.map(c=>`<option value="${esc(c)}" ${rep.chakra===c?'selected':''}>${esc(c)}</option>`).join('');
+  const selectedChakras = String(rep.chakra||'').split('、').map(s=>s.trim()).filter(Boolean);
+  const chakraChecks = REPORT_CHAKRA_OPTIONS.map(c=>`
+    <label style="display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid #EADFC8; border-radius:10px; cursor:pointer; font-size:15px;">
+      <input type="checkbox" class="rf_chakra_box" value="${esc(c)}" ${selectedChakras.includes(c)?'checked':''} style="width:17px; height:17px; margin:0;">${esc(c)}
+    </label>`).join('');
   document.getElementById('reportModalTitle').textContent = rep.bookingCode ? (rep.isDraft ? '補完草稿' : '編輯報告書') : '填寫報告書';
   document.getElementById('reportDraftBanner').style.display = rep.isDraft ? 'block' : 'none';
   document.getElementById('reportModalFields').innerHTML = `
@@ -2378,14 +2382,24 @@ function openReportForm(id){
     <div class="field"><label>Email</label><input value="${esc(rec.email||'')}" disabled></div>
     <div class="field"><label>預約時間</label><input value="${esc(rec.datetime||'')}" disabled></div>
     <div class="field"><label>方案</label><input value="${esc(rec.serviceName||'')}" disabled></div>
-    <div class="field full"><label>對應脈輪／方向</label><select id="rf_chakra"><option value="">（未指定）</option>${chakraOptions}</select></div>
     <div class="field full">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px;">
+      <label>對應脈輪／方向（可複選）</label>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px;">${chakraChecks}</div>
+    </div>
+    <div class="field full">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px; flex-wrap:wrap;">
         <label style="margin:0;">對話逐字稿（選填）</label>
-        <button type="button" id="reportAiBtn" class="btn btn-outline" style="margin:0; width:auto; padding:6px 13px; font-size:13.5px;" onclick="runReportAiSummarize()">✨ AI 整理重點</button>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <select id="rf_ai_detail" style="padding:6px 8px; font-size:13px; border:1px solid #EADFC8; border-radius:8px; background:#fff;">
+            <option value="brief">精簡</option>
+            <option value="detailed" selected>詳細（預設）</option>
+            <option value="full">盡量完整保留（適合長對話）</option>
+          </select>
+          <button type="button" id="reportAiBtn" class="btn btn-outline" style="margin:0; width:auto; padding:6px 13px; font-size:13.5px;" onclick="runReportAiSummarize()">✨ AI 整理重點</button>
+        </div>
       </div>
       <textarea id="rf_transcript" rows="4">${esc(rep.transcript||'')}</textarea>
-      <div style="font-size:13px; color:#999; margin-top:5px;">貼上這次的對話紀錄後按右上角按鈕，AI 會幫妳整理出下面兩欄的草稿，記得確認後再儲存。</div>
+      <div style="font-size:13px; color:#999; margin-top:5px;">貼上這次的對話紀錄後選好篇幅、按右上角按鈕，AI 會幫妳整理出下面兩欄的草稿。如果整理出來的內容還是覺得刪太多，可以改選「盡量完整保留」再試一次，記得確認後再儲存。</div>
     </div>
     <div class="field full"><label>諮詢重點與建議</label><textarea id="rf_advice" rows="4">${esc(rep.advice||'')}</textarea></div>
     <div class="field full"><label>注意事項</label><textarea id="rf_notes" rows="3">${esc(rep.notes||'')}</textarea></div>
@@ -2402,9 +2416,10 @@ async function runReportAiSummarize(){
   const originalHtml = btn.innerHTML;
   btn.disabled = true; btn.innerHTML = '整理中...';
   try{
+    const detailLevel = document.getElementById('rf_ai_detail')?.value || 'detailed';
     const res = await fetch(webhookUrl, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'aiSummarizeReport', password: sessionStorage.getItem('rt_admin_pw')||'', transcript:text })
+      body: JSON.stringify({ type:'aiSummarizeReport', password: sessionStorage.getItem('rt_admin_pw')||'', transcript:text, detailLevel })
     });
     const data = await res.json();
     if(data && data.ok){
@@ -2425,7 +2440,7 @@ async function saveReportForm(asDraft){
   const report = {
     bookingCode: rec.code,
     name: rec.name||'', email: rec.email||'', date: rec.datetime||'', program: rec.serviceName||'',
-    chakra: document.getElementById('rf_chakra').value,
+    chakra: Array.from(document.querySelectorAll('.rf_chakra_box:checked')).map(el=>el.value).join('、'),
     advice: document.getElementById('rf_advice').value.trim(),
     notes: document.getElementById('rf_notes').value.trim(),
     transcript: document.getElementById('rf_transcript').value.trim(),
@@ -2470,7 +2485,14 @@ const REPORT_CHAKRA_META = {
 function reportChakraMeta(name){ return REPORT_CHAKRA_META[name] || {en:'', meaning:'', color:'#C6A85A'}; }
 let currentReportCardId = null;
 function reportCardHtml(rec, rep){
-  const c = reportChakraMeta(rep.chakra);
+  const chakraList = String(rep.chakra||'').split('、').map(s=>s.trim()).filter(Boolean);
+  const chakraBlocks = chakraList.map(name=>{
+    const c = reportChakraMeta(name);
+    return `<div class="rpt-chakra">
+      <span class="dot" style="background:${c.color};"></span>
+      <div class="info"><b>${esc(name)}</b><span>${esc(c.meaning)}</span></div>
+    </div>`;
+  }).join('');
   return `<div class="rpt-card" id="rptCardInner">
     <div class="rpt-eyebrow">諮詢報告 · CONSULTATION REPORT</div>
     <div class="rpt-rule"></div>
@@ -2483,10 +2505,7 @@ function reportCardHtml(rec, rep){
         ${rec.email?`<span class="em">${esc(rec.email)}</span>`:''}
       </div>
     </div>
-    ${rep.chakra?`<div class="rpt-chakra">
-      <span class="dot" style="background:${c.color};"></span>
-      <div class="info"><b>${esc(rep.chakra)}</b><span>${esc(c.meaning)}</span></div>
-    </div>`:''}
+    ${chakraBlocks}
     <div class="rpt-section">
       <h4>諮詢重點與建議</h4>
       <div class="body">${esc(rep.advice || '（無）')}</div>
@@ -2507,7 +2526,8 @@ function reportCardHtml(rec, rep){
   </div>`;
 }
 function reportCardTextOf(rec, rep){
-  const c = reportChakraMeta(rep.chakra);
+  const chakraList = String(rep.chakra||'').split('、').map(s=>s.trim()).filter(Boolean);
+  const chakraLines = chakraList.map(name=>name+'｜'+reportChakraMeta(name).meaning).join('\n');
   const line = '──────────────';
   return [
     line, '✦ 本次諮詢報告 ✦', line,
@@ -2515,7 +2535,7 @@ function reportCardTextOf(rec, rep){
     '時間｜'+fmtDt(rec.datetime),
     '方案｜'+(rec.serviceName||'未分類'),
     '',
-    rep.chakra ? ('【脈輪療癒】'+rep.chakra+'｜'+c.meaning+'\n') : '',
+    chakraLines ? ('【脈輪療癒】\n'+chakraLines+'\n') : '',
     '【諮詢重點與建議】', rep.advice || '（無）', '',
     '【注意事項】', rep.notes || '（無）', '',
     rep.transcript ? ('【本次對話紀錄】\n'+rep.transcript+'\n') : '',
