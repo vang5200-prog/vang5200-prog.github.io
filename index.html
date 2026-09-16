@@ -482,6 +482,38 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .gate-error{ color:#B4756A; font-size:14.5px; margin:-6px 0 12px; display:none; }
 
 @media(max-width:480px){ .admin-field-grid{ grid-template-columns:1fr; } .stat-grid{ grid-template-columns:repeat(2,1fr); } }
+
+/* ===== 諮詢報告卡片（給客戶看的成品） ===== */
+.rpt-card{
+  width:100%; max-width:520px; background:#fff; border:1px solid var(--gold-border);
+  border-radius:18px; padding:30px 26px 24px; box-shadow:0 10px 30px rgba(44,44,44,0.08);
+  font-family:-apple-system, BlinkMacSystemFont, sans-serif; box-sizing:border-box;
+}
+.rpt-eyebrow{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold-text); font-weight:700; }
+.rpt-rule{ height:1px; background:linear-gradient(to right, var(--gold-border), transparent); margin:8px 0 18px; }
+.rpt-meta{ display:flex; justify-content:space-between; font-size:13px; color:var(--muted); margin-bottom:16px; }
+.rpt-client{ display:flex; align-items:stretch; gap:12px; margin-bottom:14px; }
+.rpt-client .bar{ width:4px; border-radius:4px; background:var(--gold-border); }
+.rpt-client .who{ display:flex; flex-direction:column; gap:5px; justify-content:center; }
+.rpt-client .who .n{ font-size:22px; font-weight:800; color:var(--brown); }
+.rpt-client .tag{ font-size:12.5px; color:var(--gold-text); background:#FFF6E0; border-radius:999px; padding:2px 10px; display:inline-block; width:fit-content; }
+.rpt-client .em{ font-size:13px; color:#999; margin-top:2px; }
+.rpt-chakra{ display:flex; align-items:center; gap:11px; padding:11px 14px; border-radius:12px; background:var(--cream); margin-bottom:20px; }
+.rpt-chakra .dot{ width:20px; height:20px; border-radius:50%; flex:none; }
+.rpt-chakra .info b{ font-size:15px; color:var(--brown); }
+.rpt-chakra .info span{ display:block; font-size:12.5px; color:#999; margin-top:1px; }
+.rpt-section{ margin-bottom:18px; }
+.rpt-section h4{ display:flex; align-items:center; gap:7px; font-size:14.5px; font-weight:700; margin:0 0 8px; color:var(--brown); }
+.rpt-section h4::before{ content:''; width:7px; height:7px; background:var(--gold-border); border-radius:2px; flex:none; }
+.rpt-section .body{ font-size:15px; line-height:1.8; color:#3A3A3A; white-space:pre-wrap; word-break:break-word; }
+.rpt-callout{ background:#FFF6E0; border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
+.rpt-transcript{ background:var(--cream); border:1px solid #EADFC8; border-radius:12px; padding:13px 15px; }
+.rpt-transcript .body{ font-size:13.5px; color:#555; }
+.rpt-footer{ text-align:center; margin-top:6px; }
+.rpt-footer .rule2{ height:1px; background:linear-gradient(to right, transparent, var(--gold-border), transparent); margin-bottom:12px; }
+.rpt-footer .closing{ font-size:13.5px; color:#555; line-height:1.7; margin-bottom:6px; }
+.rpt-footer .who2{ font-size:12px; color:#999; letter-spacing:.03em; }
+.rpt-footer .who2 b{ color:var(--gold-text); font-weight:700; }
 </style>
 </head>
 <body>
@@ -826,8 +858,39 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   </div>
 </div>
 
+<!-- 諮詢報告書 Modal -->
+<div class="modal-overlay" id="reportModalOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="reportModalTitle">填寫報告書</h3><button class="modal-close" onclick="closeReportForm()">✕</button></div>
+    <div class="admin-field-grid" id="reportModalFields"></div>
+    <div style="display:flex; gap:10px; margin-top:18px;">
+      <button class="btn btn-outline" style="flex:1; margin:0;" onclick="closeReportForm()">取消</button>
+      <button class="btn" style="flex:1; margin:0;" onclick="saveReportForm()">儲存報告書</button>
+    </div>
+  </div>
+</div>
+
+<!-- 諮詢報告卡片（成品）Modal -->
+<div class="modal-overlay" id="reportCardModalOverlay">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-head"><h3>報告卡片</h3><button class="modal-close" onclick="closeReportCard()">✕</button></div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+      <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 14px; font-size:14px;" onclick="copyReportCardText()">📋 複製文字</button>
+      <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 14px; font-size:14px;" id="reportImgBtn" onclick="exportReportCardImage()">🖼️ 產生圖片</button>
+      <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 14px; font-size:14px;" onclick="sendReportCardEmail()">✉️ 寄送 Email</button>
+    </div>
+    <div style="display:flex; justify-content:center;"><div id="reportCardEl"></div></div>
+    <div id="reportImgResult" style="display:none; margin-top:16px; text-align:center;">
+      <img id="reportImgPreview" style="max-width:100%; border-radius:12px; border:1px solid var(--gold-border);">
+      <p style="font-size:13px; color:#999; margin:10px 0 6px;">手機請長按圖片選「儲存圖片」，電腦請按右鍵「另存新圖」，即可存下傳給客戶。</p>
+      <a id="reportImgDownload" class="btn" style="width:auto; display:inline-flex; margin:0; text-decoration:none;">⬇️ 下載圖片</a>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 /* ============================================================
    儲存 Keys
@@ -1090,6 +1153,8 @@ let methods = loadMethods();
 if(!localStorage.getItem(K_SERVICES)) saveServices(services);
 if(!localStorage.getItem(K_ADDONS)) saveAddons(addons);
 let editingId = null;
+let reports = []; // 諮詢報告書清單，跟雲端試算表的「諮詢報告」分頁同步，不用localStorage持久化，每次進後台重新抓一次即可
+let editingReportId = null; // 目前正在編輯報告書的那筆「預約」id（不是報告本身的id）
 
 /* ============================================================
    客戶前台：服務卡片 / 加購卡片（讀 localStorage 動態渲染）
@@ -2081,6 +2146,8 @@ function renderList(){
         ${r.status==='已確認'?`<button class="danger" onclick="quickStatus('${r.id}','無故爽約')">標記無故爽約</button>`:''}
         ${r.status==='已確認'?`<button onclick="quickStatus('${r.id}','臨時取消')">標記臨時取消</button>`:''}
         ${r.status==='待確認'?`<button class="danger" onclick="rejectBookingFull('${r.id}')">婉拒（時段已滿）</button>`:''}
+        <button onclick="openReportForm('${r.id}')">${reports.some(x=>x.bookingCode===r.code)?'📝 編輯報告書':'📝 填寫報告書'}</button>
+        ${reports.some(x=>x.bookingCode===r.code)?`<button onclick="openReportCard('${r.id}')">🪧 查看卡片</button>`:''}
         <button onclick="openForm('${r.id}')">編輯</button>
         ${r.status!=='已取消'?`<button onclick="quickStatus('${r.id}','已取消')">取消</button>`:''}
         <button class="danger" onclick="deleteRecord('${r.id}')">刪除</button>
@@ -2112,6 +2179,7 @@ async function syncRecordsFromCloud(){
       toast('預約清單已同步最新資料');
     }
   }catch(err){ console.warn('同步預約清單失敗', err); }
+  syncReportsFromCloud();
 }
 async function updateStatusRemote(code, status){
   if(!webhookUrl || !code) return;
@@ -2201,6 +2269,203 @@ function deleteRecord(id){
   records=records.filter(x=>x.id!==id); saveRecords(records); renderList();
   deleteRecordRemote(r.code);
   toast('已刪除');
+}
+
+/* ============================================================
+   後台：諮詢報告書
+============================================================ */
+const REPORT_CHAKRA_OPTIONS = ['海底輪','臍輪','太陽神經叢輪','心輪','喉輪','眉心輪','頂輪','七大脈輪完整療癒（不限單一脈輪）'];
+async function syncReportsFromCloud(){
+  if(!webhookUrl) return;
+  try{
+    const res = await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'listReports', password: sessionStorage.getItem('rt_admin_pw')||'' })
+    });
+    const data = await res.json();
+    if(data && data.ok && data.reports){
+      reports = data.reports;
+      if(document.getElementById('tab-list')?.classList.contains('active')) renderList();
+    }
+  }catch(err){ console.warn('同步報告書清單失敗', err); }
+}
+function openReportForm(id){
+  const rec = records.find(x=>x.id===id); if(!rec) return;
+  if(!rec.code){ toast('這筆預約尚未產生預約代碼，無法建立報告書'); return; }
+  editingReportId = id;
+  const rep = reports.find(x=>x.bookingCode===rec.code) || {};
+  const chakraOptions = REPORT_CHAKRA_OPTIONS.map(c=>`<option value="${esc(c)}" ${rep.chakra===c?'selected':''}>${esc(c)}</option>`).join('');
+  document.getElementById('reportModalTitle').textContent = rep.bookingCode ? '編輯報告書' : '填寫報告書';
+  document.getElementById('reportModalFields').innerHTML = `
+    <div class="field"><label>客戶姓名</label><input value="${esc(rec.name||'')}" disabled></div>
+    <div class="field"><label>Email</label><input value="${esc(rec.email||'')}" disabled></div>
+    <div class="field"><label>預約時間</label><input value="${esc(rec.datetime||'')}" disabled></div>
+    <div class="field"><label>方案</label><input value="${esc(rec.serviceName||'')}" disabled></div>
+    <div class="field full"><label>對應脈輪／方向</label><select id="rf_chakra"><option value="">（未指定）</option>${chakraOptions}</select></div>
+    <div class="field full"><label>諮詢重點與建議</label><textarea id="rf_advice" rows="4">${esc(rep.advice||'')}</textarea></div>
+    <div class="field full"><label>注意事項</label><textarea id="rf_notes" rows="3">${esc(rep.notes||'')}</textarea></div>
+    <div class="field full"><label>對話逐字稿（選填）</label><textarea id="rf_transcript" rows="4">${esc(rep.transcript||'')}</textarea></div>
+  `;
+  document.getElementById('reportModalOverlay').classList.add('open');
+}
+function closeReportForm(){ document.getElementById('reportModalOverlay').classList.remove('open'); editingReportId=null; }
+async function saveReportForm(){
+  const bookingId = editingReportId;
+  const rec = records.find(x=>x.id===bookingId); if(!rec || !rec.code){ toast('找不到對應的預約，請重新開啟'); return; }
+  const report = {
+    bookingCode: rec.code,
+    name: rec.name||'', email: rec.email||'', date: rec.datetime||'', program: rec.serviceName||'',
+    chakra: document.getElementById('rf_chakra').value,
+    advice: document.getElementById('rf_advice').value.trim(),
+    notes: document.getElementById('rf_notes').value.trim(),
+    transcript: document.getElementById('rf_transcript').value.trim(),
+  };
+  if(!webhookUrl){ toast('尚未設定雲端網址，無法儲存報告書'); return; }
+  try{
+    const res = await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'saveReport', password: sessionStorage.getItem('rt_admin_pw')||'', report })
+    });
+    const data = await res.json();
+    if(data && data.ok && data.report){
+      const idx = reports.findIndex(x=>x.bookingCode===rec.code);
+      if(idx>=0) reports[idx]=data.report; else reports.push(data.report);
+      closeReportForm(); renderList();
+      toast('報告書已儲存');
+      openReportCard(bookingId);
+    } else {
+      toast('儲存失敗，請檢查雲端設定');
+    }
+  }catch(err){ toast('儲存失敗，請檢查網路連線'); }
+}
+
+/* ============================================================
+   後台：諮詢報告卡片（給客戶看的成品：複製文字／產生圖片／寄Email）
+============================================================ */
+const REPORT_CHAKRA_META = {
+  '海底輪': {en:'Root Chakra', meaning:'安全感與根基', color:'#B5564A'},
+  '臍輪': {en:'Sacral Chakra', meaning:'情感流動與親密', color:'#D98C7A'},
+  '太陽神經叢輪': {en:'Solar Plexus Chakra', meaning:'自信與意志力', color:'#C6A85A'},
+  '心輪': {en:'Heart Chakra', meaning:'愛與連結', color:'#7C9473'},
+  '喉輪': {en:'Throat Chakra', meaning:'表達與溝通', color:'#5B7FA6'},
+  '眉心輪': {en:'Third Eye Chakra', meaning:'覺察與直覺', color:'#6E6EA8'},
+  '頂輪': {en:'Crown Chakra', meaning:'靈性連結與信任', color:'#9A7FBE'},
+  '七大脈輪完整療癒（不限單一脈輪）': {en:'All Chakras', meaning:'全面能量疏通與整合', color:'#C6A85A'}
+};
+function reportChakraMeta(name){ return REPORT_CHAKRA_META[name] || {en:'', meaning:'', color:'#C6A85A'}; }
+let currentReportCardId = null;
+function reportCardHtml(rec, rep){
+  const c = reportChakraMeta(rep.chakra);
+  return `<div class="rpt-card" id="rptCardInner">
+    <div class="rpt-eyebrow">諮詢報告 · CONSULTATION REPORT</div>
+    <div class="rpt-rule"></div>
+    <div class="rpt-meta"><span>諮詢時間</span><span>${esc(fmtDt(rec.datetime))}</span></div>
+    <div class="rpt-client">
+      <span class="bar"></span>
+      <div class="who">
+        <span class="n">${esc(rec.name||'')}</span>
+        <span class="tag">${esc(rec.serviceName||'未分類')}</span>
+        ${rec.email?`<span class="em">${esc(rec.email)}</span>`:''}
+      </div>
+    </div>
+    ${rep.chakra?`<div class="rpt-chakra">
+      <span class="dot" style="background:${c.color};"></span>
+      <div class="info"><b>${esc(rep.chakra)}</b><span>${esc(c.meaning)}</span></div>
+    </div>`:''}
+    <div class="rpt-section">
+      <h4>諮詢重點與建議</h4>
+      <div class="body">${esc(rep.advice || '（無）')}</div>
+    </div>
+    <div class="rpt-section">
+      <h4>注意事項</h4>
+      <div class="rpt-callout body">${esc(rep.notes || '（無）')}</div>
+    </div>
+    ${rep.transcript?`<div class="rpt-section" style="margin-bottom:6px;">
+      <h4>本次對話紀錄</h4>
+      <div class="rpt-transcript"><div class="body">${esc(rep.transcript)}</div></div>
+    </div>`:''}
+    <div class="rpt-footer">
+      <div class="rule2"></div>
+      <div class="closing">願這份紀錄，陪妳慢慢梳理心的方向。</div>
+      <div class="who2"><b>情感讀心師</b>　@lovetalker_tw</div>
+    </div>
+  </div>`;
+}
+function reportCardTextOf(rec, rep){
+  const c = reportChakraMeta(rep.chakra);
+  const line = '──────────────';
+  return [
+    line, '✦ 本次諮詢報告 ✦', line,
+    '客戶｜'+(rec.name||''),
+    '時間｜'+fmtDt(rec.datetime),
+    '方案｜'+(rec.serviceName||'未分類'),
+    '',
+    rep.chakra ? ('【脈輪療癒】'+rep.chakra+'｜'+c.meaning+'\n') : '',
+    '【諮詢重點與建議】', rep.advice || '（無）', '',
+    '【注意事項】', rep.notes || '（無）', '',
+    rep.transcript ? ('【本次對話紀錄】\n'+rep.transcript+'\n') : '',
+    line, '願這份紀錄，陪妳慢慢梳理心的方向。', '情感讀心師　@lovetalker_tw'
+  ].filter(x=>x!=='').join('\n');
+}
+function openReportCard(id){
+  const rec = records.find(x=>x.id===id); if(!rec) return;
+  const rep = reports.find(x=>x.bookingCode===rec.code);
+  if(!rep){ toast('請先填寫報告書內容'); return; }
+  currentReportCardId = id;
+  document.getElementById('reportCardEl').innerHTML = reportCardHtml(rec, rep);
+  document.getElementById('reportImgResult').style.display = 'none';
+  document.getElementById('reportCardModalOverlay').classList.add('open');
+}
+function closeReportCard(){ document.getElementById('reportCardModalOverlay').classList.remove('open'); currentReportCardId = null; }
+function copyReportCardText(){
+  const rec = records.find(x=>x.id===currentReportCardId); if(!rec) return;
+  const rep = reports.find(x=>x.bookingCode===rec.code); if(!rep) return;
+  const text = reportCardTextOf(rec, rep);
+  const done = ()=>toast('已複製報告文字，可直接貼到LINE');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopyText(text, done));
+  } else { fallbackCopyText(text, done); }
+}
+function fallbackCopyText(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ toast('複製失敗，請手動選取文字'); }
+  document.body.removeChild(ta);
+}
+function exportReportCardImage(){
+  const card = document.getElementById('rptCardInner');
+  if(!card || !window.html2canvas){ toast('圖片功能載入失敗，請改用複製文字'); return; }
+  const rec = records.find(x=>x.id===currentReportCardId);
+  const btn = document.getElementById('reportImgBtn');
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = '產生中...';
+  window.html2canvas(card, {scale:2, backgroundColor:'#ffffff', useCORS:true}).then(canvas=>{
+    btn.innerHTML = originalHtml;
+    canvas.toBlob(blob=>{
+      if(!blob){ toast('圖片產生失敗，請改用複製文字'); return; }
+      const url = URL.createObjectURL(blob);
+      document.getElementById('reportImgPreview').src = url;
+      const dl = document.getElementById('reportImgDownload');
+      dl.href = url;
+      dl.setAttribute('download', '諮詢報告_'+(rec?rec.name:'客戶')+'.png');
+      document.getElementById('reportImgResult').style.display = 'block';
+    });
+  }).catch(err=>{
+    console.warn('html2canvas failed', err);
+    btn.innerHTML = originalHtml;
+    toast('圖片產生失敗，請改用複製文字');
+  });
+}
+function sendReportCardEmail(){
+  const rec = records.find(x=>x.id===currentReportCardId); if(!rec) return;
+  const rep = reports.find(x=>x.bookingCode===rec.code); if(!rep) return;
+  let email = rec.email || '';
+  if(!email){ email = prompt('這位客戶尚未留下Email，請輸入要寄送的Email：')||''; if(!email) return; }
+  const subject = '妳的諮詢報告書｜' + (rec.name||'');
+  const body = reportCardTextOf(rec, rep);
+  window.location.href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  toast('已開啟Email草稿，請在跳出的信箱視窗確認內容後按送出');
 }
 
 /* ============================================================
