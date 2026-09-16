@@ -258,7 +258,7 @@
     display:flex; align-items:center; gap:8px; margin-top:9px; font-size:.8rem; color:var(--text-2);
     background:var(--surface-2); border-radius:var(--radius-s); padding:8px 11px;
   }
-  .form-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:22px;}
+  .form-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:22px; flex-wrap:wrap;}
   .btn{
     border:none; border-radius:999px; padding:11px 22px; font-size:.9rem; font-weight:700;
     display:inline-flex; align-items:center; gap:7px; transition:transform .1s, opacity .15s;
@@ -749,7 +749,7 @@ function renderDashboard(){
 
   if(draftCount > 0){
     html += `<div class="banner">
-      <span>有 <b>${draftCount}</b> 筆從預約系統自動帶入的<b>待補充草稿</b>（客戶已完成諮詢，等妳補上重點內容）。</span>
+      <span>有 <b>${draftCount}</b> 筆<b>待補充草稿</b>（自動帶入或先暫存的都算），等妳補上重點內容。</span>
       <button onclick="app.go('list')">查看草稿</button>
     </div>`;
   }
@@ -839,7 +839,7 @@ function renderForm(){
 
   let html = `<div class="view">
     <div class="section-head"><h2>${editing ? '編輯諮詢紀錄' : '新增諮詢紀錄'}</h2></div>
-    ${editing && editing.isDraft ? `<div class="banner"><span>這是客戶完成諮詢後<b>自動帶入</b>的草稿，姓名/日期/方案已幫妳填好，請補上下面的諮詢問題與建議、注意事項、對話紀錄後儲存。</span></div>` : ''}
+    ${editing && editing.isDraft ? `<div class="banner"><span>這是一筆<b>待補充的草稿</b>，內容還沒填完。可以繼續補充後按「${editing ? '儲存變更' : '儲存並產生報告書'}」正式完成，或再次按「暫存草稿」保持草稿狀態。</span></div>` : ''}
     <div class="card">
       <form id="recordForm" onsubmit="return app.submitForm(event)">
         ${editing ? '' : `<div class="field">
@@ -898,8 +898,10 @@ function renderForm(){
         <div class="form-actions">
           ${editing ? `<button type="button" class="btn btn-danger btn-sm" onclick="app.deleteRecord('${editing.id}')">${ICON.trash}<span>刪除</span></button>` : ''}
           <button type="button" class="btn btn-secondary" onclick="app.go('${editing ? 'list' : 'dashboard'}')">取消</button>
+          <button type="button" class="btn btn-secondary" onclick="app.saveDraft()"><span>暫存草稿</span></button>
           <button type="submit" class="btn btn-primary"><span>${editing ? '儲存變更' : '儲存並產生報告書'}</span></button>
         </div>
+        <div class="hint" style="text-align:right; margin-top:6px;">資料還沒打好？可以先按「暫存草稿」，之後再回來補完整。</div>
       </form>
     </div>
   </div>`;
@@ -1007,40 +1009,57 @@ async function runAiSummarize(){
     btn.innerHTML = originalHtml;
   }
 }
-function submitForm(e){
-  e.preventDefault();
+function collectFormPayload(requireDate){
   const name = document.getElementById('f_name').value.trim();
   const date = document.getElementById('f_date').value;
-  if(!name || !date){ toast('請填寫客戶姓名與諮詢日期'); return false; }
-  const payload = {
+  if(!name){ toast('請至少填寫客戶姓名'); return null; }
+  if(requireDate && !date){ toast('請填寫諮詢日期'); return null; }
+  return {
     name,
-    date,
+    date: date || todayStr(),
     program: document.getElementById('f_program').value.trim(),
     chakra: document.getElementById('f_chakra').value,
     advice: document.getElementById('f_advice').value.trim(),
     notes: document.getElementById('f_notes').value.trim(),
     transcript: document.getElementById('f_transcript').value.trim()
   };
+}
+function persistFormRecord(payload, opts){
+  opts = opts || {};
   if(state._importedBookingCode) payload.sourceBookingCode = state._importedBookingCode;
   let list = state.records.slice();
   let id;
   if(state.editingId){
     const idx = list.findIndex(r=>r.id===state.editingId);
-    list[idx] = Object.assign({}, list[idx], payload, {isExample:false, isDraft:false});
+    list[idx] = Object.assign({}, list[idx], payload, {isExample:false, isDraft:!!opts.asDraft});
     id = state.editingId;
-    toast('已儲存變更');
   }else{
     id = uid();
-    list.push(Object.assign({id, createdAt:Date.now(), isExample:false}, payload));
-    toast('已建立報告書');
+    list.push(Object.assign({id, createdAt:Date.now(), isExample:false, isDraft:!!opts.asDraft}, payload));
   }
   saveRecords(list);
   const savedRec = list.find(r=>r.id===id);
   if(savedRec && !savedRec.isExample) queueAndPush({type:'save', id, record: savedRec});
   state.editingId = null;
   state._importedBookingCode = null;
+  return id;
+}
+function submitForm(e){
+  e.preventDefault();
+  const payload = collectFormPayload(true);
+  if(!payload) return false;
+  const wasEditing = !!state.editingId;
+  const id = persistFormRecord(payload, {asDraft:false});
+  toast(wasEditing ? '已儲存變更' : '已建立報告書');
   viewReport(id);
   return false;
+}
+function saveDraft(){
+  const payload = collectFormPayload(false);
+  if(!payload) return;
+  persistFormRecord(payload, {asDraft:true});
+  toast('已暫存草稿，之後可以回來補完整');
+  go('list');
 }
 function editRecord(id){
   state.editingId = id;
@@ -1662,7 +1681,7 @@ if(state.settings.cloudSyncUrl) syncNow();
 /* ============ Public API ============ */
 window.app = {
   go, showForm, editRecord, deleteRecord, clearExamples, viewReport,
-  copyReportText, exportImage, submitForm, updateChakraPreview,
+  copyReportText, exportImage, submitForm, saveDraft, updateChakraPreview,
   setSearch, setFilterProgram, setFilterChakra, toggleSort,
   openSettings, saveSettingsForm, exportBackup, importBackup, wipeAll,
   closeModal, cycleTheme, runAiSummarize, clearAiFresh, toggleApiKeyVisible,
