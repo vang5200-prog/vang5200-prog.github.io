@@ -673,6 +673,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
         <button data-subtab="frontend" class="active" onclick="switchSettingsSubTab('frontend')">前台設定</button>
         <button data-subtab="backend" onclick="switchSettingsSubTab('backend')">後台設定</button>
         <button data-subtab="line" onclick="switchSettingsSubTab('line')">官方LINE設定</button>
+        <button data-subtab="report" onclick="switchSettingsSubTab('report')">報告書設定</button>
       </div>
 
       <!-- ========== 前台設定：預約設定／開頭介紹文字／服務方案／加購／諮詢方式 ========== -->
@@ -827,6 +828,24 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
           <h3>LINE 官方帳號連結</h3>
           <div class="field"><input id="setLine" placeholder="https://lin.ee/xxxxxxx"></div>
           <button class="btn btn-outline" style="margin:12px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveLine()">儲存</button>
+        </div>
+      </div>
+
+      <!-- ========== 報告書設定：卡片品牌文字／AI整理重點金鑰說明 ========== -->
+      <div class="settings-subsection" id="settings-report" style="display:none;">
+        <div class="panel">
+          <h3>🪧 報告卡片顯示文字</h3>
+          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">這幾項文字會顯示在每一張「諮詢報告卡片」的最下方，之後有需要調整都在這裡改，不用再麻煩我改程式碼。</p>
+          <div class="field"><label>品牌／稱謂名稱</label><input id="setReportBrand" placeholder="例如：情感讀心師"></div>
+          <div class="field"><label>Instagram 帳號（留空則不顯示）</label><input id="setReportIg" placeholder="例如：@lovetalker_tw"></div>
+          <div class="field"><label>結尾祝福語</label><textarea id="setReportClosing" style="min-height:70px;" placeholder="例如：願這份紀錄，陪妳慢慢梳理心的方向。"></textarea></div>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveReportCardSettings()">儲存報告卡片設定</button>
+        </div>
+
+        <div class="panel">
+          <h3>✨ AI 整理重點（對話逐字稿）</h3>
+          <p style="font-size:14.5px; color:#999; margin-bottom:8px; line-height:1.7;">填寫報告書時，把這次的對話紀錄貼到「對話逐字稿」欄位，按「AI 整理重點」就會自動幫妳整理出一版「諮詢重點與建議」跟「注意事項」草稿，記得確認內容後再儲存。</p>
+          <p style="font-size:14.5px; color:#999; line-height:1.7;">這個功能需要先設定好 AI 金鑰才能使用：打開 Apps Script 編輯器 → 左側「專案設定」→「指令碼屬性」→ 新增一筆屬性，名稱填 <b>ANTHROPIC_API_KEY</b>，值貼上妳的 Claude API 金鑰 → 儲存。金鑰只會存在 Apps Script 後台，不會出現在網站或GitHub上，比較安全。設定好之後不用重新部署，直接就能用。</p>
         </div>
       </div>
     </div>
@@ -1022,6 +1041,26 @@ function defaultCharityBookingPolicy(){
 function loadBookingPolicy(){ return localStorage.getItem(K_POLICY) || defaultBookingPolicy(); }
 function saveBookingPolicy(){ const v=document.getElementById('setBookingPolicy').value.trim()||defaultBookingPolicy(); localStorage.setItem(K_POLICY, v); bookingPolicy=v; pushRemoteSettings(); toast('預約注意事項已儲存'); }
 
+/* 諮詢報告卡片設定：卡片最下方顯示的品牌名稱／IG帳號／祝福語，妳可以自己調整措辭 */
+const K_REPORT_BRAND='rt_report_brand';
+function defaultReportBrandName(){ return '情感讀心師'; }
+function loadReportBrandName(){ return localStorage.getItem(K_REPORT_BRAND) || defaultReportBrandName(); }
+const K_REPORT_IG='rt_report_ig';
+function defaultReportIgHandle(){ return '@lovetalker_tw'; }
+function loadReportIgHandle(){ return localStorage.getItem(K_REPORT_IG) || defaultReportIgHandle(); }
+const K_REPORT_CLOSING='rt_report_closing';
+function defaultReportClosing(){ return '願這份紀錄，陪妳慢慢梳理心的方向。'; }
+function loadReportClosing(){ return localStorage.getItem(K_REPORT_CLOSING) || defaultReportClosing(); }
+function saveReportCardSettings(){
+  const brand = document.getElementById('setReportBrand').value.trim()||defaultReportBrandName();
+  const ig = document.getElementById('setReportIg').value.trim()||defaultReportIgHandle();
+  const closing = document.getElementById('setReportClosing').value.trim()||defaultReportClosing();
+  localStorage.setItem(K_REPORT_BRAND, brand); localStorage.setItem(K_REPORT_IG, ig); localStorage.setItem(K_REPORT_CLOSING, closing);
+  reportBrandName = brand; reportIgHandle = ig; reportClosing = closing;
+  pushRemoteSettings();
+  toast('報告卡片設定已儲存');
+}
+
 /* ---------- 後台密碼鎖（改由 Apps Script 伺服器端驗證，密碼不存在網站程式碼裡） ---------- */
 async function checkAdminPassword(){
   const input = document.getElementById('gatePassword').value;
@@ -1119,6 +1158,9 @@ async function pullRemoteSettings(){
     if(data && typeof data.bookingPolicy === 'string' && data.bookingPolicy){ bookingPolicy = data.bookingPolicy; localStorage.setItem(K_POLICY, bookingPolicy); changed = true; }
     if(data && data.hero){ heroContent = {...defaultHeroContent(), ...data.hero}; saveHeroContentLocal(heroContent); changed = true; }
     if(data && data.availability){ availability = {...defaultAvailability(), ...data.availability}; saveAvailabilityLocal(availability); changed = true; }
+    if(data && typeof data.reportBrandName === 'string' && data.reportBrandName){ reportBrandName = data.reportBrandName; localStorage.setItem(K_REPORT_BRAND, reportBrandName); changed = true; }
+    if(data && typeof data.reportIgHandle === 'string' && data.reportIgHandle){ reportIgHandle = data.reportIgHandle; localStorage.setItem(K_REPORT_IG, reportIgHandle); changed = true; }
+    if(data && typeof data.reportClosing === 'string' && data.reportClosing){ reportClosing = data.reportClosing; localStorage.setItem(K_REPORT_CLOSING, reportClosing); changed = true; }
     if(changed){
       renderServiceCards();
       renderHeroContent();
@@ -1133,7 +1175,7 @@ function pushRemoteSettings(){
     fetch(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo, welcomeMsg, bookingPolicy, igLink })
+      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo, welcomeMsg, bookingPolicy, igLink, reportBrandName, reportIgHandle, reportClosing })
     }).catch(err=>console.warn('雲端設定同步失敗', err));
   }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
@@ -1150,6 +1192,9 @@ let webhookUrl = loadWebhook();
 let heroContent = loadHeroContent();
 let availability = loadAvailability();
 let methods = loadMethods();
+let reportBrandName = loadReportBrandName();
+let reportIgHandle = loadReportIgHandle();
+let reportClosing = loadReportClosing();
 if(!localStorage.getItem(K_SERVICES)) saveServices(services);
 if(!localStorage.getItem(K_ADDONS)) saveAddons(addons);
 let editingId = null;
@@ -2302,13 +2347,46 @@ function openReportForm(id){
     <div class="field"><label>預約時間</label><input value="${esc(rec.datetime||'')}" disabled></div>
     <div class="field"><label>方案</label><input value="${esc(rec.serviceName||'')}" disabled></div>
     <div class="field full"><label>對應脈輪／方向</label><select id="rf_chakra"><option value="">（未指定）</option>${chakraOptions}</select></div>
+    <div class="field full">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px;">
+        <label style="margin:0;">對話逐字稿（選填）</label>
+        <button type="button" id="reportAiBtn" class="btn btn-outline" style="margin:0; width:auto; padding:6px 13px; font-size:13.5px;" onclick="runReportAiSummarize()">✨ AI 整理重點</button>
+      </div>
+      <textarea id="rf_transcript" rows="4">${esc(rep.transcript||'')}</textarea>
+      <div style="font-size:13px; color:#999; margin-top:5px;">貼上這次的對話紀錄後按右上角按鈕，AI 會幫妳整理出下面兩欄的草稿，記得確認後再儲存。</div>
+    </div>
     <div class="field full"><label>諮詢重點與建議</label><textarea id="rf_advice" rows="4">${esc(rep.advice||'')}</textarea></div>
     <div class="field full"><label>注意事項</label><textarea id="rf_notes" rows="3">${esc(rep.notes||'')}</textarea></div>
-    <div class="field full"><label>對話逐字稿（選填）</label><textarea id="rf_transcript" rows="4">${esc(rep.transcript||'')}</textarea></div>
   `;
   document.getElementById('reportModalOverlay').classList.add('open');
 }
 function closeReportForm(){ document.getElementById('reportModalOverlay').classList.remove('open'); editingReportId=null; }
+async function runReportAiSummarize(){
+  const transcriptEl = document.getElementById('rf_transcript');
+  const text = transcriptEl.value.trim();
+  if(!text){ toast('請先在上面貼上這次的對話紀錄'); transcriptEl.focus(); return; }
+  if(!webhookUrl){ toast('尚未設定雲端網址，無法使用AI功能'); return; }
+  const btn = document.getElementById('reportAiBtn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '整理中...';
+  try{
+    const res = await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'aiSummarizeReport', password: sessionStorage.getItem('rt_admin_pw')||'', transcript:text })
+    });
+    const data = await res.json();
+    if(data && data.ok){
+      if(data.advice) document.getElementById('rf_advice').value = data.advice;
+      if(data.notes) document.getElementById('rf_notes').value = data.notes;
+      toast('已產生AI草稿，記得確認後再儲存');
+    } else if(data && data.error==='missing_api_key'){
+      toast('尚未設定AI金鑰，請到 Apps Script 指令碼屬性新增 ANTHROPIC_API_KEY（設定頁「報告書設定」有說明）');
+    } else {
+      toast((data&&data.error) || 'AI整理失敗，請稍後再試');
+    }
+  }catch(err){ toast('AI整理失敗，請檢查網路連線'); }
+  finally{ btn.disabled=false; btn.innerHTML=originalHtml; }
+}
 async function saveReportForm(){
   const bookingId = editingReportId;
   const rec = records.find(x=>x.id===bookingId); if(!rec || !rec.code){ toast('找不到對應的預約，請重新開啟'); return; }
@@ -2386,8 +2464,8 @@ function reportCardHtml(rec, rep){
     </div>`:''}
     <div class="rpt-footer">
       <div class="rule2"></div>
-      <div class="closing">願這份紀錄，陪妳慢慢梳理心的方向。</div>
-      <div class="who2"><b>情感讀心師</b>　@lovetalker_tw</div>
+      <div class="closing">${esc(reportClosing)}</div>
+      <div class="who2"><b>${esc(reportBrandName)}</b>${reportIgHandle?'　'+esc(reportIgHandle):''}</div>
     </div>
   </div>`;
 }
@@ -2404,7 +2482,7 @@ function reportCardTextOf(rec, rep){
     '【諮詢重點與建議】', rep.advice || '（無）', '',
     '【注意事項】', rep.notes || '（無）', '',
     rep.transcript ? ('【本次對話紀錄】\n'+rep.transcript+'\n') : '',
-    line, '願這份紀錄，陪妳慢慢梳理心的方向。', '情感讀心師　@lovetalker_tw'
+    line, reportClosing, reportBrandName + (reportIgHandle?'　'+reportIgHandle:'')
   ].filter(x=>x!=='').join('\n');
 }
 function openReportCard(id){
@@ -2522,6 +2600,9 @@ function renderSettings(){
   document.getElementById('setPaymentInfo').value = paymentInfo;
   document.getElementById('setIGLink').value = igLink;
   document.getElementById('setWelcomeMsg').value = welcomeMsg;
+  document.getElementById('setReportBrand').value = reportBrandName;
+  document.getElementById('setReportIg').value = reportIgHandle;
+  document.getElementById('setReportClosing').value = reportClosing;
   document.getElementById('setBookingPolicy').value = bookingPolicy;
   document.getElementById('setWebhook').value = webhookUrl;
   document.getElementById('setHeroTitle').value = heroContent.title;
