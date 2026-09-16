@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>讀心報告工作室</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  /* ================= Design tokens ================= */
+  :root{
+    --pink:#C9938A; --soft-pink:#E8C4BC;
+    --blue:#7A9BAD; --soft-blue:#B8CFDA;
+    --sage:#9AAE9B;
+    --gold:#C6A664;
+    --dark:#37352F; --medium:#5A5248; --gray:#9B9A97;
+    --bg:#FAFAF8; --surface:#FFFFFF; --surface-2:#FAF3EE; --border:#EAE4DC;
+    --text:var(--dark); --text-2:var(--medium); --text-3:var(--gray);
+    --shadow-sm: 0 1px 2px rgba(55,53,47,.06);
+    --shadow-md: 0 10px 30px -14px rgba(55,53,47,.28);
+    --radius-s:10px; --radius-m:16px; --radius-l:22px;
+    --tint-pink: color-mix(in srgb, var(--pink) 14%, var(--surface));
+    --tint-blue: color-mix(in srgb, var(--blue) 14%, var(--surface));
+    --tint-sage: color-mix(in srgb, var(--sage) 16%, var(--surface));
+    --tint-gold: color-mix(in srgb, var(--gold) 16%, var(--surface));
+    --tint-pink-strong: color-mix(in srgb, var(--pink) 30%, var(--surface));
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --pink:#D9A99D; --soft-pink:#C48F84;
+      --blue:#8FB0C1; --soft-blue:#729AAC;
+      --sage:#A9BCA9; --gold:#D4B87C;
+      --dark:#F1EAE3; --medium:#C6BCB1; --gray:#8F887E;
+      --bg:#201D1A; --surface:#292521; --surface-2:#302A24; --border:#3D362E;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+      --shadow-md: 0 14px 32px -16px rgba(0,0,0,.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --pink:#D9A99D; --soft-pink:#C48F84;
+    --blue:#8FB0C1; --soft-blue:#729AAC;
+    --sage:#A9BCA9; --gold:#D4B87C;
+    --dark:#F1EAE3; --medium:#C6BCB1; --gray:#8F887E;
+    --bg:#201D1A; --surface:#292521; --surface-2:#302A24; --border:#3D362E;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+    --shadow-md: 0 14px 32px -16px rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  h1,h2,h3{margin:0; text-wrap:balance;}
+  p{margin:0;}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,textarea{font-family:inherit; font-size:1rem; color:var(--text);}
+  .tnum{font-variant-numeric:tabular-nums;}
+  [hidden]{display:none!important;}
+  ::selection{background:var(--tint-pink-strong);}
+
+  .icon{width:19px;height:19px;flex:none;display:block;}
+
+  /* ================= Shell ================= */
+  .app{max-width:840px; margin:0 auto; padding:0 18px 96px;}
+  header.top{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:30;
+    background:color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .top-inner{
+    max-width:840px; margin:0 auto; padding:16px 18px 12px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .brand{display:flex; flex-direction:column; gap:2px;}
+  .brand .name{font-size:1.15rem; font-weight:900; letter-spacing:.01em;}
+  .brand .sub{font-size:.72rem; color:var(--text-3); letter-spacing:.08em; text-transform:uppercase;}
+  .top-actions{display:flex; gap:8px;}
+  .icon-btn{
+    width:38px; height:38px; border-radius:999px; border:1px solid var(--border);
+    background:var(--surface); color:var(--text-2);
+    display:flex; align-items:center; justify-content:center;
+    transition:background .15s, color .15s, transform .1s;
+  }
+  .icon-btn:hover{background:var(--tint-pink); color:var(--pink);}
+  .icon-btn:active{transform:scale(.94);}
+
+  nav.tabs{
+    max-width:840px; margin:0 auto; padding:12px 18px 0;
+    display:flex; gap:8px; overflow-x:auto; scrollbar-width:none;
+  }
+  nav.tabs::-webkit-scrollbar{display:none;}
+  .tab-btn{
+    flex:none; display:flex; align-items:center; gap:7px;
+    padding:9px 16px; border-radius:999px; border:1px solid var(--border);
+    background:var(--surface); color:var(--text-2); font-size:.9rem; font-weight:500;
+    white-space:nowrap; transition:all .15s;
+  }
+  .tab-btn .icon{width:16px;height:16px;}
+  .tab-btn[aria-selected="true"]{
+    background:var(--dark); color:var(--bg); border-color:var(--dark);
+    font-weight:700;
+  }
+  :root[data-theme="dark"] .tab-btn[aria-selected="true"], @media (prefers-color-scheme:dark){}
+
+  main{padding-top:22px;}
+  .view{animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+
+  /* ================= Section headings ================= */
+  .section-head{display:flex; align-items:baseline; justify-content:space-between; margin:28px 0 12px;}
+  .section-head:first-child{margin-top:0;}
+  .section-head h2{font-size:1rem; font-weight:700;}
+  .section-head .count{font-size:.8rem; color:var(--text-3);}
+
+  /* ================= Banner ================= */
+  .banner{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:var(--tint-gold); border:1px solid color-mix(in srgb, var(--gold) 40%, var(--border));
+    border-radius:var(--radius-m); padding:13px 16px; margin-bottom:20px; font-size:.85rem; color:var(--text-2);
+  }
+  .banner b{color:var(--text); font-weight:700;}
+  .banner button{
+    flex:none; background:var(--dark); color:var(--bg); border:none; border-radius:999px;
+    padding:7px 14px; font-size:.78rem; font-weight:700;
+  }
+
+  /* ================= Stat cards ================= */
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;}
+  .stat-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m);
+    padding:16px 16px 14px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden;
+  }
+  .stat-card::before{content:''; position:absolute; left:0; top:0; right:0; height:3px;}
+  .stat-card.c-pink::before{background:var(--pink);}
+  .stat-card.c-blue::before{background:var(--blue);}
+  .stat-card.c-sage::before{background:var(--sage);}
+  .stat-card.c-gold::before{background:var(--gold);}
+  .stat-card .label{font-size:.72rem; color:var(--text-3); letter-spacing:.06em; text-transform:uppercase; font-weight:700;}
+  .stat-card .value{font-size:2rem; font-weight:900; margin-top:6px; line-height:1;}
+  .stat-card .value small{font-size:.9rem; font-weight:700; color:var(--text-3); margin-left:2px;}
+
+  /* ================= Record rows ================= */
+  .record-row{
+    display:flex; align-items:center; gap:12px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m);
+    padding:13px 14px; margin-bottom:10px; cursor:pointer; transition:border-color .15s, transform .1s;
+  }
+  .record-row:hover{border-color:var(--pink);}
+  .record-row:active{transform:scale(.995);}
+  .chakra-dot{width:13px; height:13px; border-radius:50%; flex:none; box-shadow:0 0 0 3px var(--surface-2);}
+  .dot-root{background:var(--pink);}
+  .dot-sacral{background:var(--soft-pink);}
+  .dot-solar{background:var(--gold);}
+  .dot-heart{background:var(--sage);}
+  .dot-throat{background:var(--blue);}
+  .dot-thirdeye{background:var(--soft-blue);}
+  .dot-crown{background:var(--surface); border:2px solid var(--gold);}
+  .record-main{flex:1; min-width:0;}
+  .record-main .name-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .record-main .rname{font-weight:700; font-size:.97rem;}
+  .example-flag{font-size:.66rem; color:var(--gold); border:1px solid var(--gold); border-radius:999px; padding:1px 7px; font-weight:700;}
+  .tag{font-size:.72rem; color:var(--pink); background:var(--tint-pink); border-radius:999px; padding:2px 9px; font-weight:500;}
+  .record-main .meta{font-size:.78rem; color:var(--text-3); margin-top:3px;}
+  .record-side{display:flex; align-items:center; gap:6px; flex:none;}
+  .row-icon-btn{
+    width:32px; height:32px; border-radius:999px; border:1px solid transparent; background:transparent;
+    color:var(--text-3); display:flex; align-items:center; justify-content:center;
+  }
+  .row-icon-btn:hover{background:var(--surface-2); color:var(--pink);}
+  .row-icon-btn .icon{width:16px; height:16px;}
+
+  .empty-state{
+    text-align:center; padding:42px 18px; color:var(--text-3); font-size:.88rem;
+    background:var(--surface); border:1px dashed var(--border); border-radius:var(--radius-m);
+  }
+
+  /* ================= List controls ================= */
+  .list-controls{display:flex; flex-direction:column; gap:10px; margin-bottom:18px;}
+  .search-box{
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m);
+    padding:10px 14px;
+  }
+  .search-box .icon{color:var(--text-3);}
+  .search-box input{flex:1; border:none; outline:none; background:transparent; font-size:.92rem; color:var(--text);}
+  .filter-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .filter-row select, .filter-row .sort-btn{
+    border:1px solid var(--border); background:var(--surface); border-radius:var(--radius-s);
+    padding:8px 10px; font-size:.82rem; color:var(--text-2);
+  }
+  .filter-row .sort-btn{display:flex; align-items:center; gap:6px;}
+  .filter-row .sort-btn .icon{width:14px;height:14px;}
+
+  /* ================= Form ================= */
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-l);
+    padding:22px; box-shadow:var(--shadow-sm);
+  }
+  .field{margin-bottom:18px;}
+  .field label{display:block; font-size:.82rem; font-weight:700; color:var(--text-2); margin-bottom:7px;}
+  .field .hint{font-size:.74rem; color:var(--text-3); margin-top:5px;}
+  .field-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px; flex-wrap:wrap;}
+  .field-head label{margin-bottom:0;}
+  .ai-btn{
+    flex:none; display:inline-flex; align-items:center; gap:6px;
+    border:1px solid color-mix(in srgb, var(--gold) 45%, var(--border));
+    background:var(--tint-gold); color:color-mix(in srgb, var(--gold) 70%, var(--text));
+    border-radius:999px; padding:6px 13px; font-size:.78rem; font-weight:700;
+    transition:opacity .15s, transform .1s;
+  }
+  .ai-btn:active{transform:scale(.96);}
+  .ai-btn:disabled{opacity:.6; cursor:default;}
+  .ai-btn .icon{width:14px; height:14px;}
+  .ai-btn .spin{animation:spin .9s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .field.ai-fresh textarea{border-color:var(--gold); background:var(--tint-gold);}
+  .ai-flag{
+    display:none; align-items:center; gap:5px; font-size:.72rem; font-weight:700;
+    color:color-mix(in srgb, var(--gold) 70%, var(--text)); margin-top:6px;
+  }
+  .field.ai-fresh .ai-flag{display:flex;}
+  .ai-flag .icon{width:12px; height:12px;}
+  .apikey-row{display:flex; gap:8px;}
+  .apikey-row input{flex:1;}
+  .apikey-row .icon-btn{flex:none;}
+  .chip-wrap{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;}
+  .chip{display:inline-flex; align-items:center; gap:5px; background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:5px 6px 5px 13px; font-size:.8rem; color:var(--text-2);}
+  .chip button{display:flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; border:none; background:transparent; color:var(--text-3); padding:0;}
+  .chip button:hover{background:var(--border); color:#B5564A;}
+  .chip button .icon{width:11px; height:11px;}
+  .add-row{display:flex; gap:8px;}
+  .add-row input{flex:1;}
+  .add-row .icon-btn{flex:none;}
+  .field input[type=text], .field input[type=date], .field select, .field textarea{
+    width:100%; border:1px solid var(--border); border-radius:var(--radius-s);
+    padding:10px 12px; background:var(--bg); color:var(--text); outline:none;
+    transition:border-color .15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--pink);}
+  .field textarea{resize:vertical; min-height:88px; line-height:1.6;}
+  .field.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .chakra-select-row{display:flex; align-items:center; gap:10px;}
+  .chakra-select-row select{flex:1;}
+  .program-select-row{display:flex; align-items:center; gap:8px;}
+  .program-select-row select{flex:1;}
+  .program-select-row .icon-btn{width:38px; height:38px; flex:none;}
+  .chakra-preview{
+    display:flex; align-items:center; gap:8px; margin-top:9px; font-size:.8rem; color:var(--text-2);
+    background:var(--surface-2); border-radius:var(--radius-s); padding:8px 11px;
+  }
+  .form-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:22px;}
+  .btn{
+    border:none; border-radius:999px; padding:11px 22px; font-size:.9rem; font-weight:700;
+    display:inline-flex; align-items:center; gap:7px; transition:transform .1s, opacity .15s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--pink); color:#fff;}
+  .btn-primary .icon{stroke:#fff;}
+  .btn-secondary{background:var(--surface-2); color:var(--text-2); border:1px solid var(--border);}
+  .btn-danger{background:transparent; color:#B5564A; border:1px solid #B5564A55;}
+  .btn-ghost{background:transparent; color:var(--text-2);}
+  .btn-sm{padding:8px 14px; font-size:.8rem;}
+  .btn .icon{width:16px; height:16px;}
+
+  /* ================= Report ================= */
+  .report-toolbar{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px; flex-wrap:wrap;}
+  .report-toolbar .left{display:flex; align-items:center; gap:10px;}
+  .report-toolbar .actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .back-link{display:flex; align-items:center; gap:6px; color:var(--text-2); font-size:.88rem; font-weight:500;}
+  .back-link .icon{width:16px;height:16px;}
+
+  .report-wrap{display:flex; justify-content:center;}
+  #reportCard{
+    width:100%; max-width:640px; background:var(--surface); border-radius:var(--radius-l);
+    box-shadow:var(--shadow-md); padding:38px 34px 30px; border:1px solid var(--border);
+  }
+  .r-eyebrow{
+    display:flex; align-items:center; gap:10px;
+    font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); font-weight:700;
+  }
+  .r-eyebrow .label{flex:1 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .r-eyebrow .no{flex:none;}
+  .r-rule{height:1px; background:linear-gradient(to right, var(--gold), transparent); margin:9px 0 20px;}
+  .r-meta{display:flex; justify-content:space-between; font-size:.76rem; color:var(--text-3); margin-bottom:18px;}
+  .r-client{display:flex; align-items:stretch; gap:12px; margin-bottom:16px;}
+  .r-client .bar{width:4px; border-radius:4px; background:var(--pink);}
+  .r-client .who{display:flex; flex-direction:column; gap:6px; justify-content:center;}
+  .r-client .who .n{font-size:1.5rem; font-weight:900;}
+  .r-chakra{
+    display:flex; align-items:center; gap:11px; padding:11px 14px; border-radius:var(--radius-m);
+    background:var(--surface-2); margin-bottom:22px;
+  }
+  .r-chakra .dot{width:22px; height:22px;}
+  .r-chakra .info b{font-size:.92rem;}
+  .r-chakra .info span{display:block; font-size:.76rem; color:var(--text-3); margin-top:1px;}
+  .r-section{margin-bottom:20px;}
+  .r-section h3{
+    display:flex; align-items:center; gap:8px; font-size:.86rem; font-weight:700; margin-bottom:9px; color:var(--text);
+  }
+  .r-section h3::before{content:''; width:8px; height:8px; background:var(--gold); border-radius:2px; flex:none;}
+  .r-section .body{font-size:.92rem; line-height:1.85; color:var(--text-2); white-space:pre-wrap; word-break:break-word;}
+  .r-callout{
+    background:var(--tint-gold); border-left:3px solid var(--gold); border-radius:0 var(--radius-s) var(--radius-s) 0;
+    padding:12px 14px;
+  }
+  .r-transcript{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-m); padding:14px 16px;
+  }
+  .r-transcript .body{font-size:.85rem; color:var(--text-2);}
+  .r-footer{text-align:center; margin-top:8px;}
+  .r-footer .r-rule2{height:1px; background:linear-gradient(to right, transparent, var(--gold), transparent); margin-bottom:14px;}
+  .r-footer .closing{font-size:.84rem; color:var(--text-2); line-height:1.7; margin-bottom:8px;}
+  .r-footer .who2{font-size:.78rem; color:var(--text-3); letter-spacing:.04em;}
+  .r-footer .who2 b{color:var(--gold); font-weight:700;}
+
+  /* ================= Modals ================= */
+  .overlay{
+    position:fixed; inset:0; background:rgba(20,18,16,.44); backdrop-filter:blur(2px);
+    display:flex; align-items:flex-end; justify-content:center; z-index:100; padding:0;
+  }
+  @media (min-width:640px){ .overlay{align-items:center; padding:20px;} }
+  .modal{
+    background:var(--surface); width:100%; max-width:480px; max-height:88vh; overflow-y:auto;
+    border-radius:22px 22px 0 0; padding:24px 22px calc(24px + env(safe-area-inset-bottom,0px));
+    box-shadow:var(--shadow-md);
+  }
+  @media (min-width:640px){ .modal{border-radius:var(--radius-l);} }
+  .modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .modal-head h2{font-size:1.05rem; font-weight:900;}
+  .modal .field:last-of-type{margin-bottom:12px;}
+  .modal hr{border:none; border-top:1px solid var(--border); margin:18px 0;}
+  .modal .subhead{display:flex; align-items:center; gap:6px; font-size:.82rem; font-weight:700; color:var(--text-2); margin-bottom:10px;}
+  .modal .subhead .icon{width:14px; height:14px; color:var(--gold);}
+  .backup-row{display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+  .file-btn{position:relative; overflow:hidden;}
+  .file-btn input[type=file]{position:absolute; inset:0; opacity:0; cursor:pointer;}
+  .danger-zone{margin-top:6px; padding-top:14px; border-top:1px dashed var(--border);}
+
+  .confirm-modal{max-width:340px; text-align:center; padding:26px 22px;}
+  .confirm-modal p{font-size:.9rem; color:var(--text-2); margin:10px 0 20px; line-height:1.6;}
+  .confirm-modal .actions{display:flex; gap:10px;}
+  .confirm-modal .actions .btn{flex:1; justify-content:center;}
+
+  .image-modal{max-width:560px; text-align:center;}
+  .image-modal img{width:100%; border-radius:var(--radius-m); border:1px solid var(--border); margin:14px 0;}
+  .image-modal .tip{font-size:.8rem; color:var(--text-3); line-height:1.6;}
+
+  .backup-text{
+    width:100%; min-height:130px; border:1px solid var(--border); border-radius:var(--radius-s);
+    background:var(--surface-2); padding:10px; font-size:.74rem; font-family:ui-monospace,monospace; color:var(--text-2);
+  }
+
+  /* ================= Toast ================= */
+  #toast{
+    position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0px)); transform:translate(-50%,16px);
+    background:var(--dark); color:var(--bg); padding:11px 20px; border-radius:999px; font-size:.84rem; font-weight:500;
+    box-shadow:var(--shadow-md); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:200;
+    display:flex; align-items:center; gap:8px; white-space:nowrap;
+  }
+  #toast.show{opacity:1; transform:translate(-50%,0);}
+
+  /* ================= FAB ================= */
+  .fab{
+    position:fixed; right:20px; bottom:calc(20px + env(safe-area-inset-bottom,0px)); z-index:40;
+    width:56px; height:56px; border-radius:50%; background:var(--pink); color:#fff; border:none;
+    display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md);
+  }
+  .fab .icon{width:24px;height:24px; stroke:#fff;}
+
+  @media (min-width:560px){
+    .field.grid2-desktop{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <span class="name">讀心報告工作室</span>
+      <span class="sub">Consultation Report Studio</span>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="themeBtn" title="切換主題" onclick="app.cycleTheme()"></button>
+      <button class="icon-btn" title="設定" onclick="app.openSettings()" id="settingsBtn"></button>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+
+<div class="app">
+  <main id="main"></main>
+</div>
+
+<button class="fab" id="fab" onclick="app.showForm()" title="新增諮詢">
+  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+</button>
+
+<div id="modalRoot"></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ Icons ============ */
+const ICON = {
+  grid:'<svg class="icon" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
+  list:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg>',
+  plus:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>',
+  gear:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="14" cy="6" r="2.2" fill="var(--surface)"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="8" cy="12" r="2.2" fill="var(--surface)"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="16" cy="18" r="2.2" fill="var(--surface)"/></svg>',
+  search:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/></svg>',
+  pencil:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/><line x1="14" y1="6" x2="18" y2="10"/></svg>',
+  trash:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><line x1="9" y1="3" x2="15" y2="3"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+  back:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="11 6 5 12 11 18"/></svg>',
+  download:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  upload:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/><polyline points="7 8 12 3 17 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  copy:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>',
+  x:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>',
+  chevron:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>',
+  sun:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.1" y2="4.9"/></svg>',
+  moon:'<svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20 14.5A8.5 8.5 0 1110.2 4.04 6.7 6.7 0 0020 14.5z"/></svg>',
+  auto:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" stroke="none"/></svg>',
+  sparkle:'<svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M11 3l1.6 5.4L18 10l-5.4 1.6L11 17l-1.6-5.4L4 10l5.4-1.6L11 3z"/><path d="M18.5 14l.7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7.7-2.3z"/></svg>',
+  spinner:'<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3a9 9 0 019 9"/></svg>',
+  eye:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.2A10.4 10.4 0 0112 5c6.5 0 10 7 10 7a15.6 15.6 0 01-3.4 4.3M6.4 6.4C3.8 8.1 2 12 2 12s3.5 7 10 7a9.7 9.7 0 004.6-1.1"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg>',
+  sync:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0115-6.7M21 12a9 9 0 01-15 6.7"/><polyline points="18 2 18 6 14 6"/><polyline points="6 22 6 18 10 18"/></svg>',
+  check:'<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+};
+
+/* ============ Data ============ */
+const REC_KEY = 'ltrs_records_v1';
+const SET_KEY = 'ltrs_settings_v1';
+const THEME_KEY = 'ltrs_theme_v1';
+
+const CHAKRAS = [
+  {id:'crown', name:'頂輪', en:'Crown Chakra', meaning:'靈性連結與信任', dot:'dot-crown'},
+  {id:'thirdeye', name:'眉心輪', en:'Third Eye Chakra', meaning:'覺察與直覺', dot:'dot-thirdeye'},
+  {id:'throat', name:'喉輪', en:'Throat Chakra', meaning:'表達與溝通', dot:'dot-throat'},
+  {id:'heart', name:'心輪', en:'Heart Chakra', meaning:'愛與連結', dot:'dot-heart'},
+  {id:'solar', name:'太陽神經叢輪', en:'Solar Plexus Chakra', meaning:'自信與意志力', dot:'dot-solar'},
+  {id:'sacral', name:'臍輪', en:'Sacral Chakra', meaning:'情感流動與親密', dot:'dot-sacral'},
+  {id:'root', name:'海底輪', en:'Root Chakra', meaning:'安全感與根基', dot:'dot-root'}
+];
+function chakraOf(id){ return CHAKRAS.find(c=>c.id===id) || CHAKRAS[3]; }
+
+const PROGRAMS_KEY = 'ltrs_programs_v1';
+const DEFAULT_PROGRAMS = ['一對一諮詢','單一脈輪能量課程','全七脈輪能量課程','關係眼認證私塾','追蹤諮詢'];
+function loadPrograms(){
+  try{
+    const raw = localStorage.getItem(PROGRAMS_KEY);
+    if(raw){ const arr = JSON.parse(raw); if(Array.isArray(arr)) return arr; }
+  }catch(e){ console.warn('loadPrograms failed', e); }
+  return DEFAULT_PROGRAMS.slice();
+}
+function savePrograms(list){
+  state.programs = list;
+  try{ localStorage.setItem(PROGRAMS_KEY, JSON.stringify(list)); }catch(e){ console.warn(e); }
+}
+
+const DEFAULT_SETTINGS = {
+  brandName:'情感讀心師',
+  igHandle:'@lovetalker_tw',
+  closing:'願這份紀錄，陪你慢慢梳理心的方向。',
+  apiKey:'',
+  aiModel:'claude-haiku-4-5-20251001',
+  bookingApiUrl:'',
+  bookingPassword:'',
+  cloudSyncUrl:'',
+  cloudSyncPassword:''
+};
+const AI_MODELS = [
+  {id:'claude-haiku-4-5-20251001', label:'Claude Haiku 4.5（推薦：快速、省成本）'},
+  {id:'claude-sonnet-5', label:'Claude Sonnet 5（品質更好，費用較高）'}
+];
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function uid(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function fmtDate(s){
+  if(!s) return '';
+  const [y,m,d] = s.split('-');
+  return y+'年'+parseInt(m)+'月'+parseInt(d)+'日';
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function loadRecords(){
+  try{
+    const raw = localStorage.getItem(REC_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ console.warn('loadRecords failed', e); }
+  return null;
+}
+function saveRecords(list){
+  state.records = list;
+  try{ localStorage.setItem(REC_KEY, JSON.stringify(list)); }
+  catch(e){ console.warn('saveRecords failed', e); toast('儲存失敗，瀏覽器儲存空間可能已滿'); }
+}
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(SET_KEY);
+    if(raw) return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw));
+  }catch(e){ console.warn('loadSettings failed', e); }
+  return Object.assign({}, DEFAULT_SETTINGS);
+}
+function saveSettings(s){
+  state.settings = s;
+  try{ localStorage.setItem(SET_KEY, JSON.stringify(s)); }catch(e){ console.warn(e); }
+}
+
+/* ============ 雲端同步（電腦手機共用資料） ============ */
+const PEND_KEY = 'ltrs_pending_ops_v1';
+function loadPending(){
+  try{ const raw = localStorage.getItem(PEND_KEY); if(raw){ const arr = JSON.parse(raw); if(Array.isArray(arr)) return arr; } }
+  catch(e){ console.warn('loadPending failed', e); }
+  return [];
+}
+function savePending(list){
+  try{ localStorage.setItem(PEND_KEY, JSON.stringify(list)); }catch(e){ console.warn(e); }
+}
+function queueOp(op){
+  const list = loadPending().filter(o => o.id !== op.id);
+  list.push(op);
+  savePending(list);
+}
+function cloudRequest(payload){
+  const url = (state.settings.cloudSyncUrl||'').trim();
+  if(!url) return Promise.reject(new Error('not_configured'));
+  const body = Object.assign({password: state.settings.cloudSyncPassword||''}, payload);
+  return fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(body)
+  }).then(r=>r.json()).then(data=>{
+    if(!data || data.ok===false) throw new Error((data && data.error) || 'cloud_error');
+    return data;
+  });
+}
+function pushPendingOps(){
+  const list = loadPending();
+  if(list.length===0) return Promise.resolve();
+  const remaining = list.slice();
+  let chain = Promise.resolve();
+  list.forEach(op=>{
+    chain = chain.then(()=>{
+      const payload = op.type==='delete' ? {type:'delete', id:op.id} : {type:'save', record:op.record};
+      return cloudRequest(payload).then(()=>{
+        const idx = remaining.indexOf(op);
+        if(idx>-1) remaining.splice(idx,1);
+      }).catch(err=>{ console.warn('pushPendingOps op failed', op, err); });
+    });
+  });
+  return chain.then(()=>savePending(remaining));
+}
+function queueAndPush(op){
+  queueOp(op);
+  pushPendingOps().catch(err=>console.warn('background push failed', err));
+}
+function cloudStatusText(){
+  if(!state.settings.cloudSyncUrl) return '尚未設定雲端同步網址';
+  if(state.syncStatus==='syncing') return '同步中…';
+  if(state.syncStatus==='error') return '⚠️ 同步失敗，請確認網址、密碼與網路連線';
+  if(state.lastSyncAt) return '✅ 最後同步時間：'+new Date(state.lastSyncAt).toLocaleString('zh-TW');
+  return '尚未同步過，按下方「立即同步」試試看';
+}
+function syncNow(opts){
+  opts = opts || {};
+  const url = (state.settings.cloudSyncUrl||'').trim();
+  if(!url){
+    if(opts.manual) toast('尚未設定雲端同步網址，請先到設定填寫');
+    return Promise.resolve();
+  }
+  state.syncStatus = 'syncing';
+  return pushPendingOps().then(()=>cloudRequest({type:'list'})).then(data=>{
+    const cloudRecords = Array.isArray(data.records) ? data.records : [];
+    const pendingIds = new Set(loadPending().map(o=>o.id));
+    const localMap = new Map(state.records.filter(r=>!r.isExample).map(r=>[r.id, r]));
+    const examples = state.records.filter(r=>r.isExample);
+    const merged = new Map();
+    cloudRecords.forEach(r=>merged.set(r.id, Object.assign({isExample:false}, r)));
+    localMap.forEach((rec, id)=>{
+      if(pendingIds.has(id) || !merged.has(id)) merged.set(id, rec);
+    });
+    saveRecords(examples.concat(Array.from(merged.values())));
+    state.syncStatus = 'ok';
+    state.lastSyncAt = Date.now();
+    if(state.view==='dashboard' || state.view==='list' || state.view==='report') render();
+    if(opts.manual) toast('已同步最新資料');
+  }).catch(err=>{
+    console.warn('syncNow failed', err);
+    state.syncStatus = 'error';
+    if(opts.manual) toast('同步失敗，請確認網址、密碼與網路連線');
+  });
+}
+
+function seedIfEmpty(){
+  const existing = loadRecords();
+  if(existing !== null){ state.records = existing; return; }
+  const today = todayStr();
+  const y = new Date(Date.now()-86400000);
+  const yesterday = y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
+  const examples = [
+    {
+      id:uid(), isExample:true, createdAt:Date.now()-1000,
+      name:'（範例）陳小姐', date:today, program:'一對一諮詢', chakra:'heart',
+      advice:'這段關係中，妳容易把對方的沉默解讀成疏遠，但他其實只是需要獨處消化情緒。建議下次感到不安時，先給彼此30分鐘的冷靜時間，再開口確認感受，而不是直接下結論。',
+      notes:'這週工作壓力較大，容易把情緒帶入關係中，提醒自己先覺察情緒來源，避免遷怒對方。',
+      transcript:'個案表示近期與伴侶溝通時常常覺得被忽略，尤其是對方已讀不回訊息時特別焦慮。經引導覺察後，發現焦慮源自過去被忽視的經驗，而非當下關係本身。（此為範例對話紀錄，請替換為實際諮詢內容）'
+    },
+    {
+      id:uid(), isExample:true, createdAt:Date.now()-2000,
+      name:'（範例）林先生', date:yesterday, program:'單一脈輪能量課程', chakra:'solar',
+      advice:'觀察到個案在表達自身需求時容易退讓，太陽神經叢輪能量偏弱。建議每天早晨花5分鐘練習「我想要...」的自我肯定句，逐步找回為自己做決定的力量。',
+      notes:'近期在工作上有重大決策要做，避免在能量低落時做出退讓性的決定。',
+      transcript:'個案分享在职場上總是最後一個表達意見，即使有不同看法也選擇沉默。透過脈輪掃描與能量疏通，引導個案重新連結自身的意志力與價值感。（此為範例對話紀錄，請替換為實際諮詢內容）'
+    }
+  ];
+  saveRecords(examples);
+}
+
+/* ============ App state ============ */
+const state = {
+  view:'dashboard',
+  records:[],
+  settings:loadSettings(),
+  programs:loadPrograms(),
+  editingId:null,
+  reportId:null,
+  search:'',
+  filterProgram:'',
+  filterChakra:'',
+  sortDir:'desc',
+  bannerDismissed: localStorage.getItem('ltrs_banner_dismissed_v1')==='1',
+  syncStatus:'idle',
+  lastSyncAt:0
+};
+seedIfEmpty();
+
+/* ============ Toast ============ */
+let toastTimer=null;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+/* ============ Theme ============ */
+function applyTheme(){
+  const t = localStorage.getItem(THEME_KEY) || 'system';
+  const root = document.documentElement;
+  if(t==='system') root.removeAttribute('data-theme');
+  else root.setAttribute('data-theme', t);
+  const btn = document.getElementById('themeBtn');
+  btn.innerHTML = t==='dark' ? ICON.moon : (t==='light' ? ICON.sun : ICON.auto);
+  btn.title = t==='dark' ? '目前：深色（點擊切換）' : (t==='light' ? '目前：淺色（點擊切換）' : '目前：跟隨系統（點擊切換）');
+}
+function cycleTheme(){
+  const t = localStorage.getItem(THEME_KEY) || 'system';
+  const next = t==='system' ? 'light' : (t==='light' ? 'dark' : 'system');
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme();
+}
+
+/* ============ Nav / routing ============ */
+const TABS = [
+  {id:'dashboard', label:'儀表板', icon:ICON.grid},
+  {id:'list', label:'客戶清單', icon:ICON.list},
+  {id:'form', label:'新增諮詢', icon:ICON.plus}
+];
+function renderTabs(){
+  const nav = document.getElementById('tabs');
+  nav.innerHTML = TABS.map(t=>
+    `<button class="tab-btn" aria-selected="${state.view===t.id}" onclick="app.go('${t.id}')">${t.icon}<span>${t.label}</span></button>`
+  ).join('');
+}
+function go(view){
+  if(view==='form') state.editingId = null;
+  state.view = view;
+  render();
+  window.scrollTo({top:0, behavior:'instant' in window ? 'instant' : 'auto'});
+  if((view==='dashboard' || view==='list') && state.settings.cloudSyncUrl){
+    if(Date.now() - (state.lastSyncAt||0) > 15000) syncNow();
+  }
+}
+
+/* ============ Computations ============ */
+function isSameWeek(dateStr, ref){
+  const d = new Date(dateStr+'T00:00:00');
+  const r = new Date(ref+'T00:00:00');
+  const day = (r.getDay()+6)%7; // Mon=0
+  const monday = new Date(r); monday.setDate(r.getDate()-day);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  return d>=monday && d<=sunday;
+}
+function isSameMonth(dateStr, ref){
+  return dateStr.slice(0,7) === ref.slice(0,7);
+}
+function computeStats(){
+  const today = todayStr();
+  const recs = state.records;
+  const todayCount = recs.filter(r=>r.date===today).length;
+  const weekCount = recs.filter(r=>isSameWeek(r.date, today)).length;
+  const monthCount = recs.filter(r=>isSameMonth(r.date, today)).length;
+  const clients = new Set(recs.map(r=>r.name.trim()));
+  return {todayCount, weekCount, monthCount, clientCount:clients.size, total:recs.length};
+}
+function reportNumber(rec){
+  const sameDay = state.records
+    .filter(r=>r.date===rec.date)
+    .sort((a,b)=>a.createdAt-b.createdAt);
+  const idx = sameDay.findIndex(r=>r.id===rec.id);
+  return 'NO. '+rec.date.replace(/-/g,'')+'-'+String(idx+1).padStart(2,'0');
+}
+
+/* ============ Render: Dashboard ============ */
+function renderDashboard(){
+  const s = computeStats();
+  const today = todayStr();
+  const todays = state.records.filter(r=>r.date===today).sort((a,b)=>b.createdAt-a.createdAt);
+  const recent = [...state.records].sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
+  const hasExample = state.records.some(r=>r.isExample);
+  const draftCount = state.records.filter(r=>r.isDraft && !r.isExample).length;
+
+  let html = '<div class="view">';
+
+  if(hasExample && !state.bannerDismissed){
+    html += `<div class="banner">
+      <span>目前顯示的是 <b>範例資料</b>，讓你先預覽報告書的樣子。正式使用前可以清除範例。</span>
+      <button onclick="app.clearExamples()">清除範例</button>
+    </div>`;
+  }
+
+  if(draftCount > 0){
+    html += `<div class="banner">
+      <span>有 <b>${draftCount}</b> 筆從預約系統自動帶入的<b>待補充草稿</b>（客戶已完成諮詢，等妳補上重點內容）。</span>
+      <button onclick="app.go('list')">查看草稿</button>
+    </div>`;
+  }
+
+  html += `<div class="stats">
+    <div class="stat-card c-pink"><div class="label">今日諮詢</div><div class="value tnum">${s.todayCount}</div></div>
+    <div class="stat-card c-blue"><div class="label">本週諮詢</div><div class="value tnum">${s.weekCount}</div></div>
+    <div class="stat-card c-sage"><div class="label">本月諮詢</div><div class="value tnum">${s.monthCount}</div></div>
+    <div class="stat-card c-gold"><div class="label">服務客戶總數</div><div class="value tnum">${s.clientCount}</div></div>
+  </div>`;
+
+  html += `<div class="section-head"><h2>今日諮詢清單</h2><span class="count">${todays.length} 筆</span></div>`;
+  html += todays.length ? todays.map(recordRowHtml).join('') :
+    `<div class="empty-state">今天還沒有安排諮詢，點右下角「＋」新增一筆吧。</div>`;
+
+  html += `<div class="section-head"><h2>最近報告書</h2><span class="count">共 ${s.total} 筆</span></div>`;
+  html += recent.length ? recent.map(recordRowHtml).join('') :
+    `<div class="empty-state">還沒有任何報告書紀錄。</div>`;
+
+  html += '</div>';
+  document.getElementById('main').innerHTML = html;
+}
+
+function recordRowHtml(r){
+  const c = chakraOf(r.chakra);
+  return `<div class="record-row" onclick="app.viewReport('${r.id}')">
+    <span class="chakra-dot ${c.dot}"></span>
+    <div class="record-main">
+      <div class="name-row">
+        <span class="rname">${escapeHtml(r.name)}</span>
+        ${r.isExample ? '<span class="example-flag">範例</span>' : ''}
+        ${r.isDraft ? '<span class="example-flag" style="background:var(--soft-blue); color:#2E4A5C;">待補充草稿</span>' : ''}
+        <span class="tag">${escapeHtml(r.program||'未分類')}</span>
+      </div>
+      <div class="meta tnum">${fmtDate(r.date)} · ${c.name}</div>
+    </div>
+    <div class="record-side">
+      <button class="row-icon-btn" title="編輯" onclick="event.stopPropagation(); app.editRecord('${r.id}')">${ICON.pencil}</button>
+      <button class="row-icon-btn" title="刪除" onclick="event.stopPropagation(); app.deleteRecord('${r.id}')">${ICON.trash}</button>
+    </div>
+  </div>`;
+}
+
+/* ============ Render: List ============ */
+function renderList(){
+  const usedPrograms = state.records.map(r=>r.program).filter(Boolean);
+  const programs = Array.from(new Set([...state.programs, ...usedPrograms]));
+  let list = state.records.filter(r=>{
+    if(state.search){
+      const q = state.search.toLowerCase();
+      const hay = [r.name, r.program, r.advice, r.notes, r.transcript].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    if(state.filterProgram && r.program !== state.filterProgram) return false;
+    if(state.filterChakra && r.chakra !== state.filterChakra) return false;
+    return true;
+  }).sort((a,b)=> state.sortDir==='desc' ? b.date.localeCompare(a.date)||b.createdAt-a.createdAt : a.date.localeCompare(b.date)||a.createdAt-b.createdAt);
+
+  let html = '<div class="view">';
+  html += `<div class="list-controls">
+    <div class="search-box">${ICON.search}<input type="text" placeholder="搜尋客戶姓名、諮詢內容..." value="${escapeHtml(state.search)}" oninput="app.setSearch(this.value)"></div>
+    <div class="filter-row">
+      <select onchange="app.setFilterProgram(this.value)">
+        <option value="">全部方案</option>
+        ${programs.map(p=>`<option value="${escapeHtml(p)}" ${state.filterProgram===p?'selected':''}>${escapeHtml(p)}</option>`).join('')}
+      </select>
+      <select onchange="app.setFilterChakra(this.value)">
+        <option value="">全部脈輪</option>
+        ${CHAKRAS.map(c=>`<option value="${c.id}" ${state.filterChakra===c.id?'selected':''}>${c.name}</option>`).join('')}
+      </select>
+      <button class="sort-btn" onclick="app.toggleSort()">${ICON.chevron}<span>日期${state.sortDir==='desc'?'新→舊':'舊→新'}</span></button>
+    </div>
+  </div>`;
+
+  html += `<div class="section-head"><h2>諮詢報告書</h2><span class="count">${list.length} 筆</span></div>`;
+  html += list.length ? list.map(recordRowHtml).join('') :
+    `<div class="empty-state">找不到符合條件的資料。</div>`;
+  html += '</div>';
+  document.getElementById('main').innerHTML = html;
+}
+
+/* ============ Render: Form ============ */
+function renderForm(){
+  const editing = state.editingId ? state.records.find(r=>r.id===state.editingId) : null;
+  const r = editing || {name:'', date:todayStr(), program:'', chakra:'heart', advice:'', notes:'', transcript:''};
+  const c = chakraOf(r.chakra);
+
+  let html = `<div class="view">
+    <div class="section-head"><h2>${editing ? '編輯諮詢紀錄' : '新增諮詢紀錄'}</h2></div>
+    ${editing && editing.isDraft ? `<div class="banner"><span>這是客戶完成諮詢後<b>自動帶入</b>的草稿，姓名/日期/方案已幫妳填好，請補上下面的諮詢問題與建議、注意事項、對話紀錄後儲存。</span></div>` : ''}
+    <div class="card">
+      <form id="recordForm" onsubmit="return app.submitForm(event)">
+        ${editing ? '' : `<div class="field">
+          <button type="button" class="ai-btn" style="width:100%; justify-content:center; padding:11px;" onclick="app.openBookingImport()">${ICON.sync}<span>從預約系統匯入客戶資料</span></button>
+        </div>`}
+        <div class="field">
+          <label for="f_name">客戶姓名 *</label>
+          <input type="text" id="f_name" required value="${escapeHtml(r.name)}" placeholder="例如：陳小姐">
+        </div>
+        <div class="field grid2">
+          <div>
+            <label for="f_date">諮詢日期 *</label>
+            <input type="date" id="f_date" required value="${r.date}">
+          </div>
+          <div>
+            <label for="f_program">諮詢方案</label>
+            <div class="program-select-row">
+              <select id="f_program">
+                <option value="">未分類</option>
+                ${Array.from(new Set([...state.programs, ...(r.program ? [r.program] : [])])).map(p=>`<option value="${escapeHtml(p)}" ${r.program===p?'selected':''}>${escapeHtml(p)}</option>`).join('')}
+              </select>
+              <button type="button" class="icon-btn" title="新增方案" onclick="app.addProgramInline()">${ICON.plus}</button>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f_chakra">脈輪療癒</label>
+          <div class="chakra-select-row">
+            <select id="f_chakra" onchange="app.updateChakraPreview()">
+              ${CHAKRAS.map(c2=>`<option value="${c2.id}" ${r.chakra===c2.id?'selected':''}>${c2.name}（${c2.en}）</option>`).join('')}
+            </select>
+          </div>
+          <div class="chakra-preview" id="chakraPreview">
+            <span class="chakra-dot ${c.dot}"></span><span>${c.name} · ${c.meaning}</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="f_transcript">此次對話紀錄</label>
+            <button type="button" class="ai-btn" id="aiBtn" onclick="app.runAiSummarize()">${ICON.sparkle}<span>AI 整理重點</span></button>
+          </div>
+          <textarea id="f_transcript" style="min-height:150px" placeholder="把這次諮詢的對話紀錄貼在這裡，再按右上角「AI 整理重點」..." oninput="app.clearAiFresh()">${escapeHtml(r.transcript)}</textarea>
+          <div class="hint">貼上對話後按上方按鈕，AI 會幫妳把「諮詢問題與建議」「注意事項」整理成草稿，記得確認後再儲存</div>
+        </div>
+        <div class="field" id="field_advice">
+          <label for="f_advice">諮詢問題與建議</label>
+          <textarea id="f_advice" placeholder="這次個案提出的核心問題，以及妳給的專業建議..." oninput="app.clearAiFresh(this)">${escapeHtml(r.advice)}</textarea>
+          <div class="ai-flag">${ICON.sparkle}<span>AI 草稿，請確認後再儲存</span></div>
+        </div>
+        <div class="field" id="field_notes">
+          <label for="f_notes">注意事項</label>
+          <textarea id="f_notes" placeholder="需要提醒個案留意的事情..." oninput="app.clearAiFresh(this)">${escapeHtml(r.notes)}</textarea>
+          <div class="hint">會在報告書中以醒目提示方塊呈現</div>
+          <div class="ai-flag">${ICON.sparkle}<span>AI 草稿，請確認後再儲存</span></div>
+        </div>
+        <div class="form-actions">
+          ${editing ? `<button type="button" class="btn btn-danger btn-sm" onclick="app.deleteRecord('${editing.id}')">${ICON.trash}<span>刪除</span></button>` : ''}
+          <button type="button" class="btn btn-secondary" onclick="app.go('${editing ? 'list' : 'dashboard'}')">取消</button>
+          <button type="submit" class="btn btn-primary"><span>${editing ? '儲存變更' : '儲存並產生報告書'}</span></button>
+        </div>
+      </form>
+    </div>
+  </div>`;
+  document.getElementById('main').innerHTML = html;
+}
+function updateChakraPreview(){
+  const id = document.getElementById('f_chakra').value;
+  const c = chakraOf(id);
+  document.getElementById('chakraPreview').innerHTML = `<span class="chakra-dot ${c.dot}"></span><span>${c.name} · ${c.meaning}</span>`;
+}
+
+/* ============ AI summarize ============ */
+function markAiFresh(){
+  const a = document.getElementById('field_advice');
+  const n = document.getElementById('field_notes');
+  if(a) a.classList.add('ai-fresh');
+  if(n) n.classList.add('ai-fresh');
+}
+function clearAiFresh(el){
+  const field = el ? el.closest('.field') : null;
+  if(field){ field.classList.remove('ai-fresh'); return; }
+  const a = document.getElementById('field_advice');
+  const n = document.getElementById('field_notes');
+  if(a) a.classList.remove('ai-fresh');
+  if(n) n.classList.remove('ai-fresh');
+}
+function buildAiPrompt(text){
+  return `你是一位身心靈療癒／情感諮詢師的專業助理，請閱讀以下諮詢對話紀錄，整理成報告書用的兩個段落。
+
+要求：
+1. advice（諮詢問題與建議）：用溫柔、專業、第二人稱「妳／你」對客戶說話的語氣，整理出客戶這次提出的核心問題，以及可以給客戶的具體建議，約3到6句，適合直接放進正式報告書給客戶看。
+2. notes（注意事項）：需要提醒客戶留意或練習的事情，約1到4句。
+3. 只根據對話紀錄裡實際出現的內容整理，不要編造對話中沒有的事實或細節。
+4. 全部使用繁體中文。
+5. 嚴格只輸出以下 JSON 格式的純文字，不要加任何說明文字、不要加 markdown code fence：
+{"advice":"...","notes":"..."}
+
+對話紀錄：
+"""
+${text}
+"""`;
+}
+function extractJson(raw){
+  try{ return JSON.parse(raw); }catch(e){}
+  const m = raw.match(/\{[\s\S]*\}/);
+  if(m){ try{ return JSON.parse(m[0]); }catch(e){} }
+  return null;
+}
+async function runAiSummarize(){
+  const key = (state.settings.apiKey||'').trim();
+  if(!key){
+    toast('請先在設定中貼上 Claude API Key');
+    openSettings();
+    return;
+  }
+  const transcriptEl = document.getElementById('f_transcript');
+  const text = transcriptEl.value.trim();
+  if(!text){
+    toast('請先在下方貼上這次的對話紀錄');
+    transcriptEl.focus();
+    return;
+  }
+  const btn = document.getElementById('aiBtn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = ICON.spinner + '<span>AI 整理中...</span>';
+  try{
+    const model = state.settings.aiModel || DEFAULT_SETTINGS.aiModel;
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'content-type':'application/json',
+        'x-api-key': key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 800,
+        messages:[{role:'user', content: buildAiPrompt(text)}]
+      })
+    });
+    if(!resp.ok){
+      let msg = 'AI 整理失敗（狀態碼 '+resp.status+'）';
+      if(resp.status===401) msg = 'API Key 無效，請到設定確認';
+      else if(resp.status===429) msg = 'API 額度或流量限制，請稍後再試';
+      else{
+        try{ const j = await resp.json(); if(j.error && j.error.message) msg = j.error.message; }catch(e){}
+      }
+      throw new Error(msg);
+    }
+    const data = await resp.json();
+    const raw = (data.content && data.content[0] && data.content[0].text) || '';
+    const parsed = extractJson(raw);
+    if(!parsed || (!parsed.advice && !parsed.notes)) throw new Error('AI 回覆格式無法解析，請再試一次');
+    if(parsed.advice) document.getElementById('f_advice').value = parsed.advice;
+    if(parsed.notes) document.getElementById('f_notes').value = parsed.notes;
+    markAiFresh();
+    toast('已產生 AI 草稿，記得確認後再儲存');
+  }catch(err){
+    console.warn('AI summarize failed', err);
+    toast(err.message || 'AI 整理失敗，請稍後再試');
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+function submitForm(e){
+  e.preventDefault();
+  const name = document.getElementById('f_name').value.trim();
+  const date = document.getElementById('f_date').value;
+  if(!name || !date){ toast('請填寫客戶姓名與諮詢日期'); return false; }
+  const payload = {
+    name,
+    date,
+    program: document.getElementById('f_program').value.trim(),
+    chakra: document.getElementById('f_chakra').value,
+    advice: document.getElementById('f_advice').value.trim(),
+    notes: document.getElementById('f_notes').value.trim(),
+    transcript: document.getElementById('f_transcript').value.trim()
+  };
+  if(state._importedBookingCode) payload.sourceBookingCode = state._importedBookingCode;
+  let list = state.records.slice();
+  let id;
+  if(state.editingId){
+    const idx = list.findIndex(r=>r.id===state.editingId);
+    list[idx] = Object.assign({}, list[idx], payload, {isExample:false, isDraft:false});
+    id = state.editingId;
+    toast('已儲存變更');
+  }else{
+    id = uid();
+    list.push(Object.assign({id, createdAt:Date.now(), isExample:false}, payload));
+    toast('已建立報告書');
+  }
+  saveRecords(list);
+  const savedRec = list.find(r=>r.id===id);
+  if(savedRec && !savedRec.isExample) queueAndPush({type:'save', id, record: savedRec});
+  state.editingId = null;
+  state._importedBookingCode = null;
+  viewReport(id);
+  return false;
+}
+function editRecord(id){
+  state.editingId = id;
+  state.view = 'form';
+  render();
+}
+function showForm(){
+  state.editingId = null;
+  state._importedBookingCode = null;
+  state.view = 'form';
+  render();
+}
+
+/* ============ Delete ============ */
+function deleteRecord(id){
+  const rec = state.records.find(r=>r.id===id);
+  if(!rec) return;
+  confirmDialog(`確定要刪除「${escapeHtml(rec.name)}」的這筆報告紀錄嗎？此操作無法復原。`, ()=>{
+    saveRecords(state.records.filter(r=>r.id!==id));
+    if(!rec.isExample) queueAndPush({type:'delete', id});
+    toast('已刪除');
+    if(state.view==='form' && state.editingId===id){ state.editingId=null; go('list'); }
+    else if(state.reportId===id){ go('list'); }
+    else render();
+  });
+}
+function clearExamples(){
+  confirmDialog('確定要清除範例資料嗎？', ()=>{
+    saveRecords(state.records.filter(r=>!r.isExample));
+    state.bannerDismissed = true;
+    localStorage.setItem('ltrs_banner_dismissed_v1','1');
+    toast('已清除範例資料');
+    render();
+  });
+}
+
+/* ============ Report view ============ */
+function viewReport(id){
+  state.reportId = id;
+  state.view = 'report';
+  render();
+}
+function reportTextOf(r){
+  const c = chakraOf(r.chakra);
+  const s = state.settings;
+  const line = '──────────────';
+  return [
+    line,
+    '✦ 本次諮詢報告 ✦',
+    line,
+    '客戶｜'+r.name,
+    '日期｜'+fmtDate(r.date),
+    '方案｜'+(r.program||'未分類'),
+    '',
+    '【脈輪療癒】'+c.name+'｜'+c.meaning,
+    '',
+    '【諮詢重點與建議】',
+    r.advice || '（無）',
+    '',
+    '【注意事項】',
+    r.notes || '（無）',
+    '',
+    '【本次對話紀錄】',
+    r.transcript || '（無）',
+    '',
+    line,
+    s.closing,
+    s.brandName + (s.igHandle ? '　'+s.igHandle : '')
+  ].join('\n');
+}
+function renderReportCard(r){
+  const c = chakraOf(r.chakra);
+  const s = state.settings;
+  return `<div id="reportCard">
+    <div class="r-eyebrow"><span class="label">CONSULTATION REPORT · 諮詢報告</span><span class="no tnum">${reportNumber(r)}</span></div>
+    <div class="r-rule"></div>
+    <div class="r-meta"><span>諮詢日期</span><span class="tnum">${fmtDate(r.date)}</span></div>
+    <div class="r-client">
+      <span class="bar"></span>
+      <div class="who">
+        <span class="n">${escapeHtml(r.name)}</span>
+        <span class="tag">${escapeHtml(r.program||'未分類')}</span>
+      </div>
+    </div>
+    <div class="r-chakra">
+      <span class="chakra-dot dot ${c.dot}"></span>
+      <div class="info"><b>${c.name} ${c.en}</b><span>${c.meaning}</span></div>
+    </div>
+    <div class="r-section">
+      <h3>諮詢重點與建議</h3>
+      <div class="body">${escapeHtml(r.advice || '（無）')}</div>
+    </div>
+    <div class="r-section">
+      <h3>注意事項</h3>
+      <div class="r-callout body">${escapeHtml(r.notes || '（無）')}</div>
+    </div>
+    <div class="r-section" style="margin-bottom:6px;">
+      <h3>本次對話紀錄</h3>
+      <div class="r-transcript"><div class="body">${escapeHtml(r.transcript || '（無）')}</div></div>
+    </div>
+    <div class="r-footer">
+      <div class="r-rule2"></div>
+      <div class="closing">${escapeHtml(s.closing)}</div>
+      <div class="who2"><b>${escapeHtml(s.brandName)}</b>${s.igHandle ? '　'+escapeHtml(s.igHandle) : ''}</div>
+    </div>
+  </div>`;
+}
+function renderReport(){
+  const r = state.records.find(x=>x.id===state.reportId);
+  if(!r){ go('list'); return; }
+  let html = `<div class="view">
+    <div class="report-toolbar">
+      <div class="left"><a class="back-link" href="javascript:void(0)" onclick="app.go('list')">${ICON.back}<span>返回清單</span></a></div>
+      <div class="actions">
+        <button class="btn btn-secondary btn-sm" onclick="app.copyReportText('${r.id}')">${ICON.copy}<span>複製文字</span></button>
+        <button class="btn btn-secondary btn-sm" id="imgBtn" onclick="app.exportImage('${r.id}')">${ICON.download}<span>產生圖片</span></button>
+        <button class="btn btn-secondary btn-sm" onclick="app.editRecord('${r.id}')">${ICON.pencil}<span>編輯</span></button>
+      </div>
+    </div>
+    <div class="report-wrap">${renderReportCard(r)}</div>
+  </div>`;
+  document.getElementById('main').innerHTML = html;
+}
+function copyReportText(id){
+  const r = state.records.find(x=>x.id===id);
+  const text = reportTextOf(r);
+  const done = ()=>toast('已複製報告文字，可直接貼到 LINE');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text, done));
+  }else{
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ toast('複製失敗，請手動選取文字'); }
+  document.body.removeChild(ta);
+}
+function exportImage(id){
+  const r = state.records.find(x=>x.id===id);
+  const card = document.getElementById('reportCard');
+  if(!card || !window.html2canvas){ toast('圖片功能載入失敗，請改用複製文字'); return; }
+  const btn = document.getElementById('imgBtn');
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = '<span>產生中...</span>';
+  const bg = getComputedStyle(card).backgroundColor;
+  window.html2canvas(card, {scale:2, backgroundColor:bg, useCORS:true}).then(canvas=>{
+    btn.innerHTML = originalHtml;
+    canvas.toBlob(blob=>{
+      if(!blob){ toast('圖片產生失敗，請改用複製文字'); return; }
+      const url = URL.createObjectURL(blob);
+      openImageModal(url, r);
+    });
+  }).catch(err=>{
+    console.warn('html2canvas failed', err);
+    btn.innerHTML = originalHtml;
+    toast('圖片產生失敗，請改用複製文字');
+  });
+}
+function openImageModal(url, r){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="overlay" onclick="if(event.target===this) app.closeModal()">
+    <div class="modal image-modal">
+      <div class="modal-head"><h2>報告圖片</h2><button class="icon-btn" onclick="app.closeModal()">${ICON.x}</button></div>
+      <img src="${url}" alt="諮詢報告圖片">
+      <p class="tip">手機請長按圖片「儲存圖片」，電腦請在圖片上按右鍵「另存圖片」，即可存下並傳送到 LINE。</p>
+      <a class="btn btn-primary" href="${url}" download="諮詢報告_${r.name}_${r.date}.png" style="justify-content:center; margin-top:10px; text-decoration:none;">${ICON.download}<span>下載圖片</span></a>
+    </div>
+  </div>`;
+}
+
+/* ============ List filter helpers ============ */
+function setSearch(v){ state.search = v; renderList(); }
+function setFilterProgram(v){ state.filterProgram = v; render(); }
+function setFilterChakra(v){ state.filterChakra = v; render(); }
+function toggleSort(){ state.sortDir = state.sortDir==='desc' ? 'asc' : 'desc'; render(); }
+
+/* ============ Program management ============ */
+function programChipsHtml(){
+  if(!state.programs.length) return '<span class="hint">目前沒有方案，於下方新增</span>';
+  return state.programs.map(p=>
+    `<span class="chip">${escapeHtml(p)}<button type="button" data-name="${escapeHtml(p)}" onclick="app.removeProgram(this.dataset.name)" title="移除">${ICON.x}</button></span>`
+  ).join('');
+}
+function renderProgramChipsIfOpen(){
+  const el = document.getElementById('programChips');
+  if(el) el.innerHTML = programChipsHtml();
+}
+function removeProgram(name){
+  savePrograms(state.programs.filter(p=>p!==name));
+  renderProgramChipsIfOpen();
+  toast('已移除方案（既有紀錄不受影響）');
+}
+function addProgramFromSettings(){
+  const input = document.getElementById('s_newProgram');
+  const val = input.value.trim();
+  if(!val) return;
+  if(!state.programs.includes(val)) savePrograms([...state.programs, val]);
+  input.value = '';
+  renderProgramChipsIfOpen();
+  toast('已新增方案：'+val);
+}
+function addProgramInline(){
+  const holder = document.createElement('div');
+  holder.innerHTML = `<div class="overlay">
+    <div class="modal confirm-modal" style="text-align:left; max-width:380px;">
+      <div class="modal-head"><h2>新增諮詢方案</h2><button type="button" class="icon-btn" id="ap_close">${ICON.x}</button></div>
+      <div class="field" style="margin-bottom:16px;">
+        <input type="text" id="ap_input" placeholder="例如：能量地基七日課">
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" id="ap_cancel">取消</button>
+        <button type="button" class="btn btn-primary" id="ap_ok">新增</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('modalRoot').appendChild(holder);
+  const input = holder.querySelector('#ap_input');
+  input.focus();
+  const close = ()=>{ if(holder.parentNode) holder.parentNode.removeChild(holder); };
+  holder.querySelector('#ap_close').onclick = close;
+  holder.querySelector('#ap_cancel').onclick = close;
+  const commit = ()=>{
+    const val = input.value.trim();
+    if(!val){ input.focus(); return; }
+    if(!state.programs.includes(val)) savePrograms([...state.programs, val]);
+    close();
+    const sel = document.getElementById('f_program');
+    if(sel){
+      if(![...sel.options].some(o=>o.value===val)){
+        const opt = document.createElement('option');
+        opt.value = val; opt.textContent = val;
+        sel.appendChild(opt);
+      }
+      sel.value = val;
+    }
+    renderProgramChipsIfOpen();
+    toast('已新增方案：'+val);
+  };
+  holder.querySelector('#ap_ok').onclick = commit;
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(); } });
+}
+
+/* ============ Booking system import ============ */
+let _bookingRecordsCache = null;
+function openBookingImport(){
+  const url = (state.settings.bookingApiUrl||'').trim();
+  const pw = state.settings.bookingPassword || '';
+  if(!url || !pw){
+    toast('請先在設定中填寫預約系統網址與密碼');
+    openSettings();
+    return;
+  }
+  _bookingRecordsCache = null;
+  const holder = document.createElement('div');
+  holder.id = 'bookingImportHolder';
+  holder.innerHTML = `<div class="overlay" onclick="if(event.target===this) app.closeBookingImport()">
+    <div class="modal" style="max-width:480px; text-align:left;">
+      <div class="modal-head"><h2>從預約系統匯入</h2><button type="button" class="icon-btn" id="bi_close">${ICON.x}</button></div>
+      <div class="list-controls" style="margin-bottom:12px;">
+        <div class="search-box">${ICON.search}<input type="text" id="bi_search" placeholder="搜尋客戶姓名..."></div>
+        <div class="filter-row">
+          <select id="bi_status">
+            <option value="已完成">已完成</option>
+            <option value="已確認">已確認</option>
+            <option value="">全部狀態</option>
+          </select>
+        </div>
+      </div>
+      <div id="bi_list"><div class="empty-state">讀取中...</div></div>
+    </div>
+  </div>`;
+  document.getElementById('modalRoot').appendChild(holder);
+  holder.querySelector('#bi_close').onclick = closeBookingImport;
+  holder.querySelector('#bi_search').addEventListener('input', filterBookingImport);
+  holder.querySelector('#bi_status').addEventListener('change', filterBookingImport);
+  fetchBookingRecords();
+}
+function closeBookingImport(){
+  const holder = document.getElementById('bookingImportHolder');
+  if(holder && holder.parentNode) holder.parentNode.removeChild(holder);
+}
+function fetchBookingRecords(){
+  const url = state.settings.bookingApiUrl.trim();
+  const pw = state.settings.bookingPassword;
+  if(!url){
+    renderBookingImportMessage('尚未設定預約系統網址，請到設定 → 預約系統整合 填入網址');
+    return;
+  }
+  if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)){
+    renderBookingImportMessage('網址格式看起來不正確，請確認貼上的是 Apps Script 部署後的 .../exec 網址（開頭應為 https://script.google.com/）');
+    return;
+  }
+  fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({type:'getRecords', password: pw})
+  }).then(r=>r.json()).then(data=>{
+    if(!data || data.ok===false){
+      renderBookingImportMessage(data && data.error==='unauthorized' ? '密碼錯誤，請到設定確認後台密碼' : '讀取失敗，請確認預約系統網址是否正確');
+      return;
+    }
+    _bookingRecordsCache = Array.isArray(data.records) ? data.records : [];
+    filterBookingImport();
+  }).catch(err=>{
+    console.warn('fetchBookingRecords failed', err);
+    // 進一步判斷：用 no-cors 模式探測網路是否真的不通，藉此區分「網址/網路不通」與「CORS 或部署權限問題」
+    fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({type:'getRecords', password: pw}) })
+      .then(()=>{
+        renderBookingImportMessage('連線被瀏覽器擋下（可能是 CORS 或部署權限問題）。請確認 Apps Script 部署設定為「執行身份：我」「具有存取權的使用者：任何人」，並重新部署為「新版本」後，複製最新的 .../exec 網址到設定中。');
+      })
+      .catch(()=>{
+        renderBookingImportMessage('連線失敗：無法連到這個網址，請確認網路連線正常，且此頁面是用瀏覽器直接開啟（不是在預覽視窗中），再確認網址是否為 Apps Script 部署後的 .../exec 網址');
+      });
+  });
+}
+function renderBookingImportMessage(msg){
+  const list = document.getElementById('bi_list');
+  if(list) list.innerHTML = `<div class="empty-state">${escapeHtml(msg)}</div>`;
+}
+function usedBookingCodes(){
+  return new Set(state.records.map(r=>r.sourceBookingCode).filter(Boolean));
+}
+function filterBookingImport(){
+  const listEl = document.getElementById('bi_list');
+  if(!listEl) return;
+  if(_bookingRecordsCache === null){ listEl.innerHTML = '<div class="empty-state">讀取中...</div>'; return; }
+  const q = (document.getElementById('bi_search').value||'').trim().toLowerCase();
+  const status = document.getElementById('bi_status').value;
+  const used = usedBookingCodes();
+  const list = _bookingRecordsCache.filter(b=>{
+    if(status && b.status !== status) return false;
+    if(q && !String(b.name||'').toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a,b)=> String(b.datetime||'').localeCompare(String(a.datetime||'')));
+
+  if(!list.length){ listEl.innerHTML = '<div class="empty-state">沒有符合條件的預約資料</div>'; return; }
+
+  listEl.innerHTML = list.map(b=>{
+    const already = used.has(b.code);
+    const dt = String(b.datetime||'').replace('T',' ');
+    return `<div class="record-row" style="${already?'opacity:.55;':''}" data-code="${escapeHtml(b.code)}">
+      <span class="chakra-dot" style="background:var(--pink);"></span>
+      <div class="record-main">
+        <div class="name-row">
+          <span class="rname">${escapeHtml(b.name||'（無姓名）')}</span>
+          ${already ? '<span class="example-flag">已建立過報告</span>' : ''}
+          <span class="tag">${escapeHtml(b.serviceName||'未分類')}</span>
+        </div>
+        <div class="meta tnum">${escapeHtml(dt)} · ${escapeHtml(b.status||'')}</div>
+      </div>
+    </div>`;
+  }).join('');
+  listEl.querySelectorAll('.record-row').forEach(row=>{
+    row.addEventListener('click', ()=> applyBookingImport(row.dataset.code));
+  });
+}
+function applyBookingImport(code){
+  if(!_bookingRecordsCache) return;
+  const b = _bookingRecordsCache.find(x=>String(x.code)===String(code));
+  if(!b) return;
+  const nameEl = document.getElementById('f_name');
+  if(nameEl) nameEl.value = b.name || '';
+  if(b.datetime){
+    const datePart = String(b.datetime).substring(0,10);
+    const dateEl = document.getElementById('f_date');
+    if(dateEl && datePart) dateEl.value = datePart;
+  }
+  if(b.serviceName){
+    if(!state.programs.includes(b.serviceName)) savePrograms([...state.programs, b.serviceName]);
+    const sel = document.getElementById('f_program');
+    if(sel){
+      if(![...sel.options].some(o=>o.value===b.serviceName)){
+        const opt = document.createElement('option');
+        opt.value = b.serviceName; opt.textContent = b.serviceName;
+        sel.appendChild(opt);
+      }
+      sel.value = b.serviceName;
+    }
+  }
+  state._importedBookingCode = b.code;
+  closeBookingImport();
+  toast('已帶入「'+(b.name||'')+'」的預約資料');
+}
+
+/* ============ Settings modal ============ */
+function openSettings(){
+  const s = state.settings;
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="overlay" onclick="if(event.target===this) app.closeModal()">
+    <div class="modal">
+      <div class="modal-head"><h2>設定</h2><button class="icon-btn" onclick="app.closeModal()">${ICON.x}</button></div>
+      <div class="field"><label>品牌顯示名稱</label><input type="text" id="s_brand" value="${escapeHtml(s.brandName)}"></div>
+      <div class="field"><label>IG／LINE 帳號顯示文字</label><input type="text" id="s_ig" value="${escapeHtml(s.igHandle)}" placeholder="例如：@lovetalker_tw"></div>
+      <div class="field"><label>報告結語</label><textarea id="s_closing" style="min-height:64px">${escapeHtml(s.closing)}</textarea><div class="hint">會顯示在每份報告書最底部</div></div>
+      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="app.saveSettingsForm()"><span>儲存設定</span></button>
+
+      <hr>
+      <div class="subhead">${ICON.sparkle} AI 整理重點</div>
+      <div class="field">
+        <label>Claude API Key</label>
+        <div class="apikey-row">
+          <input type="password" id="s_apikey" value="${escapeHtml(s.apiKey)}" placeholder="sk-ant-...">
+          <button type="button" class="icon-btn" id="apikeyToggle" onclick="app.toggleApiKeyVisible()">${ICON.eye}</button>
+        </div>
+        <div class="hint">只會存在這台裝置的瀏覽器裡，整理重點時直接從瀏覽器呼叫 Claude API。可以到 console.anthropic.com/settings/keys 申請，依實際用量計費。</div>
+      </div>
+      <div class="field">
+        <label>使用模型</label>
+        <select id="s_model">
+          ${AI_MODELS.map(m=>`<option value="${m.id}" ${s.aiModel===m.id?'selected':''}>${m.label}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-secondary" style="width:100%; justify-content:center;" onclick="app.saveSettingsForm()"><span>儲存 AI 設定</span></button>
+
+      <hr>
+      <div class="subhead">${ICON.sync} 雲端同步（電腦手機共用資料）</div>
+      <div class="field">
+        <label>同步網址（Apps Script /exec 網址）</label>
+        <input type="text" id="s_cloudUrl" value="${escapeHtml(s.cloudSyncUrl)}" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <div class="field">
+        <label>同步密碼</label>
+        <div class="apikey-row">
+          <input type="password" id="s_cloudPassword" value="${escapeHtml(s.cloudSyncPassword)}" placeholder="自己設定的同步密碼">
+          <button type="button" class="icon-btn" id="cloudPwToggle" onclick="app.toggleCloudPwVisible()">${ICON.eye}</button>
+        </div>
+      </div>
+      <div class="hint">${cloudStatusText()}</div>
+      <div class="backup-row">
+        <button class="btn btn-primary btn-sm" style="flex:1;" onclick="app.saveSettingsForm()">${ICON.sync}<span>儲存並立即同步</span></button>
+        <button class="btn btn-secondary btn-sm" onclick="app.syncNow({manual:true})">${ICON.sync}<span>立即同步</span></button>
+      </div>
+      <div class="hint">電腦跟手機都填一樣的網址跟密碼，之後新增、修改、刪除紀錄都會自動同步到雲端，兩邊打開都會抓到最新資料，不用再手動匯出匯入備份。密碼只會存在這台裝置。</div>
+
+      <hr>
+      <div class="subhead">${ICON.sync} 串接預約系統</div>
+      <div class="field">
+        <label>預約系統網址（Apps Script /exec 網址）</label>
+        <input type="text" id="s_bookingUrl" value="${escapeHtml(s.bookingApiUrl)}" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <div class="field">
+        <label>後台密碼</label>
+        <div class="apikey-row">
+          <input type="password" id="s_bookingPassword" value="${escapeHtml(s.bookingPassword)}" placeholder="跟預約系統後台登入密碼相同">
+          <button type="button" class="icon-btn" id="bookingPwToggle" onclick="app.toggleBookingPwVisible()">${ICON.eye}</button>
+        </div>
+        <div class="hint">填好後，新增諮詢時可以按「從預約系統匯入客戶資料」，直接把 Google 表單裡狀態為「已完成」的預約資料帶進來，不用手動重打一次。密碼只會存在這台裝置。</div>
+      </div>
+      <button class="btn btn-secondary" style="width:100%; justify-content:center;" onclick="app.saveSettingsForm()"><span>儲存串接設定</span></button>
+
+      <hr>
+      <div class="subhead">諮詢方案管理</div>
+      <div class="chip-wrap" id="programChips">${programChipsHtml()}</div>
+      <div class="add-row">
+        <input type="text" id="s_newProgram" placeholder="新增方案名稱，例如：能量地基七日課" onkeydown="if(event.key==='Enter'){event.preventDefault(); app.addProgramFromSettings();}">
+        <button type="button" class="icon-btn" title="新增" onclick="app.addProgramFromSettings()">${ICON.plus}</button>
+      </div>
+      <div class="hint">這裡的方案會出現在新增諮詢表單的下拉選單裡，可依照妳前台實際的方案項目調整。</div>
+
+      <hr>
+      <div class="subhead">資料備份</div>
+      <div class="backup-row">
+        <button class="btn btn-secondary btn-sm" onclick="app.exportBackup()">${ICON.download}<span>匯出備份檔</span></button>
+        <button class="btn btn-secondary btn-sm file-btn"><input type="file" accept="application/json" onchange="app.importBackup(this.files[0])">${ICON.upload}<span>匯入備份檔</span></button>
+      </div>
+      <div class="hint">若下載按鈕無法使用，可用下方文字框整段複製備份，需要時再貼回匯入欄位。</div>
+      <textarea class="backup-text" readonly onclick="this.select()">${escapeHtml(JSON.stringify({records:state.records, settings:backupSafeSettings()}))}</textarea>
+      <div class="hint">為了安全，備份不會包含 Claude API Key 跟預約系統密碼，換裝置後這兩個要重新到設定裡貼一次。</div>
+
+      <div class="danger-zone">
+        <div class="subhead" style="color:#B5564A;">危險區域</div>
+        <button class="btn btn-danger btn-sm" onclick="app.wipeAll()">${ICON.trash}<span>清除全部資料</span></button>
+      </div>
+    </div>
+  </div>`;
+}
+function saveSettingsForm(){
+  const s = {
+    brandName: document.getElementById('s_brand').value.trim() || DEFAULT_SETTINGS.brandName,
+    igHandle: document.getElementById('s_ig').value.trim(),
+    closing: document.getElementById('s_closing').value.trim() || DEFAULT_SETTINGS.closing,
+    apiKey: document.getElementById('s_apikey').value.trim(),
+    aiModel: document.getElementById('s_model').value || DEFAULT_SETTINGS.aiModel,
+    bookingApiUrl: document.getElementById('s_bookingUrl').value.trim(),
+    bookingPassword: document.getElementById('s_bookingPassword').value,
+    cloudSyncUrl: document.getElementById('s_cloudUrl').value.trim(),
+    cloudSyncPassword: document.getElementById('s_cloudPassword').value
+  };
+  const cloudChanged = s.cloudSyncUrl !== state.settings.cloudSyncUrl || s.cloudSyncPassword !== state.settings.cloudSyncPassword;
+  saveSettings(s);
+  toast('設定已儲存');
+  closeModal();
+  if(s.cloudSyncUrl && cloudChanged) syncNow({manual:true});
+}
+function toggleApiKeyVisible(){
+  const input = document.getElementById('s_apikey');
+  const btn = document.getElementById('apikeyToggle');
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.innerHTML = showing ? ICON.eye : ICON.eyeOff;
+}
+function toggleBookingPwVisible(){
+  const input = document.getElementById('s_bookingPassword');
+  const btn = document.getElementById('bookingPwToggle');
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.innerHTML = showing ? ICON.eye : ICON.eyeOff;
+}
+function toggleCloudPwVisible(){
+  const input = document.getElementById('s_cloudPassword');
+  const btn = document.getElementById('cloudPwToggle');
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.innerHTML = showing ? ICON.eye : ICON.eyeOff;
+}
+function backupSafeSettings(){
+  const s = Object.assign({}, state.settings);
+  delete s.apiKey;
+  delete s.bookingPassword;
+  delete s.cloudSyncPassword;
+  return s;
+}
+function exportBackup(){
+  const payload = JSON.stringify({records:state.records, settings:backupSafeSettings(), exportedAt:new Date().toISOString()}, null, 2);
+  try{
+    const blob = new Blob([payload], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'lovetalker-reports-backup-'+todayStr()+'.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    toast('已匯出備份檔');
+  }catch(e){
+    console.warn(e);
+    toast('自動下載失敗，請用下方文字框手動複製備份');
+  }
+}
+function importBackup(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      const recs = Array.isArray(data.records) ? data.records : (Array.isArray(data) ? data : null);
+      if(!recs) throw new Error('格式錯誤');
+      confirmDialog('匯入將會「合併」備份資料與目前資料（相同 ID 以備份為準）。確定要匯入嗎？', ()=>{
+        const map = new Map(state.records.map(r=>[r.id, r]));
+        recs.forEach(r=>{ if(r && r.id) map.set(r.id, r); });
+        saveRecords(Array.from(map.values()));
+        if(data.settings){
+          // 備份不包含 API Key／後台密碼（安全考量），合併時保留這台裝置目前已存的值，不會被清空
+          saveSettings(Object.assign({}, DEFAULT_SETTINGS, data.settings, {
+            apiKey: state.settings.apiKey,
+            bookingPassword: state.settings.bookingPassword,
+            cloudSyncPassword: state.settings.cloudSyncPassword
+          }));
+        }
+        toast('已匯入備份資料');
+        closeModal();
+        render();
+      });
+    }catch(e){
+      toast('匯入失敗，檔案格式不正確');
+    }
+  };
+  reader.readAsText(file);
+}
+function wipeAll(){
+  const cloudNote = state.settings.cloudSyncUrl ? '（已開啟雲端同步：這裡只會清除這台裝置的暫存，雲端上的資料不會被刪除，清除後會自動重新同步回來）' : '';
+  confirmDialog(`這會刪除所有客戶報告資料，且無法復原。建議先匯出備份。確定要清除嗎？${cloudNote}`, ()=>{
+    savePending([]);
+    saveRecords([]);
+    toast('資料已清除');
+    closeModal();
+    go('dashboard');
+    if(state.settings.cloudSyncUrl) syncNow();
+  });
+}
+
+/* ============ Confirm modal ============ */
+function confirmDialog(message, onConfirm){
+  const root = document.getElementById('modalRoot');
+  const holder = document.createElement('div');
+  holder.innerHTML = `<div class="overlay">
+    <div class="modal confirm-modal">
+      <p>${message}</p>
+      <div class="actions">
+        <button class="btn btn-secondary" id="cd_cancel">取消</button>
+        <button class="btn btn-primary" id="cd_ok" style="background:#B5564A;">確定</button>
+      </div>
+    </div>
+  </div>`;
+  root.appendChild(holder);
+  holder.querySelector('#cd_cancel').onclick = ()=>root.removeChild(holder);
+  holder.querySelector('#cd_ok').onclick = ()=>{ root.removeChild(holder); onConfirm(); };
+}
+function closeModal(){ document.getElementById('modalRoot').innerHTML=''; }
+
+/* ============ Render dispatch ============ */
+function render(){
+  renderTabs();
+  if(state.view==='dashboard') renderDashboard();
+  else if(state.view==='list') renderList();
+  else if(state.view==='form') renderForm();
+  else if(state.view==='report') renderReport();
+  document.getElementById('fab').style.display = state.view==='form' ? 'none' : 'flex';
+}
+
+/* ============ Init ============ */
+document.getElementById('settingsBtn').innerHTML = ICON.gear;
+applyTheme();
+render();
+if(state.settings.cloudSyncUrl) syncNow();
+
+/* ============ Public API ============ */
+window.app = {
+  go, showForm, editRecord, deleteRecord, clearExamples, viewReport,
+  copyReportText, exportImage, submitForm, updateChakraPreview,
+  setSearch, setFilterProgram, setFilterChakra, toggleSort,
+  openSettings, saveSettingsForm, exportBackup, importBackup, wipeAll,
+  closeModal, cycleTheme, runAiSummarize, clearAiFresh, toggleApiKeyVisible,
+  addProgramInline, addProgramFromSettings, removeProgram,
+  openBookingImport, closeBookingImport, applyBookingImport, toggleBookingPwVisible,
+  syncNow, toggleCloudPwVisible
+};
+
+})();
+</script>
+</body>
+</html>
