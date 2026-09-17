@@ -491,6 +491,10 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   font-family:-apple-system, BlinkMacSystemFont, sans-serif; box-sizing:border-box; overflow:hidden;
 }
 .rpt-card::before{ content:''; position:absolute; inset:11px; border:1px solid rgba(198,168,90,0.4); border-radius:11px; pointer-events:none; }
+/* 報告書拆成多頁時，每一頁都是獨立完整的一張卡片，疊在一起預覽時中間留一點間距 */
+.rpt-page-card + .rpt-page-card{ margin-top:22px; }
+/* 頁碼放在標題正下方、置中顯示，避開四個角落的力量符號，才不會被蓋住看不見 */
+.rpt-page-tag{ position:relative; z-index:1; text-align:center; font-size:11px; color:#B8A87E; letter-spacing:.06em; margin-top:6px; }
 .rpt-corner{ position:absolute; width:50px; height:50px; pointer-events:none; z-index:1; }
 .rpt-corner svg{ width:100%; height:100%; display:block; }
 .rpt-corner.tl{ top:8px; left:8px; }
@@ -930,12 +934,8 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
       <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 14px; font-size:14px;" id="reportImgBtn" onclick="exportReportCardImage()">🖼️ 產生圖片</button>
       <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 14px; font-size:14px;" id="reportEmailBtn" onclick="sendReportCardEmail()">✉️ 寄送 Email</button>
     </div>
-    <div style="display:flex; justify-content:center;"><div id="reportCardEl"></div></div>
-    <div id="reportImgResult" style="display:none; margin-top:16px; text-align:center;">
-      <img id="reportImgPreview" style="max-width:100%; border-radius:12px; border:1px solid var(--gold-border);">
-      <p style="font-size:13px; color:#999; margin:10px 0 6px;">手機請長按圖片選「儲存圖片」，電腦請按右鍵「另存新圖」，即可存下傳給客戶。</p>
-      <a id="reportImgDownload" class="btn" style="width:auto; display:inline-flex; margin:0; text-decoration:none;">⬇️ 下載圖片</a>
-    </div>
+    <div style="display:flex; justify-content:center;"><div id="reportCardEl" style="width:100%;"></div></div>
+    <div id="reportImgResult" style="display:none; margin-top:16px; text-align:center;"></div>
   </div>
 </div>
 
@@ -2701,7 +2701,7 @@ function chakraDiagramSvg(selectedList){
     </svg>`;
   }).join('');
   return `<div style="position:relative; width:100%; max-width:200px; margin:0 auto;">
-    <img src="${RPT_CHAKRA_BODY_IMG}" alt="三脈七輪位置圖" style="width:100%; display:block; border-radius:8px;">
+    <img src="${RPT_CHAKRA_BODY_IMG}" alt="三脈七輪位置圖" width="340" height="472" style="width:100%; height:auto; aspect-ratio:340/472; display:block; border-radius:8px;">
     ${dots}
   </div>`;
 }
@@ -2737,53 +2737,186 @@ function autoGrowTextarea(el){
   const card = el.closest('.rpt-card');
   if(card) fitReportWatermark(card);
 }
-function reportCardHtml(rec, rep){
-  const chakraList = String(rep.chakra||'').split('、').map(s=>s.trim()).filter(Boolean);
-  return `<div class="rpt-card" id="rptCardInner">
+/* 給客戶看的報告書固定用這個「內文區塊」高度，每一頁都一樣大小，內容多就自動換下一頁，
+   絕對不會有的頁面高、有的頁面矮的情況，浮水印字級也因此可以固定同一個大小，不會每頁忽大忽小。 */
+var RPT_PAGE_BODY_HEIGHT = 640;
+var RPT_BLOCK_GAP = 16;
+var RPT_WATERMARK_FONT_SIZE = Math.max(20, Math.floor((RPT_PAGE_BODY_HEIGHT * 0.99 - 4 * 2) / 3));
+
+/* 把單一頁的內容包成一張完整的卡片（框、固定大小、浮水印、頁碼都齊全），
+   給客戶看的報告書會拆成好幾張這樣大小完全一致的卡片，而不是一長串捲不完的內容 */
+function reportCardPageHtml(pageNum, totalPages, bodyHtml, showFooter){
+  // 結尾祝福語的區塊每一頁都「畫」出來、只是沒輪到的頁面用 visibility:hidden 藏起來（不是整塊拿掉），
+  // 這樣每一頁保留的空間完全一樣，卡片高度才會全部一致，不會因為有沒有結尾語而忽高忽低
+  return `<div class="rpt-card rpt-page-card">
     ${RPT_CARD_CORNERS_HTML}
     ${RPT_CARD_CREST_HTML}
     ${rptEyebrowHtml()}
     <div class="rpt-rule"></div>
-    <div class="rpt-body-wrap">
-      <div class="rpt-watermark"><span>大</span><span>光</span><span>明</span></div>
-      <div class="rpt-meta"><span>${esc(fmtDt(rec.datetime))}</span></div>
-      <div class="rpt-client">
-        <span class="bar"></span>
-        <div class="who">
-          <span class="n">${esc(rec.name||'')}</span>
-          <span class="tag">${esc(rec.serviceName||'未分類')}</span>
-          ${rec.email?`<span class="em">${esc(rec.email)}</span>`:''}
-        </div>
-      </div>
-      <div class="rpt-section">
-        <h4>諮詢重點與建議</h4>
-        <div class="body">${esc(rep.advice || '（無）')}</div>
-      </div>
-      ${chakraList.length?`<div class="rpt-section">
-        <h4>此次需要注意的脈輪</h4>
-        <div style="display:flex; align-items:flex-start; gap:10px;">
-          <div style="flex:3; min-width:0;">
-            ${chakraInfoBlocksHtml(chakraList)}
-            ${rep.chakraIssue?`<div class="body" style="font-size:13px; margin-top:4px;">${esc(rep.chakraIssue)}</div>`:''}
-          </div>
-          <div style="flex:2; min-width:0;">${chakraDiagramMarkup(chakraList)}</div>
-        </div>
-      </div>`:''}
-      <div class="rpt-section">
-        <h4>注意事項</h4>
-        <div class="rpt-callout body">${esc(rep.notes || '（無）')}</div>
-      </div>
-      ${rep.transcript?`<div class="rpt-section" style="margin-bottom:6px;">
-        <h4>本次對話紀錄</h4>
-        <div class="rpt-transcript"><div class="body">${esc(rep.transcript)}</div></div>
-      </div>`:''}
+    <div class="rpt-body-wrap" style="height:${RPT_PAGE_BODY_HEIGHT}px; overflow:hidden;">
+      <div class="rpt-watermark" style="font-size:${RPT_WATERMARK_FONT_SIZE}px;"><span>大</span><span>光</span><span>明</span></div>
+      ${bodyHtml}
     </div>
-    <div class="rpt-footer">
+    <div class="rpt-footer"${showFooter?'':' style="visibility:hidden;"'}>
       <div class="rule2"></div>
       <div class="closing">${esc(reportClosing)}</div>
       <div class="who2"><b>${esc(reportBrandName)}</b>${reportIgHandle?'　'+esc(reportIgHandle):''}</div>
     </div>
+    ${totalPages>1?`<div class="rpt-page-tag">第 ${pageNum} 頁．共 ${totalPages} 頁</div>`:''}
   </div>`;
+}
+/* 用一個畫面外、看不見的量測框，套用跟正式報告書內文完全一樣的寬度跟樣式，量出這段HTML實際渲染後的高度，
+   分頁全靠這個量出來的真實高度去判斷塞不塞得下，不是用猜的字數 */
+function rptMeasureBlockHeight(html, width){
+  let box = document.getElementById('rptPagingProbe');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'rptPagingProbe';
+    box.style.cssText = 'position:fixed; left:-9999px; top:0; visibility:hidden; pointer-events:none; box-sizing:border-box;';
+    document.body.appendChild(box);
+  }
+  box.style.width = width + 'px';
+  box.innerHTML = html;
+  return box.offsetHeight;
+}
+/* 把一段純文字按句子（。！？）切開成陣列，切句子不切字，維持語意完整 */
+function rptSplitSentences(text){
+  const parts = []; let buf = '';
+  for(const ch of text){
+    buf += ch;
+    if(ch==='。'||ch==='！'||ch==='？'){ parts.push(buf); buf=''; }
+  }
+  if(buf) parts.push(buf);
+  return parts;
+}
+/* 把一段文字盡量塞進 maxHeight 高度以內：先用段落（換行）切，一段還是太長就再用句子切，
+   回傳 {fit, rest}：fit是這頁塞得下的部分，rest是塞不下、要接到下一頁繼續的部分 */
+function rptFitTextToHeight(text, width, maxHeight, wrapOpen, wrapClose){
+  const wholeHtml = wrapOpen + esc(text) + wrapClose;
+  if(rptMeasureBlockHeight(wholeHtml, width) <= maxHeight) return { fit:text, rest:'' };
+  const paras = text.split(/\n+/).filter(s=>s.length);
+  let fit = '';
+  for(let i=0;i<paras.length;i++){
+    const candidate = fit ? (fit + '\n\n' + paras[i]) : paras[i];
+    const h = rptMeasureBlockHeight(wrapOpen + esc(candidate) + wrapClose, width);
+    if(h <= maxHeight){ fit = candidate; continue; }
+    if(fit){ return { fit, rest: paras.slice(i).join('\n\n') }; }
+    // 連第一段都塞不下，改成一句一句試
+    const sentences = rptSplitSentences(paras[i]);
+    let sFit = '';
+    for(let j=0;j<sentences.length;j++){
+      const sCandidate = sFit + sentences[j];
+      const sh = rptMeasureBlockHeight(wrapOpen + esc(sCandidate) + wrapClose, width);
+      if(sh <= maxHeight){ sFit = sCandidate; } else break;
+    }
+    const restParas = paras.slice(i+1);
+    const restText = paras[i].slice(sFit.length) + (restParas.length ? ('\n\n'+restParas.join('\n\n')) : '');
+    return { fit: sFit, rest: restText };
+  }
+  return { fit, rest:'' };
+}
+/* 給客戶看的報告書：客戶資料＋諮詢重點與建議放最前面、此次需要注意的脈輪（沒選脈輪就跳過）、
+   最後是注意事項＋結尾祝福語。每一頁大小固定一致，內容太多就自動另開一頁繼續，不會把某一頁撐得特別高。
+   本次對話紀錄只是留給自己核對用的草稿，不會出現在客戶看到的報告書裡。 */
+function reportCardHtml(rec, rep){
+  // 脈輪介紹的顯示順序固定由上到下「頂輪→...→海底輪」，跟脈輪填寫/勾選的先後順序無關
+  const chakraList = String(rep.chakra||'').split('、').map(s=>s.trim()).filter(Boolean)
+    .sort((a,b)=>CHAKRA_DIAGRAM_ORDER.indexOf(a)-CHAKRA_DIAGRAM_ORDER.indexOf(b));
+  const headerHtml = `
+    <div class="rpt-meta"><span>${esc(fmtDt(rec.datetime))}</span></div>
+    <div class="rpt-client">
+      <span class="bar"></span>
+      <div class="who">
+        <span class="n">${esc(rec.name||'')}</span>
+        <span class="tag">${esc(rec.serviceName||'未分類')}</span>
+        ${rec.email?`<span class="em">${esc(rec.email)}</span>`:''}
+      </div>
+    </div>`;
+  // 脈輪介紹（文字）固定左半、脈輪圖固定右半，左右各半呈現，整塊固定在一起（一定同一頁）；
+  // 下面脈輪出現的問題文字則獨立開來，跟諮詢重點與建議、注意事項一樣可以往下展開塞滿整頁、
+  // 塞不下才自動換頁接續，不會因為文字多就無故被推去下一頁
+  const chakraTopHtml = chakraList.length ? `<div class="rpt-section" style="margin-bottom:0;">
+    <h4>此次需要注意的脈輪</h4>
+    <div style="display:flex; align-items:flex-start; gap:10px;">
+      <div style="flex:1; min-width:0;">${chakraInfoBlocksHtml(chakraList)}</div>
+      <div style="flex:1; min-width:0;">${chakraDiagramMarkup(chakraList)}</div>
+    </div>
+  </div>` : '';
+  // 先放一張暫時的探測卡片進畫面，量出實際內文可用寬度（會隨螢幕大小變化，不能用猜的）
+  // 量測「客戶實際會看到的卡片寬度」：直接借用真正的報告卡片彈窗（#reportCardModalOverlay / #reportCardEl）
+  // 短暫打開、量完立刻還原，這樣算出來的文字可用寬度才會跟真正彈窗顯示時一模一樣，文字才能塞好塞滿、不會留一堆空白
+  let contentWidth = 460;
+  const cardHostForMeasure = document.getElementById('reportCardEl');
+  const modalOverlayForMeasure = document.getElementById('reportCardModalOverlay');
+  if(cardHostForMeasure && modalOverlayForMeasure){
+    const prevHostHtml = cardHostForMeasure.innerHTML;
+    const prevVisibility = modalOverlayForMeasure.style.visibility;
+    modalOverlayForMeasure.style.visibility = 'hidden';
+    cardHostForMeasure.innerHTML = reportCardPageHtml(1, 1, '', false);
+    modalOverlayForMeasure.classList.add('open');
+    const wrapEl = cardHostForMeasure.querySelector('.rpt-body-wrap');
+    if(wrapEl && wrapEl.clientWidth) contentWidth = wrapEl.clientWidth;
+    modalOverlayForMeasure.classList.remove('open');
+    modalOverlayForMeasure.style.visibility = prevVisibility;
+    cardHostForMeasure.innerHTML = prevHostHtml;
+  }
+
+  const pages = [];
+  let current = [];
+  let currentHeight = 0;
+
+  function flushPage(){
+    if(current.length){ pages.push(current); current = []; currentHeight = 0; }
+  }
+  function pushAtomicBlock(html){
+    const h = rptMeasureBlockHeight(html, contentWidth);
+    const gapNeeded = current.length ? RPT_BLOCK_GAP : 0;
+    if(current.length && currentHeight + gapNeeded + h > RPT_PAGE_BODY_HEIGHT){ flushPage(); }
+    current.push(html);
+    currentHeight += (current.length>1?RPT_BLOCK_GAP:0) + h;
+  }
+  function pushTextSection(heading, text, bodyClass, hideFirstHeading){
+    let remain = text;
+    let isFirst = true;
+    while(true){
+      // hideFirstHeading：給「上面已經有大標題」的接續文字用（例如脈輪問題接在脈輪圖之後），
+      // 第一段不要重複顯示標題，換頁接續時才顯示「標題（續）」讓客戶看得懂
+      const headingHtml = (hideFirstHeading && isFirst) ? '' : `<h4>${esc(heading)}${isFirst?'':'（續）'}</h4>`;
+      const wrapOpen = `<div class="rpt-section" style="margin-bottom:0;">${headingHtml}<div class="${bodyClass}">`;
+      const wrapClose = `</div></div>`;
+      const gapNeeded = current.length ? RPT_BLOCK_GAP : 0;
+      const availOnCurrent = RPT_PAGE_BODY_HEIGHT - currentHeight - gapNeeded;
+      // 不管目前這頁是空的還是已經有東西，都先試著把文字盡量塞進「這頁剩餘的空間」，
+      // 塞不下（等於這頁已經沒空間了）才換頁，這樣才不會漏掉可以利用的剩餘空間
+      const { fit, rest } = rptFitTextToHeight(remain, contentWidth, availOnCurrent, wrapOpen, wrapClose);
+      if(!fit && current.length){ flushPage(); continue; }
+      // 保險：萬一連全新一頁都塞不下第一句（極端情況），寧可整段放上去、靠 overflow:hidden 裁掉，也不要卡住不動
+      const finalFit = fit || remain;
+      const partHtml = wrapOpen + esc(finalFit) + wrapClose;
+      const partHeight = rptMeasureBlockHeight(partHtml, contentWidth);
+      current.push(partHtml);
+      currentHeight += gapNeeded + partHeight;
+      const finalRest = fit ? rest : '';
+      if(!finalRest) return;
+      flushPage();
+      remain = finalRest;
+      isFirst = false;
+    }
+  }
+
+  pushAtomicBlock(headerHtml);
+  pushTextSection('諮詢重點與建議', rep.advice || '（無）', 'rpt-callout body');
+  if(chakraTopHtml) pushAtomicBlock(chakraTopHtml);
+  if(chakraList.length && rep.chakraIssue) pushTextSection('此次需要注意的脈輪', rep.chakraIssue, 'rpt-callout body', true);
+  pushTextSection('注意事項', rep.notes || '（無）', 'rpt-callout body');
+  flushPage();
+  if(!pages.length) pages.push([]);
+  // 結尾祝福語（rpt-footer）本來就是每一頁內文區塊下方「另外固定保留」的空間，
+  // 不管最後一頁的內文塞了多少都不會被擠到，所以不需要因為最後一頁內容較多，
+  // 就多開一頁空白頁來放結尾——那樣反而會出現一頁幾乎全空、很奇怪的畫面。
+  const total = pages.length;
+  const pagesHtml = pages.map((blocks,i)=>reportCardPageHtml(i+1, total, blocks.join(''), i===total-1)).join('');
+  return `<div id="rptCardInner">${pagesHtml}</div>`;
 }
 function reportCardTextOf(rec, rep){
   const chakraList = String(rep.chakra||'').split('、').map(s=>s.trim()).filter(Boolean);
@@ -2798,7 +2931,6 @@ function reportCardTextOf(rec, rep){
     chakraLines ? ('【此次需要注意的脈輪】\n'+chakraLines+(rep.chakraIssue?('\n'+rep.chakraIssue):'')+'\n') : '',
     '【諮詢重點與建議】', rep.advice || '（無）', '',
     '【注意事項】', rep.notes || '（無）', '',
-    rep.transcript ? ('【本次對話紀錄】\n'+rep.transcript+'\n') : '',
     line, reportClosing, reportBrandName + (reportIgHandle?'　'+reportIgHandle:'')
   ].filter(x=>x!=='').join('\n');
 }
@@ -2806,14 +2938,18 @@ function reportCardTextOf(rec, rep){
    讓浮水印盡量鋪滿這段範圍、但絕對不會超出去（每次報告書內容長短不同，這段範圍高度也會不一樣，所以用量測的才準） */
 function fitReportWatermark(cardEl){
   if(!cardEl) return;
-  const wrap = cardEl.querySelector('.rpt-body-wrap');
-  const wm = cardEl.querySelector('.rpt-watermark');
-  if(!wrap || !wm) return;
-  const h = wrap.clientHeight;
-  if(!h) return;
-  const gap = 4;
-  const fontSize = Math.max(20, Math.floor((h * 0.99 - gap * 2) / 3));
-  wm.style.fontSize = fontSize + 'px';
+  // 給客戶看的報告書會拆成好幾頁，每一頁都有自己的「標題橫線～結尾橫線」範圍跟浮水印，
+  // 所以這裡要把每一頁都各自量一次高度、各自算字級，不能只算第一個就好
+  const wraps = cardEl.querySelectorAll ? cardEl.querySelectorAll('.rpt-body-wrap') : [];
+  wraps.forEach(function(wrap){
+    const wm = wrap.querySelector('.rpt-watermark');
+    if(!wm) return;
+    const h = wrap.clientHeight;
+    if(!h) return;
+    const gap = 4;
+    const fontSize = Math.max(20, Math.floor((h * 0.99 - gap * 2) / 3));
+    wm.style.fontSize = fontSize + 'px';
+  });
 }
 function openReportCard(id){
   const rec = records.find(x=>x.id===id); if(!rec) return;
@@ -2821,9 +2957,12 @@ function openReportCard(id){
   if(!rep){ toast('請先填寫報告書內容'); return; }
   currentReportCardId = id;
   const cardHost = document.getElementById('reportCardEl');
+  // 客戶看的報告書每頁大小固定，浮水印字級已經在 reportCardHtml 裡直接算好、寫進每一頁，
+  // 這裡不用再另外量測套用（跟 fitReportWatermark 是給「高度會變動」的編輯預覽用的，两回事）
   cardHost.innerHTML = reportCardHtml(rec, rep);
-  fitReportWatermark(cardHost);
-  document.getElementById('reportImgResult').style.display = 'none';
+  const imgResult = document.getElementById('reportImgResult');
+  imgResult.style.display = 'none';
+  imgResult.innerHTML = '';
   document.getElementById('reportCardModalOverlay').classList.add('open');
 }
 function closeReportCard(){ document.getElementById('reportCardModalOverlay').classList.remove('open'); currentReportCardId = null; }
@@ -2843,29 +2982,54 @@ function fallbackCopyText(text, done){
   try{ document.execCommand('copy'); done(); }catch(e){ toast('複製失敗，請手動選取文字'); }
   document.body.removeChild(ta);
 }
-function exportReportCardImage(){
-  const card = document.getElementById('rptCardInner');
-  if(!card || !window.html2canvas){ toast('圖片功能載入失敗，請改用複製文字'); return; }
+/* 報告書現在拆成2~3頁、每頁都是獨立的一張卡片，所以「產生圖片」要逐頁各自產生一張圖片
+   （而不是把整份很長的內容硬擠成一張巨大的圖，那樣反而容易產生失敗）。 */
+async function exportReportCardImage(){
+  const container = document.getElementById('rptCardInner');
+  const pages = container ? Array.from(container.querySelectorAll('.rpt-page-card')) : [];
+  if(!pages.length || !window.html2canvas){ toast('圖片功能載入失敗，請改用複製文字'); return; }
   const rec = records.find(x=>x.id===currentReportCardId);
   const btn = document.getElementById('reportImgBtn');
   const originalHtml = btn.innerHTML;
   btn.innerHTML = '產生中...';
-  window.html2canvas(card, {scale:2, backgroundColor:'#ffffff', useCORS:true}).then(canvas=>{
-    btn.innerHTML = originalHtml;
-    canvas.toBlob(blob=>{
-      if(!blob){ toast('圖片產生失敗，請改用複製文字'); return; }
+  const resultWrap = document.getElementById('reportImgResult');
+  resultWrap.innerHTML = '';
+  let okCount = 0;
+  try{
+    for(let i=0;i<pages.length;i++){
+      let blob;
+      try{
+        const canvas = await window.html2canvas(pages[i], {scale:2, backgroundColor:'#ffffff', useCORS:true});
+        blob = await new Promise(resolve=>canvas.toBlob(resolve));
+      }catch(pageErr){
+        console.warn('html2canvas failed on page', i+1, pageErr);
+      }
+      if(!blob) continue;
+      okCount++;
       const url = URL.createObjectURL(blob);
-      document.getElementById('reportImgPreview').src = url;
-      const dl = document.getElementById('reportImgDownload');
-      dl.href = url;
-      dl.setAttribute('download', '諮詢報告_'+(rec?rec.name:'客戶')+'.png');
-      document.getElementById('reportImgResult').style.display = 'block';
-    });
-  }).catch(err=>{
+      const pageLabel = pages.length>1 ? `第 ${i+1}/${pages.length} 頁` : '';
+      const block = document.createElement('div');
+      block.style.marginBottom = '14px';
+      block.innerHTML = `
+        <img src="${url}" style="max-width:100%; border-radius:12px; border:1px solid var(--gold-border); display:block; margin:0 auto;">
+        <p style="font-size:13px; color:#999; margin:8px 0 6px;">${pageLabel?('（'+pageLabel+'）'):''}手機請長按圖片選「儲存圖片」，電腦請按右鍵「另存新圖」，即可存下傳給客戶。</p>
+        <a class="btn" style="width:auto; display:inline-flex; margin:0; text-decoration:none;" download="諮詢報告_${(rec?rec.name:'客戶')}${pages.length>1?('_第'+(i+1)+'頁'):''}.png">⬇️ 下載圖片${pageLabel?('（'+pageLabel+'）'):''}</a>
+      `;
+      block.querySelector('a').href = url;
+      resultWrap.appendChild(block);
+    }
+    if(okCount>0){
+      resultWrap.style.display = 'block';
+      if(okCount < pages.length) toast('部分頁面圖片產生失敗，請改用複製文字補齊');
+    } else {
+      toast('圖片產生失敗，請改用複製文字');
+    }
+  }catch(err){
     console.warn('html2canvas failed', err);
-    btn.innerHTML = originalHtml;
     toast('圖片產生失敗，請改用複製文字');
-  });
+  }finally{
+    btn.innerHTML = originalHtml;
+  }
 }
 async function sendReportCardEmail(){
   const rec = records.find(x=>x.id===currentReportCardId); if(!rec) return;
