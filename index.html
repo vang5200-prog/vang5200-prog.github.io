@@ -512,7 +512,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rpt-body-wrap{ position:relative; }
 /* 淡淡的浮水印文字，鋪滿報告書標題橫線到結尾橫線之間的整個範圍，顏色非常淺、疊在所有內容跟圖片「之上」（z-index比內容區塊高），
    營造真正蓋在畫面上的浮水印感，但因為顏色很淡+pointer-events:none，不會擋到閱讀也不會擋到點擊；
-   字級大小是由 JS（fitReportWatermark）依照這個範圍實際量到的高度動態算出來的，這裡的 font-size 只是還沒量測前的預設值 */
+   字級大小固定由 RPT_WATERMARK_FONT_SIZE 算好直接寫進每一頁，這裡的 font-size 只是還沒套用前的預設值 */
 .rpt-watermark{ position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; line-height:1; font-size:90px; font-weight:900; color:rgba(198,168,90,0.10); pointer-events:none; user-select:none; overflow:hidden; }
 .rpt-meta{ position:relative; z-index:1; display:flex; justify-content:flex-end; font-size:13px; color:#9C8868; margin-bottom:16px; }
 .rpt-client{ position:relative; z-index:1; display:flex; align-items:stretch; gap:12px; margin-bottom:14px; }
@@ -534,14 +534,10 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rpt-footer .who2{ font-size:12px; color:#9C8868; letter-spacing:.03em; }
 .rpt-footer .who2 b{ color:var(--gold-text); font-weight:700; }
 
-/* ===== 報告書填寫頁：所見即所得（畫面直接長得像成品，妳只要在上面打字） ===== */
+/* ===== 報告書填寫頁：上面是簡單好打字的輸入欄位，下面接一份跟成品完全相同（同一份程式碼產生）的即時預覽 ===== */
 .rf-tool-box{ background:#FAF7F0; border:1px dashed #D9CBA3; border-radius:12px; padding:14px 16px; margin-bottom:18px; }
 .rf-tool-box textarea{ width:100%; box-sizing:border-box; border:1.5px solid #EADFC8; border-radius:10px; padding:10px 12px; font-size:14px; font-family:inherit; background:#fff; resize:vertical; min-height:70px; }
-.rf-edit-area{ display:block; width:100%; box-sizing:border-box; border:1.5px dashed #E0D2A8; border-radius:10px;
-  padding:10px 12px; font-size:15px; line-height:1.8; color:#3A3A3A; font-family:inherit;
-  background:#FFFDF8; resize:none; overflow:hidden; min-height:80px; }
-.rf-edit-area:focus{ outline:none; border-color:var(--gold-border); background:#fff; }
-.rf-edit-area.rf-callout{ background:#FFF6E0; border-left:3px solid var(--gold-border); border-style:dashed; border-radius:0 10px 10px 0; }
+.rf-preview-label{ font-size:14.5px; font-weight:700; color:var(--brown); margin:22px 0 10px; padding-top:18px; border-top:1px dashed #EADFC8; }
 .rf-chakra-check{ display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid #EADFC8; border-radius:10px; cursor:pointer; font-size:14.5px; background:#fff; }
 .rf-chakra-check input{ width:16px; height:16px; margin:0; flex:none; }
 .rf-chakra-check-sm{ display:flex; align-items:center; gap:6px; padding:5px 10px; border:1px solid #EADFC8; border-radius:999px; cursor:pointer; font-size:13px; background:#fff; color:#777; }
@@ -2495,7 +2491,7 @@ function openReportForm(id){
   const selectedChakras = String(rep.chakra||'').split('、').map(s=>s.trim()).filter(Boolean);
   const chakraChecks = REPORT_CHAKRA_OPTIONS.map(c=>`
     <label class="rf-chakra-check-sm">
-      <input type="checkbox" class="rf_chakra_box" value="${esc(c)}" ${selectedChakras.includes(c)?'checked':''} onchange="updateChakraDiagram()">${esc(c)}
+      <input type="checkbox" class="rf_chakra_box" value="${esc(c)}" ${selectedChakras.includes(c)?'checked':''} onchange="scheduleReportPreviewRefresh()">${esc(c)}
     </label>`).join('');
   document.getElementById('reportModalTitle').textContent = rep.bookingCode ? (rep.isDraft ? '補完草稿' : '編輯報告書') : '填寫報告書';
   document.getElementById('reportDraftBanner').style.display = rep.isDraft ? 'block' : 'none';
@@ -2516,51 +2512,53 @@ function openReportForm(id){
       <div style="font-size:12.5px; color:#999; margin-top:5px;">貼上對話紀錄後選好篇幅、按右上角按鈕，AI會幫妳把下面「諮詢重點與建議」「注意事項」寫好草稿，記得確認後再儲存。如果這裡有填內容，最後也會附在給客戶看的報告書最下方。</div>
     </div>
 
-    <div class="rpt-card" style="box-shadow:none;">
-      ${RPT_CARD_CORNERS_HTML}
-      ${RPT_CARD_CREST_HTML}
-      ${rptEyebrowHtml('以下畫面即為交給客戶的成品樣式')}
-      <div class="rpt-rule"></div>
-      <div class="rpt-body-wrap">
-        <div class="rpt-watermark"><span>大</span><span>光</span><span>明</span></div>
-        <div class="rpt-meta"><span>${esc(fmtDt(rec.datetime))}</span></div>
-        <div class="rpt-client">
-          <span class="bar"></span>
-          <div class="who">
-            <span class="n">${esc(rec.name||'')}</span>
-            <span class="tag">${esc(rec.serviceName||'未分類')}</span>
-            ${rec.email?`<span class="em">${esc(rec.email)}</span>`:''}
-          </div>
-        </div>
-
-        <div class="rpt-section">
-          <h4>諮詢重點與建議</h4>
-          <textarea id="rf_advice" class="rf-edit-area" oninput="autoGrowTextarea(this)" placeholder="這次諮詢的重點跟給客戶的建議…">${esc(rep.advice||'')}</textarea>
-        </div>
-
-        <div class="rpt-section">
-          <h4>此次需要注意的脈輪</h4>
-          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">${chakraChecks}</div>
-          <div style="display:flex; align-items:flex-start; gap:10px;">
-            <div style="flex:3; min-width:0;">
-              <div id="rfChakraInfoWrap">${chakraInfoBlocksHtml(selectedChakras)}</div>
-              <textarea id="rf_chakraIssue" class="rf-edit-area" oninput="autoGrowTextarea(this)" placeholder="這次這些脈輪具體出現了什麼問題…" style="margin-top:4px;">${esc(rep.chakraIssue||'')}</textarea>
-            </div>
-            <div id="rfChakraDiagramWrap" style="flex:2; min-width:0;">${chakraDiagramMarkup(selectedChakras)}</div>
-          </div>
-        </div>
-
-        <div class="rpt-section" style="margin-bottom:0;">
-          <h4>注意事項</h4>
-          <textarea id="rf_notes" class="rf-edit-area rf-callout" oninput="autoGrowTextarea(this)" placeholder="想提醒客戶留意、練習或後續追蹤的事情…">${esc(rep.notes||'')}</textarea>
-        </div>
-      </div>
+    <div class="field">
+      <label>諮詢重點與建議</label>
+      <textarea id="rf_advice" rows="4" oninput="autoGrowTextarea(this); scheduleReportPreviewRefresh();" placeholder="這次諮詢的重點跟給客戶的建議…">${esc(rep.advice||'')}</textarea>
     </div>
+
+    <div class="field">
+      <label>此次需要注意的脈輪</label>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">${chakraChecks}</div>
+      <textarea id="rf_chakraIssue" rows="3" oninput="autoGrowTextarea(this); scheduleReportPreviewRefresh();" placeholder="這次這些脈輪具體出現了什麼問題…">${esc(rep.chakraIssue||'')}</textarea>
+    </div>
+
+    <div class="field" style="margin-bottom:0;">
+      <label>注意事項</label>
+      <textarea id="rf_notes" rows="3" oninput="autoGrowTextarea(this); scheduleReportPreviewRefresh();" placeholder="想提醒客戶留意、練習或後續追蹤的事情…">${esc(rep.notes||'')}</textarea>
+    </div>
+
+    <div class="rf-preview-label">📄 以下是客戶實際會看到的樣子（跟著上面輸入即時更新，包含會分成幾頁）</div>
+    <div id="rfLivePreview"></div>
   `;
   // 一定要先把視窗打開（讓內容真的顯示出來）之後，再去量測文字框需要多高，
   // 不然視窗還沒打開時量到的高度都是0，框框就會維持原本很小的高度，只能用鍵盤按鍵慢慢往下捲
   document.getElementById('reportModalOverlay').classList.add('open');
   ['rf_advice','rf_notes','rf_chakraIssue'].forEach(fid=>autoGrowTextarea(document.getElementById(fid)));
+  refreshReportFormPreview();
+}
+/* 編輯報告書時下面的「客戶實際會看到的樣子」預覽，直接呼叫跟正式報告書完全相同的
+   reportCardHtml()，用目前輸入框裡「還沒儲存」的最新內容即時產生，這樣才能保證編輯時看到的
+   跟儲存後客戶看到的一模一樣（浮水印大小、脈輪排序、文字框顏色、分頁位置全部相同），
+   不會發生「儲存完才發現跟預覽不一樣」的情況。打字時用短暫防抖動，避免每敲一個字就整個重算一次。 */
+let reportPreviewDebounceTimer = null;
+function scheduleReportPreviewRefresh(){
+  clearTimeout(reportPreviewDebounceTimer);
+  reportPreviewDebounceTimer = setTimeout(refreshReportFormPreview, 250);
+}
+function refreshReportFormPreview(){
+  const previewHost = document.getElementById('rfLivePreview');
+  if(!previewHost) return;
+  const rec = records.find(x=>x.id===editingReportId);
+  if(!rec) return;
+  const rep = {
+    bookingCode: rec.code, name: rec.name||'', email: rec.email||'', date: rec.datetime||'', program: rec.serviceName||'',
+    chakra: Array.from(document.querySelectorAll('.rf_chakra_box:checked')).map(el=>el.value).join('、'),
+    advice: document.getElementById('rf_advice')?.value || '',
+    chakraIssue: document.getElementById('rf_chakraIssue')?.value || '',
+    notes: document.getElementById('rf_notes')?.value || '',
+  };
+  previewHost.innerHTML = reportCardHtml(rec, rep);
 }
 function closeReportForm(){ document.getElementById('reportModalOverlay').classList.remove('open'); editingReportId=null; }
 async function runReportAiSummarize(){
@@ -2581,6 +2579,7 @@ async function runReportAiSummarize(){
     if(data && data.ok){
       if(data.advice){ const el=document.getElementById('rf_advice'); el.value = data.advice; autoGrowTextarea(el); }
       if(data.notes){ const el=document.getElementById('rf_notes'); el.value = data.notes; autoGrowTextarea(el); }
+      refreshReportFormPreview();
       toast('已產生AI草稿，記得確認後再儲存');
     } else if(data && data.error==='missing_api_key'){
       toast('尚未設定AI金鑰，請到 Apps Script 指令碼屬性新增 ANTHROPIC_API_KEY（設定頁「報告書設定」有說明）');
@@ -2720,22 +2719,11 @@ function chakraInfoBlocksHtml(selectedList){
     return `<p style="margin:0 0 8px; font-size:12.5px; line-height:1.9; color:var(--brown);"><b style="color:${c.color};">${esc(name)}</b>｜${esc(c.meaning)}。</p>`;
   }).join('');
 }
-function updateChakraDiagram(){
-  const diagramWrap = document.getElementById('rfChakraDiagramWrap');
-  const infoWrap = document.getElementById('rfChakraInfoWrap');
-  const selected = Array.from(document.querySelectorAll('.rf_chakra_box:checked')).map(el=>el.value);
-  if(diagramWrap) diagramWrap.innerHTML = chakraDiagramMarkup(selected);
-  if(infoWrap) infoWrap.innerHTML = chakraInfoBlocksHtml(selected);
-  const card = infoWrap ? infoWrap.closest('.rpt-card') : null;
-  if(card) fitReportWatermark(card);
-}
 /* 輸入框自動長高，不用再一直滑動小視窗才能看到完整內容 */
 function autoGrowTextarea(el){
   if(!el) return;
   el.style.height = 'auto';
   el.style.height = (el.scrollHeight + 2) + 'px';
-  const card = el.closest('.rpt-card');
-  if(card) fitReportWatermark(card);
 }
 /* 給客戶看的報告書固定用這個「內文區塊」高度，每一頁都一樣大小，內容多就自動換下一頁，
    絕對不會有的頁面高、有的頁面矮的情況，浮水印字級也因此可以固定同一個大小，不會每頁忽大忽小。 */
@@ -2934,31 +2922,13 @@ function reportCardTextOf(rec, rep){
     line, reportClosing, reportBrandName + (reportIgHandle?'　'+reportIgHandle:'')
   ].filter(x=>x!=='').join('\n');
 }
-/* 依照「標題橫線～結尾橫線」這段範圍實際量到的高度，動態算出浮水印「大光明」三個字的字級大小，
-   讓浮水印盡量鋪滿這段範圍、但絕對不會超出去（每次報告書內容長短不同，這段範圍高度也會不一樣，所以用量測的才準） */
-function fitReportWatermark(cardEl){
-  if(!cardEl) return;
-  // 給客戶看的報告書會拆成好幾頁，每一頁都有自己的「標題橫線～結尾橫線」範圍跟浮水印，
-  // 所以這裡要把每一頁都各自量一次高度、各自算字級，不能只算第一個就好
-  const wraps = cardEl.querySelectorAll ? cardEl.querySelectorAll('.rpt-body-wrap') : [];
-  wraps.forEach(function(wrap){
-    const wm = wrap.querySelector('.rpt-watermark');
-    if(!wm) return;
-    const h = wrap.clientHeight;
-    if(!h) return;
-    const gap = 4;
-    const fontSize = Math.max(20, Math.floor((h * 0.99 - gap * 2) / 3));
-    wm.style.fontSize = fontSize + 'px';
-  });
-}
 function openReportCard(id){
   const rec = records.find(x=>x.id===id); if(!rec) return;
   const rep = reports.find(x=>x.bookingCode===rec.code);
   if(!rep){ toast('請先填寫報告書內容'); return; }
   currentReportCardId = id;
   const cardHost = document.getElementById('reportCardEl');
-  // 客戶看的報告書每頁大小固定，浮水印字級已經在 reportCardHtml 裡直接算好、寫進每一頁，
-  // 這裡不用再另外量測套用（跟 fitReportWatermark 是給「高度會變動」的編輯預覽用的，两回事）
+  // 客戶看的報告書每頁大小固定，浮水印字級已經在 reportCardHtml 裡直接算好、寫進每一頁
   cardHost.innerHTML = reportCardHtml(rec, rep);
   const imgResult = document.getElementById('reportImgResult');
   imgResult.style.display = 'none';
