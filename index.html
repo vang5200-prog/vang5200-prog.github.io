@@ -2788,18 +2788,26 @@ function rptFitTextToHeight(text, width, maxHeight, wrapOpen, wrapClose){
     const candidate = fit ? (fit + '\n\n' + paras[i]) : paras[i];
     const h = rptMeasureBlockHeight(wrapOpen + esc(candidate) + wrapClose, width);
     if(h <= maxHeight){ fit = candidate; continue; }
-    if(fit){ return { fit, rest: paras.slice(i).join('\n\n') }; }
-    // 連第一段都塞不下，改成一句一句試
+    // 這一整段塞不下：改成一句一句試著塞，把這一頁剩餘空間盡量填滿（不管前面是不是已經放了其他段落），
+    // 而不是整段留到下一頁、平白浪費掉這一頁還剩下的空間
     const sentences = rptSplitSentences(paras[i]);
     let sFit = '';
     for(let j=0;j<sentences.length;j++){
       const sCandidate = sFit + sentences[j];
-      const sh = rptMeasureBlockHeight(wrapOpen + esc(sCandidate) + wrapClose, width);
+      const combined = fit ? (fit + '\n\n' + sCandidate) : sCandidate;
+      const sh = rptMeasureBlockHeight(wrapOpen + esc(combined) + wrapClose, width);
       if(sh <= maxHeight){ sFit = sCandidate; } else break;
     }
     const restParas = paras.slice(i+1);
-    const restText = paras[i].slice(sFit.length) + (restParas.length ? ('\n\n'+restParas.join('\n\n')) : '');
-    return { fit: sFit, rest: restText };
+    if(sFit){
+      const restText = paras[i].slice(sFit.length) + (restParas.length ? ('\n\n'+restParas.join('\n\n')) : '');
+      return { fit: fit ? (fit + '\n\n' + sFit) : sFit, rest: restText };
+    }
+    // 連一句都塞不下：如果前面已經有段落塞好了，就先回傳前面那些，這一段整段留到下一頁繼續
+    if(fit){ return { fit, rest: paras.slice(i).join('\n\n') }; }
+    // fit是空的，且連第一句都塞不下（極端情況，例如單一句子本身就超長）：
+    // 回傳空字串，交給外層的保險機制決定要不要整段硬放上去、靠 overflow:hidden 裁掉，避免卡住不動
+    return { fit: '', rest: paras.slice(i).join('\n\n') };
   }
   return { fit, rest:'' };
 }
