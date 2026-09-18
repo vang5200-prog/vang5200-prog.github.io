@@ -969,7 +969,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-05 ・ 修正：拍照複製品不能拿掉id，不然力量符號跟脈輪發光會消失', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-06 ・ 修正：脈輪發光的SVG不能直接設絕對定位，改用外層div包住', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2725,10 +2725,16 @@ function chakraDiagramSvg(selectedList){
     const yPct = CHAKRA_BODY_IMG_POS[name];
     const color = CHAKRA_BODY_IMG_COLOR[name] || reportChakraMeta(name).color;
     const light = shadeColor(color, 65);
-    return `<svg viewBox="0 0 24 24" style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; overflow:visible; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);" xmlns="http://www.w3.org/2000/svg">
-      <path d="M 12.00 0.50 L 12.84 9.97 L 16.24 7.76 L 14.03 11.16 L 21.50 12.00 L 14.03 12.84 L 15.54 15.54 L 12.84 14.03 L 12.00 23.00 L 11.16 14.03 L 7.40 16.60 L 9.97 12.84 L 3.50 12.00 L 9.97 11.16 L 8.11 8.11 L 11.16 9.97 Z" fill="${color}"/>
-      <path d="M 12.00 6.83 L 12.38 11.09 L 13.91 10.09 L 12.91 11.62 L 16.27 12.00 L 12.91 12.38 L 13.59 13.59 L 12.38 12.91 L 12.00 16.95 L 11.62 12.91 L 9.93 14.07 L 11.09 12.38 L 8.18 12.00 L 11.09 11.62 L 10.25 10.25 L 11.62 11.09 Z" fill="${light}"/>
-    </svg>`;
+    // 這裡故意把「絕對定位」放在外層的div上，SVG本身只給寬高、不直接定位——
+    // 這套抓圖工具（html2canvas）對「SVG標籤自己就是絕對定位」這種寫法支援不好，
+    // 常常整個不畫出來（不是位置錯誤，是完全消失），改成外層div定位、SVG只負責畫圖案，
+    // 兩種瀏覽器畫面看起來一模一樣，但抓圖時就不會再讓發光效果不見了。
+    return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);">
+      <svg viewBox="0 0 24 24" width="22" height="22" style="display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 12.00 0.50 L 12.84 9.97 L 16.24 7.76 L 14.03 11.16 L 21.50 12.00 L 14.03 12.84 L 15.54 15.54 L 12.84 14.03 L 12.00 23.00 L 11.16 14.03 L 7.40 16.60 L 9.97 12.84 L 3.50 12.00 L 9.97 11.16 L 8.11 8.11 L 11.16 9.97 Z" fill="${color}"/>
+        <path d="M 12.00 6.83 L 12.38 11.09 L 13.91 10.09 L 12.91 11.62 L 16.27 12.00 L 12.91 12.38 L 13.59 13.59 L 12.38 12.91 L 12.00 16.95 L 11.62 12.91 L 9.93 14.07 L 11.09 12.38 L 8.18 12.00 L 11.09 11.62 L 10.25 10.25 L 11.62 11.09 Z" fill="${light}"/>
+      </svg>
+    </div>`;
   }).join('');
   return `<div style="position:relative; width:100%; max-width:200px; margin:0 auto;">
     <img src="${RPT_CHAKRA_BODY_IMG}" alt="三脈七輪位置圖" width="340" height="472" style="width:100%; height:auto; aspect-ratio:340/472; display:block; border-radius:8px;">
@@ -3099,10 +3105,14 @@ function stripAllGradientsForCapture(rootEl){
     let cs;
     try{ cs = getComputedStyle(el); }catch(e){ continue; }
     const bg = cs.backgroundImage || '';
-    if(bg.indexOf('gradient') === -1) continue;
-    if(el.offsetWidth > 0 && el.offsetHeight > 0) continue;
-    el.style.backgroundImage = 'none';
-    if(!el.style.backgroundColor){ el.style.backgroundColor = cs.borderTopColor || '#D4AF37'; }
+    if(bg.indexOf('gradient') !== -1 && !(el.offsetWidth > 0 && el.offsetHeight > 0)){
+      el.style.backgroundImage = 'none';
+      if(!el.style.backgroundColor){ el.style.backgroundColor = cs.borderTopColor || '#D4AF37'; }
+    }
+    // 脈輪圖「發光」的星星標記用的是CSS的filter（模糊光暈）效果，這套抓圖工具對filter支援不好，
+    // 常常直接整個不畫（不是只有光暈不見，連星星本身的顏色都不見了）。既然這份複製品拍完就丟掉，
+    // 乾脆把filter拿掉，星星本身的顏色還是會畫出來、看得出是哪個脈輪亮起來，只是少了柔和的光暈而已。
+    if(cs.filter && cs.filter !== 'none'){ el.style.filter = 'none'; }
   }
 }
 /* canvas.toBlob() 有時候不會丟錯誤、卻默默回傳null（例如畫面被視為「不乾淨」，也就是
