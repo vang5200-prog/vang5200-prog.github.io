@@ -996,7 +996,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-28 ・ 重大修正：底色改成統一由一個元素從文字框頂端畫到底，徹底解決接縫線；角落力量符號id唯一化避免消失；金線恢復原本漸層質感', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-29 ・ 修正：注意事項等文字框快到頁尾才開頭時，不再只塞一兩句話就跳頁；金色收尾線改用純色拼接，修好「產生圖片」漏頁與當機的問題', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2865,6 +2865,14 @@ function autoGrowTextarea(el){
 var RPT_PAGE_BODY_HEIGHT = 640;
 var RPT_BLOCK_GAP = 16;
 var RPT_WATERMARK_FONT_SIZE = Math.max(20, Math.floor((RPT_PAGE_BODY_HEIGHT * 0.99 - 4 * 2) / 3));
+/* 「孤兒段落」保險：一段新內容（例如注意事項）如果剛好在一頁快結束時才開始，這一頁能塞的
+   空間可能只夠放標題+一兩句話，其餘大部分都要接到下一頁。這種情況下文字框會因為「撐滿剩餘
+   空間」的設計（見rptAlignCalloutTail的說明）硬是把底色拉得很長，畫面看起來就會變成「標題
+   底下只有一兩句話，下面卻拖著一大片空白底色，然後就跳頁了」，客戶會覺得很奇怪、像是明明
+   還有空間卻莫名其妙跳頁。這裡設一個「這頁至少要塞得下多高的內容，才值得在這頁開始」的門檻，
+   塞不到這個高度、又還有剩要接下一頁，就乾脆整段留到下一頁從頭開始（下一頁預算是完整的一整頁，
+   通常就夠塞下大半甚至全部），避免這種「一兩句話+一大片空白」的畫面。 */
+var RPT_ORPHAN_MIN_HEIGHT = 130;
 
 /* 把單一頁的內容包成一張完整的卡片（框、固定大小、浮水印、頁碼都齊全），
    給客戶看的報告書會拆成好幾張這樣大小完全一致的卡片，而不是一長串捲不完的內容 */
@@ -3053,6 +3061,13 @@ function reportCardHtml(rec, rep){
       // 不管目前這頁是空的還是已經有東西，都先試著把文字盡量塞進「這頁剩餘的空間」，
       // 塞不下（等於這頁已經沒空間了）才換頁，這樣才不會漏掉可以利用的剩餘空間
       const { fit, rest } = rptFitTextToHeight(remain, contentWidth, availOnCurrent, wrapOpen, wrapClose);
+      // 孤兒段落保險（見RPT_ORPHAN_MIN_HEIGHT的說明）：只在「這是全新標題的第一次嘗試、
+      // 這頁已經有別的內容、又還有剩要接下一頁」時才檢查，續頁（isFirst=false）一定是
+      // 剛換到全新一頁、預算是完整一整頁，不會有這個問題
+      if(isFirst && current.length && fit && rest){
+        const fitHeight = rptMeasureBlockHeight(wrapOpen + esc(fit) + wrapClose, contentWidth);
+        if(fitHeight < RPT_ORPHAN_MIN_HEIGHT){ flushPage(); continue; }
+      }
       if(!fit && current.length){ flushPage(); continue; }
       // 保險：萬一連全新一頁都塞不下第一句（極端情況），寧可整段放上去、靠 overflow:hidden 裁掉，也不要卡住不動
       const finalFit = fit || remain;
@@ -3222,11 +3237,20 @@ function fallbackCopyText(text, done){
    現在文字框已經不畫自己的底色了（底色統一交給.rpt-callout-tail一個元素從頭畫到尾，
    見rptAlignCalloutTail的說明），文字框畫多高、有沒有撐滿，畫面上完全看不出差別，
    這個「補高度」的步驟就不再需要了，抓圖時保留flex排版原樣即可。 */
+/* 「願此次相會...」上面那條細線（.rpt-footer .rule2）兩端漸淡的效果，抓圖用的複製品裡
+   改用「一整排極細的純色小方塊、透明度從兩端到中間漸漸變深」拼出來，取代原本的CSS漸層色。
+   每個小方塊都是純色、沒有漸層，肉眼在這麼細的一條線上幾乎看不出跟真的漸層有差別。 */
+var RPT_RULE2_FADE_SEGMENTS_HTML = (function(){
+  var n = 40, out = '';
+  for(var i=0;i<n;i++){
+    var p = (i + 0.5) / n;
+    var op = Math.max(0, 1 - Math.abs(2*p - 1));
+    out += '<span style="flex:1 1 0; align-self:stretch; background:#D4AF37; opacity:'+op.toFixed(3)+';"></span>';
+  }
+  return out;
+})();
 function stripAllGradientsForCapture(rootEl){
   // 已知報告書卡片裡幾個會用到漸層色的地方，量出來的尺寸是0時，一律直接換成實心色，避免整頁失敗。
-  // 「願此次相會...」上面那條細線（.rpt-footer .rule2）原本是兩端漸淡的金線——這條線本身
-  // 有實際寬高（不是量到0的那種），不屬於「一定要換成實心色」的情況，所以不特別處理，
-  // 保留原本兩端漸淡的樣子，跟報告書畫面上直接看到的一致，不會變成一條死板的實心線。
   const known = [
     { sel: null, color: '#F8EEF6' }, // rootEl 自己（卡片底色，原本是淡粉漸層）
     { sel: '.rpt-rule', color: '#D4AF37' },
@@ -3235,6 +3259,18 @@ function stripAllGradientsForCapture(rootEl){
   known.forEach(({sel, color})=>{
     const els = sel ? Array.from(rootEl.querySelectorAll(sel)) : [rootEl];
     els.forEach(el=>{ el.style.backgroundImage = 'none'; el.style.backgroundColor = color; });
+  });
+  // 「願此次相會...」上面那條細線（.rpt-footer .rule2）只有1px高，這套抓圖工具(html2canvas)
+  // 在複製品裡量測「只有1px高又是漸層背景」的元素時，偶爾會量到0高度——量到0之後它自己內部
+  // 用來畫漸層的暫存畫布也會跟著變成0x0，一去貼上就直接整頁失敗（這正是上面「known」清單原本
+  // 要擋掉的那類問題；曾經為了保留兩端漸淡的質感把這條線移出清單，結果讓這個已知的當機風險
+  // 又跑回來，害「產生圖片」整頁失敗、少了一頁）。改用上面拼好的純色小方塊排版，徹底不再用
+  // 漸層/材質貼圖畫這條線，兩端漸淡的視覺效果保留，同時不會再有這個當機風險。
+  rootEl.querySelectorAll('.rpt-footer .rule2').forEach(el=>{
+    el.style.backgroundImage = 'none';
+    el.style.backgroundColor = 'transparent';
+    el.style.display = 'flex';
+    el.innerHTML = RPT_RULE2_FADE_SEGMENTS_HTML;
   });
   // 保險：再掃一次整份內容，任何「量出來寬或高是0、但背景還是漸層色」的元素，一樣直接換成實心色
   const all = rootEl.querySelectorAll('*');
