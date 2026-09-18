@@ -884,13 +884,13 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
             <label>各脈輪的介紹文字</label>
             <div style="font-size:13px; color:#999; margin-top:2px; margin-bottom:10px; line-height:1.6;">報告卡片「此次需要注意的脈輪」區塊裡，每個脈輪名稱後面那句說明（例如「頂輪｜靈性連結與信任。」的「靈性連結與信任」），可以自己改成想要的說法，不用再麻煩我改程式碼。</div>
           </div>
-          <div class="field"><label>頂輪</label><input id="setChakraMeaning0" placeholder="例如：靈性連結與信任" onkeydown="rptChakraMeaningEnterNext(event,0)"></div>
-          <div class="field"><label>眉心輪</label><input id="setChakraMeaning1" placeholder="例如：覺察與直覺" onkeydown="rptChakraMeaningEnterNext(event,1)"></div>
-          <div class="field"><label>喉輪</label><input id="setChakraMeaning2" placeholder="例如：表達與溝通" onkeydown="rptChakraMeaningEnterNext(event,2)"></div>
-          <div class="field"><label>心輪</label><input id="setChakraMeaning3" placeholder="例如：愛與連結" onkeydown="rptChakraMeaningEnterNext(event,3)"></div>
-          <div class="field"><label>太陽神經叢輪</label><input id="setChakraMeaning4" placeholder="例如：自信與意志力" onkeydown="rptChakraMeaningEnterNext(event,4)"></div>
-          <div class="field"><label>臍輪</label><input id="setChakraMeaning5" placeholder="例如：情感流動與親密" onkeydown="rptChakraMeaningEnterNext(event,5)"></div>
-          <div class="field"><label>海底輪</label><input id="setChakraMeaning6" placeholder="例如：安全感與根基" onkeydown="rptChakraMeaningEnterNext(event,6)"></div>
+          <div class="field"><label>頂輪</label><textarea id="setChakraMeaning0" rows="2" placeholder="例如：靈性連結與信任"></textarea></div>
+          <div class="field"><label>眉心輪</label><textarea id="setChakraMeaning1" rows="2" placeholder="例如：覺察與直覺"></textarea></div>
+          <div class="field"><label>喉輪</label><textarea id="setChakraMeaning2" rows="2" placeholder="例如：表達與溝通"></textarea></div>
+          <div class="field"><label>心輪</label><textarea id="setChakraMeaning3" rows="2" placeholder="例如：愛與連結"></textarea></div>
+          <div class="field"><label>太陽神經叢輪</label><textarea id="setChakraMeaning4" rows="2" placeholder="例如：自信與意志力"></textarea></div>
+          <div class="field"><label>臍輪</label><textarea id="setChakraMeaning5" rows="2" placeholder="例如：情感流動與親密"></textarea></div>
+          <div class="field"><label>海底輪</label><textarea id="setChakraMeaning6" rows="2" placeholder="例如：安全感與根基"></textarea></div>
           <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveReportCardSettings()">儲存報告卡片設定</button>
         </div>
 
@@ -991,7 +991,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-13 ・ 修正：七個脈輪介紹文字輸入框，按ENTER會跳到下一個欄位', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-14 ・ 修正：脈輪介紹文字改成多行輸入框(ENTER=換行)；補上「填寫報告書」即時預覽漏掉的文字框延伸效果', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -1173,16 +1173,6 @@ function saveReportCardSettings(){
   reportBrandName = brand; reportIgHandle = ig; reportClosing = closing; reportChakraImageUrl = chakraImg; reportChakraMeanings = meanings;
   pushRemoteSettings();
   toast('報告卡片設定已儲存');
-}
-/* 七個脈輪輸入框都是單行的輸入欄，瀏覽器預設按ENTER不會有反應（因為沒有跟著一個「送出表單」的按鈕），
-   這裡自己接管ENTER鍵：按下去就跳到下一個脈輪欄位，最後一個（海底輪）按ENTER則直接收鍵盤／取消游標，
-   這樣妳可以直接一路按ENTER把七個脈輪都填完，不用每個欄位都要用滑鼠點下一個 */
-function rptChakraMeaningEnterNext(event, index){
-  if(event.key !== 'Enter') return;
-  event.preventDefault();
-  const next = document.getElementById('setChakraMeaning'+(index+1));
-  if(next){ next.focus(); next.select && next.select(); }
-  else if(event.target && event.target.blur){ event.target.blur(); }
 }
 
 /* Google的雲端網址偶爾會出現「明明密碼/網路都沒問題，卻連線失敗」的狀況——這不是妳的網路差，
@@ -2672,6 +2662,10 @@ function refreshReportFormPreview(){
     notes: document.getElementById('rf_notes')?.value || '',
   };
   previewHost.innerHTML = reportCardHtml(rec, rep);
+  // 產生報告書內容後一定要接著呼叫這個，把文字框延伸到祝福語附近的位置量出來、直接寫死成px數字，
+  // 這裡是「填寫報告書」畫面下方的即時預覽，跟正式開卡（openReportCard）是各自獨立的兩個地方，
+  // 少了這一行，這個預覽畫面看到的文字框延伸效果就會不見（回到還沒延伸之前的樣子）
+  rptAlignAllCalloutTails(previewHost);
 }
 function closeReportForm(){ document.getElementById('reportModalOverlay').classList.remove('open'); editingReportId=null; }
 async function runReportAiSummarize(){
@@ -2843,7 +2837,7 @@ function chakraDiagramMarkup(selectedList){
 function chakraInfoBlocksHtml(selectedList){
   return (selectedList||[]).map(name=>{
     const c = reportChakraMeta(name);
-    return `<p style="margin:0 0 8px; font-size:12.5px; line-height:1.9; color:var(--brown);"><b style="color:${c.color};">${esc(name)}</b>｜${esc(c.meaning)}。</p>`;
+    return `<p style="margin:0 0 8px; font-size:12.5px; line-height:1.9; color:var(--brown);"><b style="color:${c.color};">${esc(name)}</b>｜${esc(c.meaning).replace(/\n/g,'<br>')}。</p>`;
   }).join('');
 }
 /* 輸入框自動長高，不用再一直滑動小視窗才能看到完整內容 */
@@ -3103,7 +3097,7 @@ function reportCardEmailHtml(rec, rep){
       <div style="font-size:15px; font-weight:700; color:${brown}; margin:0 0 8px;">此次需要注意的脈輪</div>
       ${chakraList.map(name=>{
         const c = reportChakraMeta(name);
-        return `<p style="margin:0 0 6px; font-size:13.5px; line-height:1.8; color:${brown};"><b style="color:${c.color};">${esc(name)}</b>｜${esc(c.meaning)}。</p>`;
+        return `<p style="margin:0 0 6px; font-size:13.5px; line-height:1.8; color:${brown};"><b style="color:${c.color};">${esc(name)}</b>｜${esc(c.meaning).replace(/\n/g,'<br>')}。</p>`;
       }).join('')}
       ${rep.chakraIssue ? `<div style="border-left:3px solid ${goldBorder}; background:${boxBg}; border-radius:0 8px 8px 0; padding:12px 14px; margin-top:8px; font-size:14.5px; line-height:1.9; color:${ink};">${nl2br(rep.chakraIssue)}</div>` : ''}
     </td></tr>` : '';
