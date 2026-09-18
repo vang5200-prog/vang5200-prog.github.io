@@ -509,7 +509,12 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rpt-rule{ position:relative; z-index:1; height:1px; background:linear-gradient(to right, transparent, #D4AF37 20%, #D4AF37 80%, transparent); margin:9px 0 20px; }
 /* 報告書內文區塊（標題橫線之下、結尾橫線之上）的容器，浮水印會用絕對定位鋪滿這個範圍，
    這樣浮水印的上下範圍就一定不會超出「標題下方橫線」到「結尾上方橫線」之間 */
-.rpt-body-wrap{ position:relative; }
+.rpt-body-wrap{ position:relative; display:flex; flex-direction:column; }
+/* 這一頁最後一個區塊（通常是「注意事項」的文字框）不管文字多寡，固定往下撐滿到快接近結尾金線的地方，
+   不會因為文字少就整個文字框連同左邊金條、底色陰影都在文字結束的地方就硬生生停住，
+   下面留一大塊完全空白（只有浮水印）看起來像沒寫完一樣。文字框底部跟結尾金線之間留約36px（約1公分）的呼吸空間。 */
+.rpt-body-wrap > .rpt-section:last-child{ flex:1 1 auto; display:flex; flex-direction:column; min-height:0; }
+.rpt-body-wrap > .rpt-section:last-child > .rpt-callout{ flex:1 1 auto; margin-bottom:36px; min-height:0; }
 /* 淡淡的浮水印文字，鋪滿報告書標題橫線到結尾橫線之間的整個範圍，顏色非常淺、疊在所有內容跟圖片「之上」（z-index比內容區塊高），
    營造真正蓋在畫面上的浮水印感，但因為顏色很淡+pointer-events:none，不會擋到閱讀也不會擋到點擊；
    字級大小固定由 RPT_WATERMARK_FONT_SIZE 算好直接寫進每一頁，這裡的 font-size 只是還沒套用前的預設值 */
@@ -969,7 +974,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-07 ・ 修正：脈輪發光點位置重新校正，對齊圖片上的正確位置', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-08 ・ 修正：每頁最後一個文字框（金條+底色）固定撐滿到結尾金線上方，不再因文字多寡忽長忽短', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
