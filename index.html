@@ -536,10 +536,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rpt-callout{ background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
 /* 文字框往下的延伸底色：接在.rpt-body-wrap下緣，一路蓋到結尾祝福語文字附近（實際top/height由JS量出來直接寫死），
    z-index比結尾文字(.rpt-footer, z-index:1)低，文字才會一直保持在最上面清楚看得到 */
-/* 延伸底色的下緣，在最後一頁因為剛好接到「願此次相會...」上面那條金線，過渡很自然；
-   但在其他頁（沒有那條金線），延伸底色就是直接「切斷」，變成一條看起來像意外斷開的白線。
-   加一條淡淡的金色底線，讓每一頁的延伸底色下緣看起來都是「刻意收尾」，不是斷掉。 */
-.rpt-callout-tail{ position:absolute; left:30px; right:30px; z-index:0; background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-bottom:2px solid rgba(198,168,90,0.65); border-radius:0 0 10px 0; pointer-events:none; }
+.rpt-callout-tail{ position:absolute; left:30px; right:30px; z-index:0; background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 0 10px 0; pointer-events:none; }
 .rpt-transcript{ background:rgba(154,127,190,0.05); border:1px solid #EADFC8; border-radius:12px; padding:13px 15px; }
 .rpt-transcript .body{ font-size:13.5px; color:#6B5A45; }
 .rpt-footer{ position:relative; z-index:1; text-align:center; margin-top:2px; }
@@ -994,7 +991,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-24 ・ 修正：延伸底色下緣加粗金線收尾，交界處位置取整數避免鋸齒白線', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-26 ・ 修正：找到白線縫隙真正原因（內文區塊裁切邊界擋住了疊出去的部分），拿掉金線改成單純消除縫隙', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -3239,10 +3236,16 @@ function bakeFlexHeightsForCapture(rootEl){
   // 讓文字框底部「故意疊一點點」到延伸底色上面——兩者顏色本來就幾乎一樣，疊一點點完全看不出來，
   // 但可以保證兩塊中間不會因為畫面渲染時的極小誤差而露出縫隙。全部取整數px，避免小數點位置
   // 讓抓圖工具在交界處畫出模糊的半透明鋸齒。
-  const desiredH = Math.max(0, Math.round(targetBottomRelToCard - calloutTopRelToCard) + 2);
+  const overlapPx = 2;
+  const desiredH = Math.max(0, Math.round(targetBottomRelToCard - calloutTopRelToCard) + overlapPx);
   const deficit = Math.max(0, Math.round(desiredH - naturalH));
   const curPaddingBottom = parseFloat(getComputedStyle(callout).paddingBottom) || 0;
   callout.style.paddingBottom = Math.round(curPaddingBottom + deficit) + 'px';
+  // 內文區塊（.rpt-body-wrap）本身有overflow:hidden、固定高度640px，是用來裁掉「排版時放不下的內容」。
+  // 但文字框故意疊出去的這一點點（overlapPx），也會被這個裁切一起擋掉，等於疊了等於沒疊。
+  // 把這個裁切邊界跟著往下挪一樣的距離，文字框疊出去的這一點點才真的畫得出來。
+  const curWrapH = parseFloat(getComputedStyle(wrap).height) || 0;
+  wrap.style.height = (curWrapH + overlapPx) + 'px';
 }
 function stripAllGradientsForCapture(rootEl){
   // 已知報告書卡片裡3個會用到漸層色的地方，不管量出來的尺寸是多少，一律直接換成實心色
