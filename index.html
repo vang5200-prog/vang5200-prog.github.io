@@ -3109,6 +3109,25 @@ async function canvasToBlobRobust(canvas, label){
   }
   return blob;
 }
+/* 找到真正原因了：報告書卡片預覽視窗用的是「position:fixed」（固定貼在畫面正中央）這種版面方式，
+   html2canvas這套抓圖工具在處理這種「固定定位」的視窗時，量出來的尺寸常常會直接變成0x0
+   （這是這套工具本身已知的限制，不是妳的畫面或設定有問題）。
+   解法：拍照前，先把這張卡片複製一份，貼到畫面外一個「一般版面（不是固定定位）」的暫時容器裡，
+   對著這個複製品拍照，拍完立刻刪掉這個複製品——畫面上完全看不出任何變化，
+   但因為複製品不是固定定位的視窗，html2canvas就能正常量出正確的尺寸。 */
+function withOffscreenClone(el, fn){
+  const rect = el.getBoundingClientRect();
+  const width = el.offsetWidth || rect.width || 520;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute; left:-99999px; top:0; width:'+width+'px; z-index:-1;';
+  const clone = el.cloneNode(true);
+  // 把量測用的id去掉，避免跟畫面上正在顯示的原本卡片同一個id而互相干擾
+  clone.removeAttribute('id');
+  clone.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+  wrap.appendChild(clone);
+  document.body.appendChild(wrap);
+  return Promise.resolve(fn(clone)).finally(()=>{ wrap.remove(); });
+}
 async function captureReportCardPageBlobs(){
   const container = document.getElementById('rptCardInner');
   const pages = container ? Array.from(container.querySelectorAll('.rpt-page-card')) : [];
@@ -3116,22 +3135,24 @@ async function captureReportCardPageBlobs(){
   const blobs = [];
   for(let i=0;i<pages.length;i++){
     let blob = null;
-    // 先把這一頁裡「量出來是0寬或0高、卻背景是漸層色」的元素暫時處理掉，避免整頁失敗，拍完馬上復原。
-    const restore = neutralizeZeroSizeGradients(pages[i]);
-    try{
-      const canvas = await window.html2canvas(pages[i], {scale:2, backgroundColor:'#ffffff', useCORS:true});
-      blob = await canvasToBlobRobust(canvas, 'page'+(i+1)+'-第一次嘗試');
-    }catch(pageErr){
-      console.warn('html2canvas failed on page', i+1, pageErr, '— 改用備用畫法再試一次');
+    await withOffscreenClone(pages[i], async (pageClone)=>{
+      // 先把這一頁裡「量出來是0寬或0高、卻背景是漸層色」的元素暫時處理掉，避免整頁失敗，拍完馬上復原。
+      const restore = neutralizeZeroSizeGradients(pageClone);
       try{
-        const canvas2 = await window.html2canvas(pages[i], {scale:2, backgroundColor:'#ffffff', useCORS:true, foreignObjectRendering:true});
-        blob = await canvasToBlobRobust(canvas2, 'page'+(i+1)+'-備用畫法');
-      }catch(pageErr2){
-        console.warn('html2canvas備用畫法也失敗 page', i+1, pageErr2);
+        const canvas = await window.html2canvas(pageClone, {scale:2, backgroundColor:'#ffffff', useCORS:true});
+        blob = await canvasToBlobRobust(canvas, 'page'+(i+1)+'-第一次嘗試');
+      }catch(pageErr){
+        console.warn('html2canvas failed on page', i+1, pageErr, '— 改用備用畫法再試一次');
+        try{
+          const canvas2 = await window.html2canvas(pageClone, {scale:2, backgroundColor:'#ffffff', useCORS:true, foreignObjectRendering:true});
+          blob = await canvasToBlobRobust(canvas2, 'page'+(i+1)+'-備用畫法');
+        }catch(pageErr2){
+          console.warn('html2canvas備用畫法也失敗 page', i+1, pageErr2);
+        }
+      }finally{
+        restore();
       }
-    }finally{
-      restore();
-    }
+    });
     blobs.push(blob);
   }
   return blobs;
