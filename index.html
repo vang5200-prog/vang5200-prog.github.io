@@ -3090,6 +3090,25 @@ function neutralizeZeroSizeGradients(rootEl){
   }
   return function restoreAll(){ restores.forEach(fn=>fn()); };
 }
+/* canvas.toBlob() 有時候不會丟錯誤、卻默默回傳null（例如畫面被視為「不乾淨」，也就是
+   常說的canvas「汙染」問題）。這個函式在toBlob失敗時，額外多試一種方法(toDataURL)，
+   並且把canvas實際量出來的寬高、還有失敗當下的詳細原因都印在Console，
+   這樣才能真正知道是「圖片內容有問題」還是「尺寸有問題」還是「畫面被瀏覽器認為不安全」。 */
+async function canvasToBlobRobust(canvas, label){
+  console.warn(label, 'canvas尺寸：', canvas.width, 'x', canvas.height);
+  let blob = await new Promise(resolve=>{ try{ canvas.toBlob(resolve); }catch(e){ console.warn(label, 'toBlob直接丟出錯誤：', e && e.message); resolve(null); } });
+  if(blob) return blob;
+  console.warn(label, 'toBlob沒有丟出錯誤但回傳null，改試toDataURL...');
+  try{
+    const dataUrl = canvas.toDataURL('image/png');
+    const res = await fetch(dataUrl);
+    blob = await res.blob();
+    console.warn(label, 'toDataURL成功，畫面內容OK（代表toBlob這個方法本身有問題，不是畫面被汙染）');
+  }catch(e){
+    console.warn(label, 'toDataURL也失敗，錯誤訊息：', e && e.message, '←這種錯誤通常代表畫面裡有某個圖片來源被瀏覽器判定為不安全（跨網域汙染）');
+  }
+  return blob;
+}
 async function captureReportCardPageBlobs(){
   const container = document.getElementById('rptCardInner');
   const pages = container ? Array.from(container.querySelectorAll('.rpt-page-card')) : [];
@@ -3101,14 +3120,12 @@ async function captureReportCardPageBlobs(){
     const restore = neutralizeZeroSizeGradients(pages[i]);
     try{
       const canvas = await window.html2canvas(pages[i], {scale:2, backgroundColor:'#ffffff', useCORS:true});
-      blob = await new Promise(resolve=>canvas.toBlob(resolve));
-      if(!blob) console.warn('html2canvas第一次嘗試沒有丟出錯誤，但沒有產生出圖片內容 page', i+1);
+      blob = await canvasToBlobRobust(canvas, 'page'+(i+1)+'-第一次嘗試');
     }catch(pageErr){
       console.warn('html2canvas failed on page', i+1, pageErr, '— 改用備用畫法再試一次');
       try{
         const canvas2 = await window.html2canvas(pages[i], {scale:2, backgroundColor:'#ffffff', useCORS:true, foreignObjectRendering:true});
-        blob = await new Promise(resolve=>canvas2.toBlob(resolve));
-        if(!blob) console.warn('html2canvas備用畫法也沒有丟出錯誤，但一樣沒有產生出圖片內容 page', i+1);
+        blob = await canvasToBlobRobust(canvas2, 'page'+(i+1)+'-備用畫法');
       }catch(pageErr2){
         console.warn('html2canvas備用畫法也失敗 page', i+1, pageErr2);
       }
