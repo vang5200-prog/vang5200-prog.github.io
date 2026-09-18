@@ -3072,23 +3072,34 @@ function fallbackCopyText(text, done){
    這個函式會在拍照之前，先把畫面上「現在量出來寬或高是0、但背景卻是漸層色」
    的元素，暫時關掉漸層效果（拍完後就恢復原樣、畫面上完全看不出來），
    這樣就不會再讓整頁因為這個小地方而整份失敗。 */
-function neutralizeZeroSizeGradients(rootEl){
-  const restores = [];
-  const all = [rootEl, ...rootEl.querySelectorAll('*')];
+/* 就算把漸層色改成寫死的顏色（不是用var()變數），這套抓圖工具還是會在少數環境下對
+   「漸層背景」處理失敗（量到尺寸是0，導致整頁產生失敗）。既然這個複製品本來就只是拍完照
+   就丟掉、不會被妳或客戶看到，乾脆讓拍照用的這份複製品「乾脆不要有任何漸層背景」——
+   全部換成一個代表色的實心色塊，這樣就徹底不會再遇到這一整類的問題。
+   畫面上正式顯示、客戶看到的報告書完全不受影響，因為改的只是這個拍照專用、拍完即丟的複製品。 */
+function stripAllGradientsForCapture(rootEl){
+  // 已知報告書卡片裡3個會用到漸層色的地方，不管量出來的尺寸是多少，一律直接換成實心色
+  const known = [
+    { sel: null, color: '#F8EEF6' }, // rootEl 自己（卡片底色，原本是淡粉漸層）
+    { sel: '.rpt-rule', color: '#D4AF37' },
+    { sel: '.rpt-client .bar', color: '#D4AF37' },
+    { sel: '.rpt-footer .rule2', color: '#D4AF37' }
+  ];
+  known.forEach(({sel, color})=>{
+    const els = sel ? Array.from(rootEl.querySelectorAll(sel)) : [rootEl];
+    els.forEach(el=>{ el.style.backgroundImage = 'none'; el.style.backgroundColor = color; });
+  });
+  // 保險：再掃一次整份內容，任何「量出來寬或高是0、但背景還是漸層色」的元素，一樣直接換成實心色
+  const all = rootEl.querySelectorAll('*');
   for(const el of all){
     let cs;
     try{ cs = getComputedStyle(el); }catch(e){ continue; }
     const bg = cs.backgroundImage || '';
     if(bg.indexOf('gradient') === -1) continue;
-    const w = el.offsetWidth, h = el.offsetHeight;
-    if(w > 0 && h > 0) continue;
-    const prevBg = el.style.backgroundImage;
-    const prevBgColor = el.style.backgroundColor;
+    if(el.offsetWidth > 0 && el.offsetHeight > 0) continue;
     el.style.backgroundImage = 'none';
     if(!el.style.backgroundColor){ el.style.backgroundColor = cs.borderTopColor || '#D4AF37'; }
-    restores.push(()=>{ el.style.backgroundImage = prevBg; el.style.backgroundColor = prevBgColor; });
   }
-  return function restoreAll(){ restores.forEach(fn=>fn()); };
 }
 /* canvas.toBlob() 有時候不會丟錯誤、卻默默回傳null（例如畫面被視為「不乾淨」，也就是
    常說的canvas「汙染」問題）。這個函式在toBlob失敗時，額外多試一種方法(toDataURL)，
@@ -3136,21 +3147,15 @@ async function captureReportCardPageBlobs(){
   for(let i=0;i<pages.length;i++){
     let blob = null;
     await withOffscreenClone(pages[i], async (pageClone)=>{
-      // 先把這一頁裡「量出來是0寬或0高、卻背景是漸層色」的元素暫時處理掉，避免整頁失敗，拍完馬上復原。
-      const restore = neutralizeZeroSizeGradients(pageClone);
+      // 這份複製品拍完就丟掉，畫面上妳跟客戶看到的完全不受影響——直接把所有漸層背景都換成實心色，
+      // 徹底避開這套抓圖工具處理漸層時的問題（試過「備用畫法」，結果拍出來的圖是空白的，
+      // 比原本的失敗更糟，所以拿掉了，改用這個更根本的方式解決）。
+      stripAllGradientsForCapture(pageClone);
       try{
         const canvas = await window.html2canvas(pageClone, {scale:2, backgroundColor:'#ffffff', useCORS:true});
-        blob = await canvasToBlobRobust(canvas, 'page'+(i+1)+'-第一次嘗試');
+        blob = await canvasToBlobRobust(canvas, 'page'+(i+1));
       }catch(pageErr){
-        console.warn('html2canvas failed on page', i+1, pageErr, '— 改用備用畫法再試一次');
-        try{
-          const canvas2 = await window.html2canvas(pageClone, {scale:2, backgroundColor:'#ffffff', useCORS:true, foreignObjectRendering:true});
-          blob = await canvasToBlobRobust(canvas2, 'page'+(i+1)+'-備用畫法');
-        }catch(pageErr2){
-          console.warn('html2canvas備用畫法也失敗 page', i+1, pageErr2);
-        }
-      }finally{
-        restore();
+        console.warn('html2canvas failed on page', i+1, pageErr);
       }
     });
     blobs.push(blob);
