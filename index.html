@@ -991,7 +991,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-15 ・ 修正：報告書文字延伸底色跑版，左側金邊超出卡片邊框、蓋到圓角外面的問題', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-20 ・ 修正：產生圖片／Email裡，最後一段文字框沒有撐滿、底下留一大塊空白斷層的問題', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -3196,6 +3196,38 @@ function fallbackCopyText(text, done){
    就丟掉、不會被妳或客戶看到，乾脆讓拍照用的這份複製品「乾脆不要有任何漸層背景」——
    全部換成一個代表色的實心色塊，這樣就徹底不會再遇到這一整類的問題。
    畫面上正式顯示、客戶看到的報告書完全不受影響，因為改的只是這個拍照專用、拍完即丟的複製品。 */
+/* 這套抓圖工具（html2canvas）對CSS的「flex自動撐滿」支援不好：畫面上妳跟客戶用瀏覽器看的時候，
+   最後一段文字框（諮詢重點與建議／注意事項）會自動往下撐滿到接近結尾祝福語的地方，這在瀏覽器裡
+   是正確的；但同一份內容交給這套抓圖工具拍照時，它量不出撐滿後的真正高度——試過直接把量到的
+   高度數字寫死成文字框的height，這套工具還是常常不理會，只照文字本身多長就畫多高，
+   結果拍出來的圖，文字框在文字結束的地方就直接停住，底下留了一大片空白，看起來像「斷開了一塊」，
+   尤其是最後一段文字剛好比較短的時候特別明顯。
+   後來換一個更保險的做法：不跟這套工具「硬凹」框框的height（它常常不理），改成算出「文字本身的
+   自然高度」跟「撐滿後應該有的高度」中間差多少，把這個差額直接加在文字框的padding-bottom（下方留白）
+   上面——padding本來就是每一套繪圖工具都一定要支援的基本功能，比較不會又踩到這套工具在其他地方
+   的支援漏洞。 */
+function bakeFlexHeightsForCapture(rootEl){
+  const wrap = rootEl.querySelector('.rpt-body-wrap');
+  if(!wrap) return;
+  const lastSection = wrap.querySelector(':scope > .rpt-section:last-child');
+  if(!lastSection) return;
+  const callout = lastSection.querySelector(':scope > .rpt-callout');
+  if(!callout) return; // 這一頁最後一段不是文字框（例如是脈輪位置圖），沒有東西需要補padding
+  // 先趁flex排版還在作用的時候，量出「撐滿後應該有的高度」（這時候量到的數字才是正確的，
+  // 因為還沒進到抓圖工具手上）。
+  const targetH = callout.getBoundingClientRect().height;
+  // 接著把flex關掉，量出「不撐滿、純粹照文字內容本身」會有多高。
+  callout.style.flex = 'none';
+  lastSection.style.flex = 'none';
+  wrap.style.display = 'block';
+  lastSection.style.display = 'block';
+  const naturalH = callout.getBoundingClientRect().height;
+  const deficit = Math.max(0, targetH - naturalH);
+  if(deficit > 0){
+    const curPaddingBottom = parseFloat(getComputedStyle(callout).paddingBottom) || 0;
+    callout.style.paddingBottom = (curPaddingBottom + deficit) + 'px';
+  }
+}
 function stripAllGradientsForCapture(rootEl){
   // 已知報告書卡片裡3個會用到漸層色的地方，不管量出來的尺寸是多少，一律直接換成實心色
   const known = [
@@ -3274,6 +3306,7 @@ async function captureReportCardPageBlobs(){
       // 這份複製品拍完就丟掉，畫面上妳跟客戶看到的完全不受影響——直接把所有漸層背景都換成實心色，
       // 徹底避開這套抓圖工具處理漸層時的問題（試過「備用畫法」，結果拍出來的圖是空白的，
       // 比原本的失敗更糟，所以拿掉了，改用這個更根本的方式解決）。
+      bakeFlexHeightsForCapture(pageClone);
       stripAllGradientsForCapture(pageClone);
       try{
         const canvas = await window.html2canvas(pageClone, {scale:2, backgroundColor:'#ffffff', useCORS:true});
