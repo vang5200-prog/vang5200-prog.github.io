@@ -880,6 +880,17 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
           <div class="field"><label>Instagram 帳號（留空則不顯示）</label><input id="setReportIg" placeholder="例如：@lovetalker_tw"></div>
           <div class="field"><label>結尾祝福語</label><textarea id="setReportClosing" style="min-height:70px;" placeholder="例如：願這份紀錄，陪妳慢慢梳理心的方向。"></textarea></div>
           <div class="field"><label>脈輪位置圖片網址（選填）</label><input id="setReportChakraImg" placeholder="貼上圖片網址，例如上傳到GitHub後的圖片連結"><div style="font-size:13px; color:#999; margin-top:5px; line-height:1.6;">找到喜歡的七脈輪位置圖後，可以上傳到跟妳網站同一個GitHub專案（跟首頁大頭照photo.jpg放在一起的地方），再把圖片網址貼在這裡。留空的話，會先用系統內建的簡易示意圖代替。</div></div>
+          <div class="field" style="margin-top:18px;">
+            <label>各脈輪的介紹文字</label>
+            <div style="font-size:13px; color:#999; margin-top:2px; margin-bottom:10px; line-height:1.6;">報告卡片「此次需要注意的脈輪」區塊裡，每個脈輪名稱後面那句說明（例如「頂輪｜靈性連結與信任。」的「靈性連結與信任」），可以自己改成想要的說法，不用再麻煩我改程式碼。</div>
+          </div>
+          <div class="field"><label>頂輪</label><input id="setChakraMeaning0" placeholder="例如：靈性連結與信任"></div>
+          <div class="field"><label>眉心輪</label><input id="setChakraMeaning1" placeholder="例如：覺察與直覺"></div>
+          <div class="field"><label>喉輪</label><input id="setChakraMeaning2" placeholder="例如：表達與溝通"></div>
+          <div class="field"><label>心輪</label><input id="setChakraMeaning3" placeholder="例如：愛與連結"></div>
+          <div class="field"><label>太陽神經叢輪</label><input id="setChakraMeaning4" placeholder="例如：自信與意志力"></div>
+          <div class="field"><label>臍輪</label><input id="setChakraMeaning5" placeholder="例如：情感流動與親密"></div>
+          <div class="field"><label>海底輪</label><input id="setChakraMeaning6" placeholder="例如：安全感與根基"></div>
           <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveReportCardSettings()">儲存報告卡片設定</button>
         </div>
 
@@ -980,7 +991,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-10 ・ 修正：文字框底色延伸蓋過祝福語文字，停在祝福語跟品牌名中間', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-12 ・ 修正：登入後台/讀取雲端設定連線失敗時，自動重試最多2次，不用手動再按一次', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -1123,17 +1134,67 @@ function defaultReportClosing(){ return '願這份紀錄，陪妳慢慢梳理心
 function loadReportClosing(){ return localStorage.getItem(K_REPORT_CLOSING) || defaultReportClosing(); }
 const K_REPORT_CHAKRA_IMG='rt_report_chakra_img';
 function loadReportChakraImageUrl(){ return localStorage.getItem(K_REPORT_CHAKRA_IMG) || ''; }
+/* 各脈輪介紹文字（報告卡片「此次需要注意的脈輪」區塊，每個脈輪名稱後面那段說明，例如「靈性連結與信任」），
+   這裡的預設值特意直接寫死一份（跟後面 REPORT_CHAKRA_META 裡的文字保持一致），不去讀取 CHAKRA_DIAGRAM_ORDER
+   這類要等整份程式碼都載入完才會有值的常數，因為這個函式在網站一打開、程式碼「由上往下」執行到這裡時
+   就會立刻被呼叫一次，這時候寫在檔案更後面的常數都還沒宣告好，硬要讀會直接跳錯導致整個網站打不開。
+   妳在後台改過的話，才會用改過的版本蓋掉這裡的預設值。 */
+const K_REPORT_CHAKRA_MEANINGS='rt_report_chakra_meanings';
+function defaultReportChakraMeanings(){
+  return {
+    '頂輪':'靈性連結與信任',
+    '眉心輪':'覺察與直覺',
+    '喉輪':'表達與溝通',
+    '心輪':'愛與連結',
+    '太陽神經叢輪':'自信與意志力',
+    '臍輪':'情感流動與親密',
+    '海底輪':'安全感與根基'
+  };
+}
+function loadReportChakraMeanings(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(K_REPORT_CHAKRA_MEANINGS) || 'null');
+    return (saved && typeof saved === 'object') ? {...defaultReportChakraMeanings(), ...saved} : defaultReportChakraMeanings();
+  }catch(e){ return defaultReportChakraMeanings(); }
+}
 function saveReportCardSettings(){
   const brand = document.getElementById('setReportBrand').value.trim()||defaultReportBrandName();
   const ig = document.getElementById('setReportIg').value.trim()||defaultReportIgHandle();
   const closing = document.getElementById('setReportClosing').value.trim()||defaultReportClosing();
   const chakraImg = document.getElementById('setReportChakraImg').value.trim();
+  const defaultMeanings = defaultReportChakraMeanings();
+  const meanings = {};
+  CHAKRA_DIAGRAM_ORDER.forEach((name,i)=>{
+    const el = document.getElementById('setChakraMeaning'+i);
+    meanings[name] = (el && el.value.trim()) || defaultMeanings[name];
+  });
   localStorage.setItem(K_REPORT_BRAND, brand); localStorage.setItem(K_REPORT_IG, ig); localStorage.setItem(K_REPORT_CLOSING, closing); localStorage.setItem(K_REPORT_CHAKRA_IMG, chakraImg);
-  reportBrandName = brand; reportIgHandle = ig; reportClosing = closing; reportChakraImageUrl = chakraImg;
+  localStorage.setItem(K_REPORT_CHAKRA_MEANINGS, JSON.stringify(meanings));
+  reportBrandName = brand; reportIgHandle = ig; reportClosing = closing; reportChakraImageUrl = chakraImg; reportChakraMeanings = meanings;
   pushRemoteSettings();
   toast('報告卡片設定已儲存');
 }
 
+/* Google的雲端網址偶爾會出現「明明密碼/網路都沒問題，卻連線失敗」的狀況——這不是妳的網路差，
+   而是Google伺服器那邊短暫的小狀況（例如瀏覽器同時登入好幾個Google帳號時，Google有時候會
+   導到錯的網址導致收到404），這種情況通常「等一下、重試一次」就會自己通了。
+   這裡加上自動重試：呼叫雲端網址失敗（或收到的不是正常JSON資料）時，不會馬上顯示失敗，
+   而是先稍等一下自動重試最多2次，這樣遇到這種暫時性小狀況時，妳不用自己手動再按一次就能過。 */
+async function fetchWebhookJson(url, options, retries){
+  retries = (typeof retries === 'number') ? retries : 2;
+  let lastErr;
+  for(let attempt=0; attempt<=retries; attempt++){
+    try{
+      const res = await fetch(url, options);
+      const text = await res.text();
+      return JSON.parse(text);
+    }catch(err){
+      lastErr = err;
+      if(attempt < retries) await new Promise(r=>setTimeout(r, 600 + attempt*400));
+    }
+  }
+  throw lastErr;
+}
 /* ---------- 後台密碼鎖（改由 Apps Script 伺服器端驗證，密碼不存在網站程式碼裡） ---------- */
 async function checkAdminPassword(){
   const input = document.getElementById('gatePassword').value;
@@ -1142,12 +1203,11 @@ async function checkAdminPassword(){
   if(!webhookUrl){ errEl.textContent='尚未設定雲端網址，無法驗證密碼'; errEl.style.display='block'; return; }
   if(!input){ return; }
   try{
-    const res = await fetch(webhookUrl, {
+    const data = await fetchWebhookJson(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify({ type:'auth', password: input })
     });
-    const data = await res.json();
     if(data && data.ok){
       sessionStorage.setItem('rt_admin_unlocked','1');
       sessionStorage.setItem('rt_admin_pw', input); // 暫存在這次瀏覽器分頁的記憶體中，供後續設定儲存時驗證用，關閉分頁即消失
@@ -1218,8 +1278,7 @@ async function pullRemoteSettings(){
   if(!webhookUrl) return;
   try{
     const sep = webhookUrl.includes('?') ? '&' : '?';
-    const res = await fetch(webhookUrl + sep + 'action=settings');
-    const data = await res.json();
+    const data = await fetchWebhookJson(webhookUrl + sep + 'action=settings');
     let changed = false;
     if(data && data.services && data.services.length){ services = data.services; saveServices(services); changed = true; }
     if(data && data.addons){ addons = data.addons; saveAddons(addons); changed = true; }
@@ -1235,6 +1294,7 @@ async function pullRemoteSettings(){
     if(data && typeof data.reportIgHandle === 'string' && data.reportIgHandle){ reportIgHandle = data.reportIgHandle; localStorage.setItem(K_REPORT_IG, reportIgHandle); changed = true; }
     if(data && typeof data.reportClosing === 'string' && data.reportClosing){ reportClosing = data.reportClosing; localStorage.setItem(K_REPORT_CLOSING, reportClosing); changed = true; }
     if(data && typeof data.reportChakraImageUrl === 'string' && data.reportChakraImageUrl){ reportChakraImageUrl = data.reportChakraImageUrl; localStorage.setItem(K_REPORT_CHAKRA_IMG, reportChakraImageUrl); changed = true; }
+    if(data && data.reportChakraMeanings && typeof data.reportChakraMeanings === 'object'){ reportChakraMeanings = {...defaultReportChakraMeanings(), ...data.reportChakraMeanings}; localStorage.setItem(K_REPORT_CHAKRA_MEANINGS, JSON.stringify(reportChakraMeanings)); changed = true; }
     if(changed){
       renderServiceCards();
       renderHeroContent();
@@ -1249,7 +1309,7 @@ function pushRemoteSettings(){
     fetch(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo, welcomeMsg, bookingPolicy, igLink, reportBrandName, reportIgHandle, reportClosing, reportChakraImageUrl })
+      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo, welcomeMsg, bookingPolicy, igLink, reportBrandName, reportIgHandle, reportClosing, reportChakraImageUrl, reportChakraMeanings })
     }).catch(err=>console.warn('雲端設定同步失敗', err));
   }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
@@ -1270,6 +1330,7 @@ let reportBrandName = loadReportBrandName();
 let reportIgHandle = loadReportIgHandle();
 let reportChakraImageUrl = loadReportChakraImageUrl();
 let reportClosing = loadReportClosing();
+let reportChakraMeanings = loadReportChakraMeanings();
 if(!localStorage.getItem(K_SERVICES)) saveServices(services);
 if(!localStorage.getItem(K_ADDONS)) saveAddons(addons);
 let editingId = null;
@@ -2680,7 +2741,11 @@ const REPORT_CHAKRA_META = {
   '頂輪': {en:'Crown Chakra', meaning:'靈性連結與信任', color:'#9A7FBE'},
   '七大脈輪完整療癒（不限單一脈輪）': {en:'All Chakras', meaning:'全面能量疏通與整合', color:'#C6A85A'}
 };
-function reportChakraMeta(name){ return REPORT_CHAKRA_META[name] || {en:'', meaning:'', color:'#C6A85A'}; }
+function reportChakraMeta(name){
+  const base = REPORT_CHAKRA_META[name] || {en:'', meaning:'', color:'#C6A85A'};
+  const override = reportChakraMeanings && reportChakraMeanings[name];
+  return (override && override.trim()) ? {...base, meaning: override.trim()} : base;
+}
 let currentReportCardId = null;
 /* 報告書卡片四個角的力量符號 Chokurei（直接依照標準畫法：橫線→直線→螺旋，四個角方向一致、不鏡射，
    因為這是有方向性的符號，鏡射會變成反過來的錯誤畫法），加上卡片最上方一個小小的金色徽紋，
@@ -3367,6 +3432,10 @@ function renderSettings(){
   document.getElementById('setReportIg').value = reportIgHandle;
   document.getElementById('setReportClosing').value = reportClosing;
   document.getElementById('setReportChakraImg').value = reportChakraImageUrl;
+  CHAKRA_DIAGRAM_ORDER.forEach((name,i)=>{
+    const el = document.getElementById('setChakraMeaning'+i);
+    if(el) el.value = reportChakraMeanings[name] || '';
+  });
   document.getElementById('setBookingPolicy').value = bookingPolicy;
   document.getElementById('setWebhook').value = webhookUrl;
   document.getElementById('setHeroTitle').value = heroContent.title;
