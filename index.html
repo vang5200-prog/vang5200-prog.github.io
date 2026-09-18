@@ -536,7 +536,10 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rpt-callout{ background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
 /* 文字框往下的延伸底色：接在.rpt-body-wrap下緣，一路蓋到結尾祝福語文字附近（實際top/height由JS量出來直接寫死），
    z-index比結尾文字(.rpt-footer, z-index:1)低，文字才會一直保持在最上面清楚看得到 */
-.rpt-callout-tail{ position:absolute; left:30px; right:30px; z-index:0; background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 0 10px 0; pointer-events:none; }
+/* 延伸底色的下緣，在最後一頁因為剛好接到「願此次相會...」上面那條金線，過渡很自然；
+   但在其他頁（沒有那條金線），延伸底色就是直接「切斷」，變成一條看起來像意外斷開的白線。
+   加一條淡淡的金色底線，讓每一頁的延伸底色下緣看起來都是「刻意收尾」，不是斷掉。 */
+.rpt-callout-tail{ position:absolute; left:30px; right:30px; z-index:0; background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-bottom:2px solid rgba(198,168,90,0.65); border-radius:0 0 10px 0; pointer-events:none; }
 .rpt-transcript{ background:rgba(154,127,190,0.05); border:1px solid #EADFC8; border-radius:12px; padding:13px 15px; }
 .rpt-transcript .body{ font-size:13.5px; color:#6B5A45; }
 .rpt-footer{ position:relative; z-index:1; text-align:center; margin-top:2px; }
@@ -991,7 +994,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-20 ・ 修正：產生圖片／Email裡，最後一段文字框沒有撐滿、底下留一大塊空白斷層的問題', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-24 ・ 修正：延伸底色下緣加粗金線收尾，交界處位置取整數避免鋸齒白線', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2893,8 +2896,9 @@ function rptAlignCalloutTail(pageEl){
   const who2Rect = who2.getBoundingClientRect();
   const topY = wrapRect.bottom;
   const midY = (closingRect.bottom + who2Rect.top) / 2;
-  tail.style.top = (topY - cardRect.top) + 'px';
-  tail.style.height = Math.max(0, midY - topY) + 'px';
+  // top／height都取整數px，避免小數點位置讓抓圖工具在交界處畫出模糊的半透明鋸齒，看起來像多一條細線
+  tail.style.top = Math.round(topY - cardRect.top) + 'px';
+  tail.style.height = Math.max(0, Math.round(midY - topY)) + 'px';
 }
 function rptAlignAllCalloutTails(rootEl){
   const pages = (rootEl || document).querySelectorAll('.rpt-page-card');
@@ -3213,20 +3217,32 @@ function bakeFlexHeightsForCapture(rootEl){
   if(!lastSection) return;
   const callout = lastSection.querySelector(':scope > .rpt-callout');
   if(!callout) return; // 這一頁最後一段不是文字框（例如是脈輪位置圖），沒有東西需要補padding
-  // 先趁flex排版還在作用的時候，量出「撐滿後應該有的高度」（這時候量到的數字才是正確的，
-  // 因為還沒進到抓圖工具手上）。
-  const targetH = callout.getBoundingClientRect().height;
-  // 接著把flex關掉，量出「不撐滿、純粹照文字內容本身」會有多高。
+  const cardRect = rootEl.getBoundingClientRect();
+  // 文字框「應該要撐到哪裡」，直接用旁邊那條延伸底色（.rpt-callout-tail）的頂端當作終點——
+  // 這條延伸底色的位置早就量好、寫死成px數字了（複製卡片時會一起複製過去），
+  // 用同一份數字當終點，才不會又發生「文字框」跟「延伸底色」兩邊各自獨立量測、
+  // 各自四捨五入，中間露出一條白線縫隙的狀況。
+  const tail = rootEl.querySelector(':scope > .rpt-callout-tail');
+  let targetBottomRelToCard;
+  if(tail){
+    targetBottomRelToCard = tail.getBoundingClientRect().top - cardRect.top;
+  }else{
+    targetBottomRelToCard = callout.getBoundingClientRect().bottom - cardRect.top;
+  }
+  // 把flex關掉，量出「不撐滿、純粹照文字內容本身」會有多高，以及這時候文字框頂端實際落在哪裡。
   callout.style.flex = 'none';
   lastSection.style.flex = 'none';
   wrap.style.display = 'block';
   lastSection.style.display = 'block';
+  const calloutTopRelToCard = callout.getBoundingClientRect().top - cardRect.top;
   const naturalH = callout.getBoundingClientRect().height;
-  const deficit = Math.max(0, targetH - naturalH);
-  if(deficit > 0){
-    const curPaddingBottom = parseFloat(getComputedStyle(callout).paddingBottom) || 0;
-    callout.style.paddingBottom = (curPaddingBottom + deficit) + 'px';
-  }
+  // 讓文字框底部「故意疊一點點」到延伸底色上面——兩者顏色本來就幾乎一樣，疊一點點完全看不出來，
+  // 但可以保證兩塊中間不會因為畫面渲染時的極小誤差而露出縫隙。全部取整數px，避免小數點位置
+  // 讓抓圖工具在交界處畫出模糊的半透明鋸齒。
+  const desiredH = Math.max(0, Math.round(targetBottomRelToCard - calloutTopRelToCard) + 2);
+  const deficit = Math.max(0, Math.round(desiredH - naturalH));
+  const curPaddingBottom = parseFloat(getComputedStyle(callout).paddingBottom) || 0;
+  callout.style.paddingBottom = Math.round(curPaddingBottom + deficit) + 'px';
 }
 function stripAllGradientsForCapture(rootEl){
   // 已知報告書卡片裡3個會用到漸層色的地方，不管量出來的尺寸是多少，一律直接換成實心色
