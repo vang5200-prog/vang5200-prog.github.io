@@ -884,13 +884,13 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
             <label>各脈輪的介紹文字</label>
             <div style="font-size:13px; color:#999; margin-top:2px; margin-bottom:10px; line-height:1.6;">報告卡片「此次需要注意的脈輪」區塊裡，每個脈輪名稱後面那句說明（例如「頂輪｜靈性連結與信任。」的「靈性連結與信任」），可以自己改成想要的說法，不用再麻煩我改程式碼。</div>
           </div>
-          <div class="field"><label>頂輪</label><input id="setChakraMeaning0" placeholder="例如：靈性連結與信任"></div>
-          <div class="field"><label>眉心輪</label><input id="setChakraMeaning1" placeholder="例如：覺察與直覺"></div>
-          <div class="field"><label>喉輪</label><input id="setChakraMeaning2" placeholder="例如：表達與溝通"></div>
-          <div class="field"><label>心輪</label><input id="setChakraMeaning3" placeholder="例如：愛與連結"></div>
-          <div class="field"><label>太陽神經叢輪</label><input id="setChakraMeaning4" placeholder="例如：自信與意志力"></div>
-          <div class="field"><label>臍輪</label><input id="setChakraMeaning5" placeholder="例如：情感流動與親密"></div>
-          <div class="field"><label>海底輪</label><input id="setChakraMeaning6" placeholder="例如：安全感與根基"></div>
+          <div class="field"><label>頂輪</label><input id="setChakraMeaning0" placeholder="例如：靈性連結與信任" onkeydown="rptChakraMeaningEnterNext(event,0)"></div>
+          <div class="field"><label>眉心輪</label><input id="setChakraMeaning1" placeholder="例如：覺察與直覺" onkeydown="rptChakraMeaningEnterNext(event,1)"></div>
+          <div class="field"><label>喉輪</label><input id="setChakraMeaning2" placeholder="例如：表達與溝通" onkeydown="rptChakraMeaningEnterNext(event,2)"></div>
+          <div class="field"><label>心輪</label><input id="setChakraMeaning3" placeholder="例如：愛與連結" onkeydown="rptChakraMeaningEnterNext(event,3)"></div>
+          <div class="field"><label>太陽神經叢輪</label><input id="setChakraMeaning4" placeholder="例如：自信與意志力" onkeydown="rptChakraMeaningEnterNext(event,4)"></div>
+          <div class="field"><label>臍輪</label><input id="setChakraMeaning5" placeholder="例如：情感流動與親密" onkeydown="rptChakraMeaningEnterNext(event,5)"></div>
+          <div class="field"><label>海底輪</label><input id="setChakraMeaning6" placeholder="例如：安全感與根基" onkeydown="rptChakraMeaningEnterNext(event,6)"></div>
           <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveReportCardSettings()">儲存報告卡片設定</button>
         </div>
 
@@ -991,7 +991,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-12 ・ 修正：登入後台/讀取雲端設定連線失敗時，自動重試最多2次，不用手動再按一次', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-13 ・ 修正：七個脈輪介紹文字輸入框，按ENTER會跳到下一個欄位', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -1173,6 +1173,16 @@ function saveReportCardSettings(){
   reportBrandName = brand; reportIgHandle = ig; reportClosing = closing; reportChakraImageUrl = chakraImg; reportChakraMeanings = meanings;
   pushRemoteSettings();
   toast('報告卡片設定已儲存');
+}
+/* 七個脈輪輸入框都是單行的輸入欄，瀏覽器預設按ENTER不會有反應（因為沒有跟著一個「送出表單」的按鈕），
+   這裡自己接管ENTER鍵：按下去就跳到下一個脈輪欄位，最後一個（海底輪）按ENTER則直接收鍵盤／取消游標，
+   這樣妳可以直接一路按ENTER把七個脈輪都填完，不用每個欄位都要用滑鼠點下一個 */
+function rptChakraMeaningEnterNext(event, index){
+  if(event.key !== 'Enter') return;
+  event.preventDefault();
+  const next = document.getElementById('setChakraMeaning'+(index+1));
+  if(next){ next.focus(); next.select && next.select(); }
+  else if(event.target && event.target.blur){ event.target.blur(); }
 }
 
 /* Google的雲端網址偶爾會出現「明明密碼/網路都沒問題，卻連線失敗」的狀況——這不是妳的網路差，
