@@ -969,7 +969,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-04 ・ 產生圖片：拍照複製品全面拿掉漸層背景版', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-05 ・ 修正：拍照複製品不能拿掉id，不然力量符號跟脈輪發光會消失', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -3135,10 +3135,11 @@ function withOffscreenClone(el, fn){
   const width = el.offsetWidth || rect.width || 520;
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:absolute; left:-99999px; top:0; width:'+width+'px; z-index:-1;';
+  // 這裡故意「不」把複製品裡的id拿掉：四個角落的力量符號、脈輪圖的發光效果，內部都是
+  // 用SVG的「id」互相參照畫出漸層顏色的（例如 url(#rptCornerGradTl) 這種寫法）。
+  // 之前有一版把id拿掉，結果雖然拍照不再失敗，但力量符號跟脈輪發光效果都「消失」了——
+  // 因為那些SVG內部原本靠id才找得到對應的漸層顏色，id一被拿掉，顏色就顯示不出來了。
   const clone = el.cloneNode(true);
-  // 把量測用的id去掉，避免跟畫面上正在顯示的原本卡片同一個id而互相干擾
-  clone.removeAttribute('id');
-  clone.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
   return Promise.resolve(fn(clone)).finally(()=>{ wrap.remove(); });
