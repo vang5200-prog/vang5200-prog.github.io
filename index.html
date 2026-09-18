@@ -3072,11 +3072,22 @@ async function captureReportCardPageBlobs(){
   const blobs = [];
   for(let i=0;i<pages.length;i++){
     let blob = null;
+    // 先用一般模式拍。少數瀏覽器/顯示卡在畫漸層色（例如金色細線、色塊）時，
+    // html2canvas自己的繪圖引擎偶爾會算出不合法的數值而整頁失敗
+    // （這不是報告書內容或設定的問題，是這套圖片工具本身在某些環境下的小毛病）。
+    // 如果真的失敗，就自動改用「foreignObjectRendering」這個備用畫法再拍一次看看，
+    // 這個備用畫法是直接請瀏覽器自己畫，不會再經過同一段容易出錯的漸層運算。
     try{
       const canvas = await window.html2canvas(pages[i], {scale:2, backgroundColor:'#ffffff', useCORS:true});
       blob = await new Promise(resolve=>canvas.toBlob(resolve));
     }catch(pageErr){
-      console.warn('html2canvas failed on page', i+1, pageErr);
+      console.warn('html2canvas failed on page', i+1, pageErr, '— 改用備用畫法再試一次');
+      try{
+        const canvas2 = await window.html2canvas(pages[i], {scale:2, backgroundColor:'#ffffff', useCORS:true, foreignObjectRendering:true});
+        blob = await new Promise(resolve=>canvas2.toBlob(resolve));
+      }catch(pageErr2){
+        console.warn('html2canvas備用畫法也失敗 page', i+1, pageErr2);
+      }
     }
     blobs.push(blob);
   }
