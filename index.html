@@ -517,7 +517,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
    這裡只調整文字框自己的margin-bottom，完全不去動RPT_PAGE_BODY_HEIGHT那個640px的分頁高度預算，
    所以不會有文字內容被算超過、被下面overflow:hidden切掉的風險。 */
 .rpt-body-wrap > .rpt-section:last-child{ flex:1 1 auto; display:flex; flex-direction:column; min-height:0; }
-.rpt-body-wrap > .rpt-section:last-child > .rpt-callout{ flex:1 1 auto; margin-bottom:8px; min-height:0; }
+.rpt-body-wrap > .rpt-section:last-child > .rpt-callout{ flex:1 1 auto; margin-bottom:0; min-height:0; border-radius:0 10px 0 0; }
 /* 淡淡的浮水印文字，鋪滿報告書標題橫線到結尾橫線之間的整個範圍，顏色非常淺、疊在所有內容跟圖片「之上」（z-index比內容區塊高），
    營造真正蓋在畫面上的浮水印感，但因為顏色很淡+pointer-events:none，不會擋到閱讀也不會擋到點擊；
    字級大小固定由 RPT_WATERMARK_FONT_SIZE 算好直接寫進每一頁，這裡的 font-size 只是還沒套用前的預設值 */
@@ -534,6 +534,9 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rpt-section h4::before{ content:''; width:7px; height:7px; background:var(--gold-border); border-radius:2px; flex:none; transform:rotate(45deg); }
 .rpt-section .body{ font-size:15px; line-height:1.8; color:var(--brown); white-space:pre-wrap; word-break:break-word; }
 .rpt-callout{ background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
+/* 文字框往下的延伸底色：接在.rpt-body-wrap下緣，一路蓋到結尾祝福語文字附近（實際top/height由JS量出來直接寫死），
+   z-index比結尾文字(.rpt-footer, z-index:1)低，文字才會一直保持在最上面清楚看得到 */
+.rpt-callout-tail{ position:absolute; left:0; right:0; z-index:0; background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 0 10px 0; pointer-events:none; }
 .rpt-transcript{ background:rgba(154,127,190,0.05); border:1px solid #EADFC8; border-radius:12px; padding:13px 15px; }
 .rpt-transcript .body{ font-size:13.5px; color:#6B5A45; }
 .rpt-footer{ position:relative; z-index:1; text-align:center; margin-top:2px; }
@@ -977,7 +980,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-09 ・ 修正：每頁最後一個文字框再往下拉長，幾乎貼到「願此次相會」那行字的正上方', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-10 ・ 修正：文字框底色延伸蓋過祝福語文字，停在祝福語跟品牌名中間', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2794,6 +2797,7 @@ function reportCardPageHtml(pageNum, totalPages, bodyHtml, showFooter){
       <div class="rpt-watermark" style="font-size:${RPT_WATERMARK_FONT_SIZE}px;"><span>大</span><span>光</span><span>明</span></div>
       ${bodyHtml}
     </div>
+    <div class="rpt-callout-tail"></div>
     <div class="rpt-footer"${showFooter?'':' style="visibility:hidden;"'}>
       <div class="rule2"></div>
       <div class="closing">${esc(reportClosing)}</div>
@@ -2801,6 +2805,31 @@ function reportCardPageHtml(pageNum, totalPages, bodyHtml, showFooter){
     </div>
     ${totalPages>1?`<div class="rpt-page-tag">第 ${pageNum} 頁．共 ${totalPages} 頁</div>`:''}
   </div>`;
+}
+/* 文字框的底色/金條光靠CSS撐不到「蓋住祝福語文字」那麼下面——因為內文區塊本身固定640px高、
+   超出的部分會被裁掉（避免文字太多爆版），結尾整段祝福語其實是「內文區塊外面」另外保留的空間。
+   所以改用量實際位置的方式：量出「內文區塊的下緣」跟「祝福語文字下緣／品牌那行上緣的中間點」，
+   把這塊透明的延伸底色（.rpt-callout-tail）精準覆蓋這中間這一段，文字繼續正常疊在最上面看得到，
+   底色會蓋到「願這份紀錄...」那行字、但停在它跟「情感讀心師」那行的中間，不會整個蓋過品牌名。
+   這個量測結果是算好直接寫死成px數字，複製卡片去產生圖片時數字會一起複製過去，不用再重算一次。 */
+function rptAlignCalloutTail(pageEl){
+  const wrap = pageEl.querySelector('.rpt-body-wrap');
+  const tail = pageEl.querySelector('.rpt-callout-tail');
+  const closing = pageEl.querySelector('.rpt-footer .closing');
+  const who2 = pageEl.querySelector('.rpt-footer .who2');
+  if(!wrap || !tail || !closing || !who2) return;
+  const cardRect = pageEl.getBoundingClientRect();
+  const wrapRect = wrap.getBoundingClientRect();
+  const closingRect = closing.getBoundingClientRect();
+  const who2Rect = who2.getBoundingClientRect();
+  const topY = wrapRect.bottom;
+  const midY = (closingRect.bottom + who2Rect.top) / 2;
+  tail.style.top = (topY - cardRect.top) + 'px';
+  tail.style.height = Math.max(0, midY - topY) + 'px';
+}
+function rptAlignAllCalloutTails(rootEl){
+  const pages = (rootEl || document).querySelectorAll('.rpt-page-card');
+  pages.forEach(rptAlignCalloutTail);
 }
 /* 用一個畫面外、看不見的量測框，套用跟正式報告書內文完全一樣的寬度跟樣式，量出這段HTML實際渲染後的高度，
    分頁全靠這個量出來的真實高度去判斷塞不塞得下，不是用猜的字數 */
@@ -3061,6 +3090,9 @@ function openReportCard(id){
   imgResult.style.display = 'none';
   imgResult.innerHTML = '';
   document.getElementById('reportCardModalOverlay').classList.add('open');
+  // 卡片要先真的「顯示出來」(modal打開後)才量得到正確位置，量完直接把px數字寫死在每一頁上，
+  // 之後不管是預覽還是截圖抓圖，都是直接複製這個已經量好、寫死數字的版本，不用重新再量一次
+  rptAlignAllCalloutTails(cardHost);
 }
 function closeReportCard(){ document.getElementById('reportCardModalOverlay').classList.remove('open'); currentReportCardId = null; }
 function copyReportCardText(){
