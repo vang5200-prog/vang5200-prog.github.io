@@ -533,7 +533,12 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rpt-section h4{ display:flex; align-items:center; gap:7px; font-size:14.5px; font-weight:700; margin:0 0 8px; color:var(--soft-pink); }
 .rpt-section h4::before{ content:''; width:7px; height:7px; background:var(--gold-border); border-radius:2px; flex:none; transform:rotate(45deg); }
 .rpt-section .body{ font-size:15px; line-height:1.8; color:var(--brown); white-space:pre-wrap; word-break:break-word; }
-.rpt-callout{ background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
+/* 文字框本身不再自己畫底色，底色統一交給旁邊的.rpt-callout-tail一個元素從頭畫到尾（見下面
+   rptAlignCalloutTail的說明）。原本文字框跟延伸底色是「兩塊顏色一樣的東西各自獨立擺放，
+   想辦法對齊接起來」，不管怎麼對，兩塊交接的地方就是容易因為畫面渲染的極小誤差，
+   露出一條淺色縫隙或看起來變深的接縫線——這次直接把「畫底色」這件事整個交給同一個元素，
+   從根本上不會再有「兩塊東西接起來」這件事，自然就不會再有接縫線。 */
+.rpt-callout{ background:transparent; border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
 /* 文字框往下的延伸底色：接在.rpt-body-wrap下緣，一路蓋到結尾祝福語文字附近（實際top/height由JS量出來直接寫死），
    z-index比結尾文字(.rpt-footer, z-index:1)低，文字才會一直保持在最上面清楚看得到 */
 .rpt-callout-tail{ position:absolute; left:30px; right:30px; z-index:0; background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 0 10px 0; pointer-events:none; }
@@ -991,7 +996,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-27 ・ 修正：延伸底色改成統一往上多疊一點解決縫隙、抓圖時的金色細線改用淡色避免變成土氣粗線', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-28 ・ 重大修正：底色改成統一由一個元素從文字框頂端畫到底，徹底解決接縫線；角落力量符號id唯一化避免消失；金線恢復原本漸層質感', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2767,7 +2772,16 @@ function rptCornerOrnamentSvg(gradId){
     <path d="${RPT_CORNER_PATH_D}" fill="none" stroke="url(#${gradId})" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 }
-const RPT_CARD_CORNERS_HTML = `<div class="rpt-corner tl">${rptCornerOrnamentSvg('rptCornerGradTl')}</div><div class="rpt-corner tr">${rptCornerOrnamentSvg('rptCornerGradTr')}</div><div class="rpt-corner bl">${rptCornerOrnamentSvg('rptCornerGradBl')}</div><div class="rpt-corner br">${rptCornerOrnamentSvg('rptCornerGradBr')}</div>`;
+// 四個角落力量符號的漸層色id，原本是每張卡片都寫死同樣的id（rptCornerGradTl...）。
+// 一份報告書有好幾頁、同時「填寫預覽」「正式報告書」「產生圖片」這幾個地方都各自會畫出一整套卡片，
+// 同一個id在同一個網頁裡重複出現太多次，瀏覽器只認第一個，如果那個「第一個」剛好是被隱藏起來的
+// （例如已經關掉的填寫視窗），角落的漸層色就會抓不到、力量符號整個消失不見。
+// 改成每張卡片呼叫時都給一組獨一無二的id，就不會再互相搶走彼此的漸層色。
+let rptCornerIdSeq = 0;
+function rptCardCornersHtml(){
+  const uid = 'u' + (rptCornerIdSeq++);
+  return `<div class="rpt-corner tl">${rptCornerOrnamentSvg('rptCornerGradTl_'+uid)}</div><div class="rpt-corner tr">${rptCornerOrnamentSvg('rptCornerGradTr_'+uid)}</div><div class="rpt-corner bl">${rptCornerOrnamentSvg('rptCornerGradBl_'+uid)}</div><div class="rpt-corner br">${rptCornerOrnamentSvg('rptCornerGradBr_'+uid)}</div>`;
+}
 const RPT_CARD_CREST_HTML = '<div class="rpt-crest"><svg viewBox="0 0 60 24" width="60" height="24" xmlns="http://www.w3.org/2000/svg"><path d="M2 12 C14 12 16 2 30 2 C44 2 46 12 58 12" stroke="#C6A85A" stroke-width="1" fill="none" opacity="0.55"/><path d="M26 8 L30 4 L34 8 L30 12 Z" fill="#C6A85A"/><circle cx="30" cy="4" r="1.3" fill="#7A3B52"/></svg></div>';
 /* 標題：中文置中在上、英文置中在下（後台編輯畫面會多一行小提示字，成品卡片上沒有這行） */
 function rptEyebrowHtml(note){
@@ -2858,7 +2872,7 @@ function reportCardPageHtml(pageNum, totalPages, bodyHtml, showFooter){
   // 結尾祝福語的區塊每一頁都「畫」出來、只是沒輪到的頁面用 visibility:hidden 藏起來（不是整塊拿掉），
   // 這樣每一頁保留的空間完全一樣，卡片高度才會全部一致，不會因為有沒有結尾語而忽高忽低
   return `<div class="rpt-card rpt-page-card">
-    ${RPT_CARD_CORNERS_HTML}
+    ${rptCardCornersHtml()}
     ${RPT_CARD_CREST_HTML}
     ${rptEyebrowHtml()}
     <div class="rpt-rule"></div>
@@ -2875,11 +2889,12 @@ function reportCardPageHtml(pageNum, totalPages, bodyHtml, showFooter){
     ${totalPages>1?`<div class="rpt-page-tag">第 ${pageNum} 頁．共 ${totalPages} 頁</div>`:''}
   </div>`;
 }
-/* 文字框的底色/金條光靠CSS撐不到「蓋住祝福語文字」那麼下面——因為內文區塊本身固定640px高、
-   超出的部分會被裁掉（避免文字太多爆版），結尾整段祝福語其實是「內文區塊外面」另外保留的空間。
-   所以改用量實際位置的方式：量出「內文區塊的下緣」跟「祝福語文字下緣／品牌那行上緣的中間點」，
-   把這塊透明的延伸底色（.rpt-callout-tail）精準覆蓋這中間這一段，文字繼續正常疊在最上面看得到，
-   底色會蓋到「願這份紀錄...」那行字、但停在它跟「情感讀心師」那行的中間，不會整個蓋過品牌名。
+/* 文字框（.rpt-callout）本身已經改成不畫自己的底色（見CSS的說明），這裡量出「最後一個文字框
+   的頂端」到「祝福語文字下緣／品牌那行上緣的中間點」這一整段距離，讓.rpt-callout-tail
+   這「一個」元素從文字框最上面直接畫到快接近品牌名的地方，包含文字本身的範圍也一起蓋過去
+   （文字顏色比底色深很多，疊一層很淡的底色不影響閱讀）。
+   底色只交給這一個元素負責，就不會再有「兩塊顏色一樣的東西各自獨立擺放、接縫處露出淺色
+   縫隙或變深接縫線」的問題——因為根本沒有第二塊東西需要對齊。
    這個量測結果是算好直接寫死成px數字，複製卡片去產生圖片時數字會一起複製過去，不用再重算一次。 */
 function rptAlignCalloutTail(pageEl){
   const wrap = pageEl.querySelector('.rpt-body-wrap');
@@ -2888,18 +2903,19 @@ function rptAlignCalloutTail(pageEl){
   const who2 = pageEl.querySelector('.rpt-footer .who2');
   if(!wrap || !tail || !closing || !who2) return;
   const cardRect = pageEl.getBoundingClientRect();
-  const wrapRect = wrap.getBoundingClientRect();
   const closingRect = closing.getBoundingClientRect();
   const who2Rect = who2.getBoundingClientRect();
-  const topY = wrapRect.bottom;
+  // 找「最後一個文字框」（諮詢重點與建議／此次需要注意的脈輪／注意事項，看哪個排在這一頁最後面）；
+  // 如果這一頁最後一段不是文字框（例如是脈輪位置圖），就沒有東西可以當起點，退回用內文區塊的
+  // 下緣當起點（維持舊的做法，至少不會整個掛掉）。
+  const lastSection = wrap.querySelector(':scope > .rpt-section:last-child');
+  const lastCallout = lastSection ? lastSection.querySelector(':scope > .rpt-callout') : null;
+  const wrapRect = wrap.getBoundingClientRect();
+  const topY = lastCallout ? lastCallout.getBoundingClientRect().top : wrapRect.bottom;
   const midY = (closingRect.bottom + who2Rect.top) / 2;
-  // top／height都取整數px，避免小數點位置讓抓圖工具在交界處畫出模糊的半透明鋸齒，看起來像多一條細線。
-  // 另外故意把頂端往上多疊一點點（OVERLAP_PX），蓋到「內文區塊」本來就留白的地方——這樣不管是瀏覽器
-  // 畫面上直接看、還是複製去抓圖，這條延伸底色都保證跟內文區塊的底色搭上，不會因為兩邊各自獨立算出來的
-  // 小數點誤差（就算只差不到1px），中間露出一條淺色縫隙。
-  const OVERLAP_PX = 3;
-  tail.style.top = Math.round(topY - cardRect.top - OVERLAP_PX) + 'px';
-  tail.style.height = Math.max(0, Math.round(midY - topY) + OVERLAP_PX) + 'px';
+  // top／height都取整數px，避免小數點位置讓抓圖工具在交界處畫出模糊的半透明鋸齒。
+  tail.style.top = Math.round(topY - cardRect.top) + 'px';
+  tail.style.height = Math.max(0, Math.round(midY - topY)) + 'px';
 }
 function rptAlignAllCalloutTails(rootEl){
   const pages = (rootEl || document).querySelectorAll('.rpt-page-card');
@@ -3201,60 +3217,20 @@ function fallbackCopyText(text, done){
    就丟掉、不會被妳或客戶看到，乾脆讓拍照用的這份複製品「乾脆不要有任何漸層背景」——
    全部換成一個代表色的實心色塊，這樣就徹底不會再遇到這一整類的問題。
    畫面上正式顯示、客戶看到的報告書完全不受影響，因為改的只是這個拍照專用、拍完即丟的複製品。 */
-/* 這套抓圖工具（html2canvas）對CSS的「flex自動撐滿」支援不好：畫面上妳跟客戶用瀏覽器看的時候，
-   最後一段文字框（諮詢重點與建議／注意事項）會自動往下撐滿到接近結尾祝福語的地方，這在瀏覽器裡
-   是正確的；但同一份內容交給這套抓圖工具拍照時，它量不出撐滿後的真正高度——試過直接把量到的
-   高度數字寫死成文字框的height，這套工具還是常常不理會，只照文字本身多長就畫多高，
-   結果拍出來的圖，文字框在文字結束的地方就直接停住，底下留了一大片空白，看起來像「斷開了一塊」，
-   尤其是最後一段文字剛好比較短的時候特別明顯。
-   後來換一個更保險的做法：不跟這套工具「硬凹」框框的height（它常常不理），改成算出「文字本身的
-   自然高度」跟「撐滿後應該有的高度」中間差多少，把這個差額直接加在文字框的padding-bottom（下方留白）
-   上面——padding本來就是每一套繪圖工具都一定要支援的基本功能，比較不會又踩到這套工具在其他地方
-   的支援漏洞。 */
-function bakeFlexHeightsForCapture(rootEl){
-  const wrap = rootEl.querySelector('.rpt-body-wrap');
-  if(!wrap) return;
-  const lastSection = wrap.querySelector(':scope > .rpt-section:last-child');
-  if(!lastSection) return;
-  const callout = lastSection.querySelector(':scope > .rpt-callout');
-  if(!callout) return; // 這一頁最後一段不是文字框（例如是脈輪位置圖），沒有東西需要補padding
-  const cardRect = rootEl.getBoundingClientRect();
-  // 文字框「應該要撐到哪裡」，直接用旁邊那條延伸底色（.rpt-callout-tail）的頂端當作終點——
-  // 這條延伸底色的位置早就量好、寫死成px數字了（複製卡片時會一起複製過去，且頂端本來就已經
-  // 刻意往上多疊了幾px，蓋到內文區塊留白的地方，見rptAlignCalloutTail的OVERLAP_PX），
-  // 用同一份數字當終點，文字框只要撐到「延伸底色的頂端」就好，不用自己再額外硬疊，
-  // 兩塊底色接起來的地方本來就已經有安全範圍，不會露出縫隙。
-  const tail = rootEl.querySelector(':scope > .rpt-callout-tail');
-  let targetBottomRelToCard;
-  if(tail){
-    targetBottomRelToCard = tail.getBoundingClientRect().top - cardRect.top;
-  }else{
-    targetBottomRelToCard = callout.getBoundingClientRect().bottom - cardRect.top;
-  }
-  // 把flex關掉，量出「不撐滿、純粹照文字內容本身」會有多高，以及這時候文字框頂端實際落在哪裡。
-  callout.style.flex = 'none';
-  lastSection.style.flex = 'none';
-  wrap.style.display = 'block';
-  lastSection.style.display = 'block';
-  const calloutTopRelToCard = callout.getBoundingClientRect().top - cardRect.top;
-  const naturalH = callout.getBoundingClientRect().height;
-  // 全部取整數px，避免小數點位置讓抓圖工具在交界處畫出模糊的半透明鋸齒。
-  const desiredH = Math.max(0, Math.round(targetBottomRelToCard - calloutTopRelToCard));
-  const deficit = Math.max(0, Math.round(desiredH - naturalH));
-  const curPaddingBottom = parseFloat(getComputedStyle(callout).paddingBottom) || 0;
-  callout.style.paddingBottom = Math.round(curPaddingBottom + deficit) + 'px';
-}
+/* 這套抓圖工具（html2canvas）對CSS的「flex自動撐滿」支援不好，之前文字框（.rpt-callout）
+   自己也要負責畫底色、撐滿到接近結尾祝福語的地方，所以要另外用JS補這段高度給抓圖工具看。
+   現在文字框已經不畫自己的底色了（底色統一交給.rpt-callout-tail一個元素從頭畫到尾，
+   見rptAlignCalloutTail的說明），文字框畫多高、有沒有撐滿，畫面上完全看不出差別，
+   這個「補高度」的步驟就不再需要了，抓圖時保留flex排版原樣即可。 */
 function stripAllGradientsForCapture(rootEl){
-  // 已知報告書卡片裡3個會用到漸層色的地方，不管量出來的尺寸是多少，一律直接換成實心色。
-  // 「願此次相會...」上面那條細線（.rpt-footer .rule2）原本是兩端漸淡的金線，整條線大部分
-  // 都是淡淡的、只有中間一小段接近實心；如果直接換成整條「滿版不透明」的金色，看起來會變成
-  // 一條很搶眼、土氣的實心粗線，跟畫面上原本輕盈的質感差很多，所以換成低透明度的金色，
-  // 份量比較接近原本那條漸層線給人的視覺重量。
+  // 已知報告書卡片裡幾個會用到漸層色的地方，量出來的尺寸是0時，一律直接換成實心色，避免整頁失敗。
+  // 「願此次相會...」上面那條細線（.rpt-footer .rule2）原本是兩端漸淡的金線——這條線本身
+  // 有實際寬高（不是量到0的那種），不屬於「一定要換成實心色」的情況，所以不特別處理，
+  // 保留原本兩端漸淡的樣子，跟報告書畫面上直接看到的一致，不會變成一條死板的實心線。
   const known = [
     { sel: null, color: '#F8EEF6' }, // rootEl 自己（卡片底色，原本是淡粉漸層）
     { sel: '.rpt-rule', color: '#D4AF37' },
-    { sel: '.rpt-client .bar', color: '#D4AF37' },
-    { sel: '.rpt-footer .rule2', color: 'rgba(212,175,55,0.4)' }
+    { sel: '.rpt-client .bar', color: '#D4AF37' }
   ];
   known.forEach(({sel, color})=>{
     const els = sel ? Array.from(rootEl.querySelectorAll(sel)) : [rootEl];
@@ -3326,7 +3302,6 @@ async function captureReportCardPageBlobs(){
       // 這份複製品拍完就丟掉，畫面上妳跟客戶看到的完全不受影響——直接把所有漸層背景都換成實心色，
       // 徹底避開這套抓圖工具處理漸層時的問題（試過「備用畫法」，結果拍出來的圖是空白的，
       // 比原本的失敗更糟，所以拿掉了，改用這個更根本的方式解決）。
-      bakeFlexHeightsForCapture(pageClone);
       stripAllGradientsForCapture(pageClone);
       try{
         const canvas = await window.html2canvas(pageClone, {scale:2, backgroundColor:'#ffffff', useCORS:true});
