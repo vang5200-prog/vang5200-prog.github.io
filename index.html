@@ -536,7 +536,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rpt-callout{ background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
 /* 文字框往下的延伸底色：接在.rpt-body-wrap下緣，一路蓋到結尾祝福語文字附近（實際top/height由JS量出來直接寫死），
    z-index比結尾文字(.rpt-footer, z-index:1)低，文字才會一直保持在最上面清楚看得到 */
-.rpt-callout-tail{ position:absolute; left:0; right:0; z-index:0; background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 0 10px 0; pointer-events:none; }
+.rpt-callout-tail{ position:absolute; left:30px; right:30px; z-index:0; background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 0 10px 0; pointer-events:none; }
 .rpt-transcript{ background:rgba(154,127,190,0.05); border:1px solid #EADFC8; border-radius:12px; padding:13px 15px; }
 .rpt-transcript .body{ font-size:13.5px; color:#6B5A45; }
 .rpt-footer{ position:relative; z-index:1; text-align:center; margin-top:2px; }
@@ -991,7 +991,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-14 ・ 修正：脈輪介紹文字改成多行輸入框(ENTER=換行)；補上「填寫報告書」即時預覽漏掉的文字框延伸效果', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-18-15 ・ 修正：報告書文字延伸底色跑版，左側金邊超出卡片邊框、蓋到圓角外面的問題', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
