@@ -554,10 +554,13 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
    預設都有自己的底色（依文字實際多寡自然決定範圍），只有真正「這一頁最後一個」的那個文字框
    才把自己的底色關掉、改交給.rpt-callout-tail負責延伸到底（見下面的說明），這樣不管一頁裡有
    幾個文字框，每一個都看得到底色。 */
-.rpt-callout{ background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
+/* 這個底色原本設定成0.07（很淡），跟卡片本身淡粉色的底混在一起，肉眼幾乎看不出來——
+   笑笑好幾次都以為「這裡是空白的、跳頁跳太早」，其實文字框跟延伸底色都有畫、範圍也對，
+   只是顏色太淺看不出來。改成0.14（深一倍），讓文字框的範圍看起來更明確，不會再被誤會成空白。 */
+.rpt-callout{ background:rgba(154,127,190,0.14); border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
 /* 文字框往下的延伸底色：接在.rpt-body-wrap下緣，一路蓋到結尾祝福語文字附近（實際top/height由JS量出來直接寫死），
    z-index比結尾文字(.rpt-footer, z-index:1)低，文字才會一直保持在最上面清楚看得到 */
-.rpt-callout-tail{ position:absolute; left:30px; right:30px; z-index:0; background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 0 10px 0; pointer-events:none; }
+.rpt-callout-tail{ position:absolute; left:30px; right:30px; z-index:0; background:rgba(154,127,190,0.14); border-left:3px solid var(--gold-border); border-radius:0 0 10px 0; pointer-events:none; }
 .rpt-transcript{ background:rgba(154,127,190,0.05); border:1px solid #EADFC8; border-radius:12px; padding:13px 15px; }
 .rpt-transcript .body{ font-size:13.5px; color:#6B5A45; }
 .rpt-footer{ position:relative; z-index:1; text-align:center; margin-top:2px; }
@@ -1012,7 +1015,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-37 ・ 找到脈輪發光「歪一邊」的真正原因：星星形狀本身四個角長度本來就不一樣長（不是抓圖工具的問題），平常畫面上有模糊光暈把不對稱蓋過去看不出來，但產生圖片、寄送EMAIL時模糊效果會不見，不對稱就完全露出來；改成四個角長度、角度都對稱的星形，不管有沒有模糊都是正的', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-39 ・ 文字欄底色從0.07加深到0.14，範圍更看得出來、不會再被誤會成空白跳頁（有用「大光明」浮水印字比對過，確認每頁最後一個文字欄都有確實延伸到底，只是原本顏色太淺看不出來）；產生圖片、EMAIL的脈輪發光再調得更鮮豔飽和一點；並修正一個排列順序寫反的bug，讓拍照專用的柔和光暈能正確顯示（之前因為順序問題，光暈會被誤判成「量不到尺寸」而變成死板的實心圓點）', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2845,22 +2848,20 @@ function chakraDiagramSvg(selectedList){
     // 這套抓圖工具（html2canvas）對「SVG標籤自己就是絕對定位」這種寫法支援不好，
     // 常常整個不畫出來（不是位置錯誤，是完全消失），改成外層div定位、SVG只負責畫圖案，
     // 兩種瀏覽器畫面看起來一模一樣，但抓圖時就不會再讓發光效果不見了。
-    // 拍照專用的替代光暈（平常隱藏）：畫面上看到的發光效果，其實是CSS的模糊光暈（filter），
-    // 抓圖工具完全不支援，只能用別的方式「模仿」出接近的效果，不可能一模一樣。改成兩層放射狀
-    // 漸層疊在一起：外層範圍大、顏色淡，模仿原本模糊光暈「暈開一大片」的感覺；內層範圍小、
-    // 顏色深，對應星星本身的亮點——兩層都設計成邊緣自然淡出透明，不是硬邊實心圓點，這樣
-    // 「頂輪」跟「眉心輪」這種本來就緊挨在一起的位置，就算範圍重疊，看起來也是兩團光自然暈開
-    // 融在一起，而不是硬邊色塊互相截斷、變成「歪一邊」的怪形狀。這個效果抓圖工具
-    // （html2canvas）能正確畫出來（漸層背景本來就支援）。
-    const captureHalo = `<div style="position:absolute; left:50%; top:50%; width:36px; height:36px; margin:-18px 0 0 -18px; border-radius:50%; background:radial-gradient(circle, ${color}66 0%, ${color}33 40%, ${color}00 72%);"></div><div style="position:absolute; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%; background:radial-gradient(circle, ${color}FF 0%, ${color}FF 30%, ${color}00 80%);"></div>`;
+    // 拍照專用的替代光暈（平常隱藏，發現星星本身的形狀不管怎麼調都無法跟編輯畫面100%一致，
+    // 因為星星是尖角形狀，只要沒有模糊，尖角一定會有幾個角看起來比較長、比較短，肉眼就會覺得
+    // 「歪一邊」——這是形狀本身的問題，不是抓圖工具的問題，也不是位置算錯，換過兩次尖角座標
+    // 都還是這樣。改成拍照時乾脆不畫尖角星星，只用「圓形」的光暈＋一個用CSS畫出來的十字＋
+    // 對角十字（4條線，每條角度都是精準的0°/45°/90°/135°，用電腦畫，不是用滑鼠點座標，
+    // 絕對不會有一邊長一邊短的問題）疊出來的「閃亮」感，形狀單純很多，但保證不管怎麼看都是正的、
+    // 置中的，不會再有任何一邊比較長、看起來偏一邊的問題。 */
+    const sparkleLine = (deg, len) => `<div style="position:absolute; left:50%; top:50%; width:2.8px; height:${len}px; margin:${-len/2}px 0 0 -1.4px; border-radius:2px; background:linear-gradient(${color}00, ${color}FF 38%, ${color}FF 62%, ${color}00); transform:rotate(${deg}deg);"></div>`;
+    // 笑笑覺得產生圖片裡的發光還要更鮮豔一點，這裡把外層柔光的濃度加深（55/28→8C/50），
+    // 中心亮點也加大、疊了三層由近到遠的暈光（原本只有兩層），整體看起來更飽和、更亮眼。
+    const captureHalo = `<div style="position:absolute; left:50%; top:50%; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:50%; background:radial-gradient(circle, ${color}8C 0%, ${color}50 42%, ${color}00 74%);"></div>${sparkleLine(0,28)}${sparkleLine(90,28)}${sparkleLine(45,19)}${sparkleLine(135,19)}<div style="position:absolute; left:50%; top:50%; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; background:${color}; box-shadow:0 0 4px #fff, 0 0 8px ${color}, 0 0 14px ${color}DD, 0 0 20px ${color}99;"></div>`;
     return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);">
       <div class="rpt-chakra-halo-capture" style="display:none;">${captureHalo}</div>
-      <!-- 這裡的星星形狀改成用數學算出來的正八角放射狀（四個長角、四個短角，角度、長度都對稱），
-           不是原本手畫的星星（原本每個角長度都不一樣：上尖角比左尖角長快3成）。畫面上看得到的
-           發光效果本來靠CSS模糊光暈（filter）把這種不對稱「揉」得看不出來，但拍照工具
-           （html2canvas）完全不支援filter、只能把模糊拿掉直接畫星星本身，不對稱的地方就完全
-           露出來，變成笑笑說的「歪一邊」。換成對稱星形之後，不管有沒有模糊，看起來都是正的。 -->
-      <svg viewBox="0 0 24 24" width="22" height="22" style="position:relative; display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
+      <svg class="rpt-chakra-star-svg" viewBox="0 0 24 24" width="22" height="22" style="position:relative; display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
         <path d="M 12.00 0.50 L 12.84 9.97 L 16.24 7.76 L 14.03 11.16 L 23.50 12.00 L 14.03 12.84 L 16.24 16.24 L 12.84 14.03 L 12.00 23.50 L 11.16 14.03 L 7.76 16.24 L 9.97 12.84 L 0.50 12.00 L 9.97 11.16 L 7.76 7.76 L 11.16 9.97 Z" fill="${color}"/>
         <path d="M 12.00 7.00 L 12.38 11.08 L 13.84 10.16 L 12.92 11.62 L 17.00 12.00 L 12.92 12.38 L 13.84 13.84 L 12.38 12.92 L 12.00 17.00 L 11.62 12.92 L 10.16 13.84 L 11.08 12.38 L 7.00 12.00 L 11.08 11.62 L 10.16 10.16 L 11.62 11.08 Z" fill="${light}"/>
       </svg>
@@ -3336,6 +3337,17 @@ function stripAllGradientsForCapture(rootEl){
     el.style.display = 'flex';
     el.innerHTML = RPT_RULE2_FADE_SEGMENTS_HTML;
   });
+  // 先把「拍照專用」的脈輪光暈換上、尖角星星藏起來（見chakraDiagramSvg的說明），一定要在
+  // 下面「掃描整份內容、把量出來是0大小的漸層換成實心色」這一步之前先做——因為光暈平常是
+  // display:none藏起來的，量測當下如果還沒打開，量到的寬高一定是0，會被下面那段誤判成
+  // 「量出來是0大小的漸層」，把光暈本來設計好的柔和漸層直接換成一整塊死板的實心色，
+  // 变成硬邊圓點、完全沒有柔和暈開的感覺（這正是「歪一邊」之外，另一個曾經發生過的問題）。
+  rootEl.querySelectorAll('.rpt-chakra-halo-capture').forEach(el=>{ el.style.display = 'block'; });
+  // 尖角星星本身的形狀（.rpt-chakra-star-svg）拿掉模糊之後，尖角一定會有幾邊看起來比較長、
+  // 比較短（形狀本身的關係，見chakraDiagramSvg的說明），肉眼會覺得「歪一邊」。拍照時乾脆把
+  // 這個尖角星星整個藏起來，只留上面那個用CSS畫的圓形光暈＋十字閃亮效果，形狀簡單、
+  // 保證不會歪。畫面上（編輯、成品）看到的還是原本的尖角星星，這裡不影響。
+  rootEl.querySelectorAll('.rpt-chakra-star-svg').forEach(el=>{ el.style.display = 'none'; });
   // 保險：再掃一次整份內容，任何「量出來寬或高是0、但背景還是漸層色」的元素，一樣直接換成實心色
   const all = rootEl.querySelectorAll('*');
   for(const el of all){
@@ -3351,10 +3363,6 @@ function stripAllGradientsForCapture(rootEl){
     // 乾脆把filter拿掉，星星本身的顏色還是會畫出來、看得出是哪個脈輪亮起來。
     if(cs.filter && cs.filter !== 'none'){ el.style.filter = 'none'; }
   }
-  // 上面把filter拿掉之後，畫面上原本靠filter做出來的柔和光暈就會不見，只剩星星本身的顏色——
-  // 這裡把每個脈輪點旁邊「平常藏起來、拍照專用」的純色圓點光暈（見chakraDiagramSvg的說明）
-  // 打開，讓拍出來的圖片、寄出的EMAIL也能看到發光效果，不會變成只有顏色、沒有光暈。
-  rootEl.querySelectorAll('.rpt-chakra-halo-capture').forEach(el=>{ el.style.display = 'block'; });
 }
 /* canvas.toBlob() 有時候不會丟錯誤、卻默默回傳null（例如畫面被視為「不乾淨」，也就是
    常說的canvas「汙染」問題）。這個函式在toBlob失敗時，額外多試一種方法(toDataURL)，
