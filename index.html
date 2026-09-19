@@ -492,8 +492,15 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 @media(max-width:480px){ .admin-field-grid{ grid-template-columns:1fr; } .stat-grid{ grid-template-columns:repeat(2,1fr); } }
 
 /* ===== 諮詢報告卡片（給客戶看的成品）：溫柔神秘的高級感，粉紫漸層＋力量符號鑲邊，全部避開黑／灰色調 ===== */
+/* 這裡故意用固定的520px寬度，不隨螢幕大小改變（不是width:100%那種會縮放的寫法）——
+   原因是：報告書要分幾頁、文字在哪裡換行，全部是照這張卡片實際的寬度去計算的（見reportCardHtml
+   裡contentWidth的說明），如果卡片寬度跟著手機螢幕縮小，換行位置跟著變、頁數也會跟著變，
+   結果同一位客戶用電腦送出的報告書跟用手機送出的，篇幅（頁數）完全不一樣，客戶會覺得混亂。
+   固定寬度以後，不管用電腦還是手機，內容、分頁保證完全一致；手機螢幕比520px窄的話，
+   靠下面 fitReportCardScale() 這個函式把整張卡片「等比例縮小顯示」（跟看PDF縮放頁面一樣，
+   文字內容、換行都不變，只是畫面上看起來變小），不會影響實際送出、產生圖片的內容。 */
 .rpt-card{
-  position:relative; width:100%; max-width:520px;
+  position:relative; width:520px; margin:0 auto;
   background:radial-gradient(ellipse at 50% 42%, #FEFCFE 0%, #F8EEF6 55%, #EEDCEA 100%); border:1px solid var(--gold-border);
   border-radius:20px; padding:40px 30px 28px; box-shadow:0 14px 34px rgba(122,59,82,0.14);
   font-family:-apple-system, BlinkMacSystemFont, sans-serif; box-sizing:border-box; overflow:hidden;
@@ -1015,7 +1022,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-41 ・ 兩個調整：①「產生圖片、寄送EMAIL」的脈輪發光，上一版拿掉尖角星星只留柔光，結果變成一片單純暈開的色塊、沒有放射感，這次把星星（已經是對稱、不會歪的形狀）疊回柔光上面一起拍，兼顧柔和暈開＋放射尖角的感覺；②「此次需要注意的脈輪」圖表跟緊接在下面的「脈輪問題」文字欄之間，間距從跟其他文字欄一樣的16px，加大到30px，讓兩者看起來明顯分開、不像黏在一起（只調整這一處的間距，其他文字欄之間的距離不受影響）', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-43 ・ 修正一個重要的根本問題：報告卡片以前是「跟著螢幕寬度縮放」的（width:100%），導致同一位客戶的報告書，用電腦送出跟用手機送出，文字換行位置、頁數完全不一樣（電腦3頁、手機可能變6頁），脈輪圖上相鄰的發光點（例如頂輪、眉心輪）在手機窄螢幕上也會擠在一起變成重疊。原因是報告卡片內容的排版全部是照卡片「當下實際寬度」去計算的，螢幕越窄，字越容易換行、佔的高度越多，頁數自然變多。修法：報告卡片固定用520px的寬度去計算內容、分頁（不管在哪種裝置上，內容、頁數保證一致），螢幕比520px窄的話（例如手機），改成畫面上把整張卡片等比例縮小顯示（跟縮放PDF頁面一樣，文字內容、換行都不變，只是看起來變小），「產生圖片」「寄送EMAIL」則永遠照520px的原始大小拍照，不受畫面縮小影響、畫質也不會變差', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2690,6 +2697,7 @@ function refreshReportFormPreview(){
   // 這裡是「填寫報告書」畫面下方的即時預覽，跟正式開卡（openReportCard）是各自獨立的兩個地方，
   // 少了這一行，這個預覽畫面看到的文字框延伸效果就會不見（回到還沒延伸之前的樣子）
   rptAlignAllCalloutTails(previewHost);
+  fitReportCardScale(previewHost);
 }
 function closeReportForm(){ document.getElementById('reportModalOverlay').classList.remove('open'); editingReportId=null; }
 async function runReportAiSummarize(){
@@ -2852,16 +2860,22 @@ function chakraDiagramSvg(selectedList){
     // 這裡曾經試過用CSS漸層（radial-gradient）＋十字線條畫這個圓形光暈，結果實際拍出來的圖片
     // 反而變成一朵尖角分明的「太陽花／齒輪」形狀，不是柔和的光暈——原因是抓圖工具（html2canvas）
     // 對「漸層」的處理本來就不精準（這也是整份程式一直把其他地方的漸層背景統一換成實心色的原因，
-    // 見上面 stripAllGradientsForCapture 的說明），漸層畫小範圍的光暈時，色階會被拍成一圈一圈
-    // 有稜有角的色塊，十字線條的漸層淡出效果也會被拍成硬邊，兩者疊在一起看起來就像一朵花，
-    // 完全不是柔光的感覺。真正的解法：光暈不要用漸層，改成用很多層「純色圓形」由大到小、
-    // 由淡到濃疊在一起（跟畫面上文字欄底色一樣都是實心色，抓圖工具畫實心色一向很準確），
-    // 層數夠多，疊出來的效果肉眼看起來就是一圈一圈自然變淡的柔光，不會再有漸層造成的鋸齒或花瓣狀。
-    // 曾經拍照時把尖角星星整個藏起來、只留這圈柔光，結果變成一片單純暈開的色塊，沒有放射感，
-    // 笑笑看了覺得「太醜」；現在改成星星（尖角、對稱、負責放射感）疊在這圈柔光（負責柔和暈開感）
-    // 上面一起拍，兩個效果疊起來，才會比較接近編輯、成品畫面「星星＋柔光」的感覺。
-    const glowRing = (r, alphaHex) => `<div style="position:absolute; left:50%; top:50%; width:${r*2}px; height:${r*2}px; margin:${-r}px 0 0 ${-r}px; border-radius:50%; background-color:${color}${alphaHex};"></div>`;
-    const captureHalo = `${glowRing(20,'12')}${glowRing(17,'18')}${glowRing(14,'22')}${glowRing(11.5,'30')}${glowRing(9.5,'42')}${glowRing(7.5,'5C')}${glowRing(5.8,'7E')}${glowRing(4.2,'A8')}${glowRing(3,'FF')}`;
+    // 見上面 stripAllGradientsForCapture 的說明）。改用很多層「純色圓形」疊出柔光的做法方向是對的，
+    // 但一開始只疊了9層、每層之間的半徑差距太大，近看（例如把圖片放大來檢查）還是能清楚看到
+    // 一圈一圈邊界分明的「靶心」痕跡，不是真正的柔光，這正是笑笑放大檢查後發現「三張圖根本不一樣」
+    // 的原因之一。改成疊28層，每層之間的半徑差距縮小到原本的三分之一以下，色階變化更細緻，
+    // 肉眼（甚至放大檢查）看起來才會是真正平滑漸層變淡的柔光，不再有明顯的一圈一圈邊界。
+    const CAPTURE_HALO_RING_COUNT = 28;
+    const CAPTURE_HALO_MAX_R = 21;
+    const CAPTURE_HALO_MIN_R = 2.6;
+    let captureHalo = '';
+    for(let ringI=0; ringI<CAPTURE_HALO_RING_COUNT; ringI++){
+      const t = ringI/(CAPTURE_HALO_RING_COUNT-1); // 0（最外層、最淡）～1（最內層、最濃）
+      const r = CAPTURE_HALO_MAX_R - t*(CAPTURE_HALO_MAX_R-CAPTURE_HALO_MIN_R);
+      const alpha = Math.round(255*Math.pow(t,2.3));
+      const alphaHex = alpha.toString(16).padStart(2,'0').toUpperCase();
+      captureHalo += `<div style="position:absolute; left:50%; top:50%; width:${(r*2).toFixed(2)}px; height:${(r*2).toFixed(2)}px; margin:${(-r).toFixed(2)}px 0 0 ${(-r).toFixed(2)}px; border-radius:50%; background-color:${color}${alphaHex};"></div>`;
+    }
     return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);">
       <div class="rpt-chakra-halo-capture" style="display:none;">${captureHalo}</div>
       <svg class="rpt-chakra-star-svg" viewBox="0 0 24 24" width="22" height="22" style="position:relative; display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
@@ -2904,6 +2918,10 @@ function autoGrowTextarea(el){
    絕對不會有的頁面高、有的頁面矮的情況，浮水印字級也因此可以固定同一個大小，不會每頁忽大忽小。 */
 var RPT_PAGE_BODY_HEIGHT = 640;
 var RPT_BLOCK_GAP = 16;
+/* 報告卡片固定用這個寬度計算分頁、換行（見CSS .rpt-card的說明和下面fitReportCardScale()），
+   不管螢幕多寬多窄，都是照這個寬度去量測，這樣同一位客戶的報告書不管用電腦還是手機送出，
+   頁數、換行位置才會保證完全一樣 */
+var RPT_CANONICAL_CARD_WIDTH = 520;
 var RPT_WATERMARK_FONT_SIZE = Math.max(20, Math.floor((RPT_PAGE_BODY_HEIGHT * 0.99 - 4 * 2) / 3));
 /* 把單一頁的內容包成一張完整的卡片（框、固定大小、浮水印、頁碼都齊全），
    給客戶看的報告書會拆成好幾張這樣大小完全一致的卡片，而不是一長串捲不完的內容 */
@@ -2969,6 +2987,42 @@ function rptAlignCalloutTail(pageEl){
 function rptAlignAllCalloutTails(rootEl){
   const pages = (rootEl || document).querySelectorAll('.rpt-page-card');
   pages.forEach(rptAlignCalloutTail);
+}
+/* 報告卡片固定是520px寬（見上面CSS .rpt-card的說明），手機螢幕通常比這個窄，直接顯示會被
+   截斷或橫向超出畫面。這裡不是把卡片本身縮窄（那樣會改變換行、頁數，見CSS說明），而是在
+   畫面顯示這一步，把整張卡片（含所有頁面）當成一張圖一樣，用CSS transform等比例縮小，
+   縮小後空出來的高度、寬度也一起調整，這樣手機上看到的畫面比例正確、不會裁切，
+   但實際文字內容、分頁邏輯完全沒被改動——「產生圖片」「寄送EMAIL」用的是另一份沒套用這個
+   縮放效果的複製品（見withOffscreenClone），一律照520px的原始大小拍照，畫質不會被縮小影響。
+   螢幕本來就夠寬（大於等於520px，例如電腦）的話，這裡什麼都不做，跟以前一模一樣。 */
+function fitReportCardScale(hostEl){
+  if(!hostEl) return;
+  const inner = hostEl.querySelector('#rptCardInner');
+  if(!inner) return;
+  let outer = inner.parentNode && inner.parentNode.classList && inner.parentNode.classList.contains('rpt-scale-outer') ? inner.parentNode : null;
+  // 先還原成沒縮放的狀態，才能重新量到「沒被縮小過」的真實寬高
+  inner.style.transform = '';
+  inner.style.transformOrigin = '';
+  inner.style.width = '';
+  if(outer){ outer.style.width=''; outer.style.height=''; outer.style.overflow=''; }
+  const availWidth = (outer ? outer.parentNode : hostEl).clientWidth;
+  const naturalWidth = RPT_CANONICAL_CARD_WIDTH;
+  if(!availWidth || availWidth >= naturalWidth){ return; } // 螢幕夠寬，不用縮放
+  const scale = availWidth / naturalWidth;
+  const naturalHeight = inner.offsetHeight;
+  inner.style.width = naturalWidth + 'px';
+  inner.style.transformOrigin = 'top left';
+  inner.style.transform = 'scale(' + scale + ')';
+  if(!outer){
+    outer = document.createElement('div');
+    outer.className = 'rpt-scale-outer';
+    inner.parentNode.insertBefore(outer, inner);
+    outer.appendChild(inner);
+  }
+  outer.style.margin = '0 auto';
+  outer.style.overflow = 'hidden';
+  outer.style.width = Math.round(naturalWidth*scale) + 'px';
+  outer.style.height = Math.round(naturalHeight*scale) + 'px';
 }
 /* 用一個畫面外、看不見的量測框，套用跟正式報告書內文完全一樣的寬度跟樣式，量出這段HTML實際渲染後的高度，
    分頁全靠這個量出來的真實高度去判斷塞不塞得下，不是用猜的字數 */
@@ -3269,6 +3323,9 @@ function openReportCard(id){
   // 卡片要先真的「顯示出來」(modal打開後)才量得到正確位置，量完直接把px數字寫死在每一頁上，
   // 之後不管是預覽還是截圖抓圖，都是直接複製這個已經量好、寫死數字的版本，不用重新再量一次
   rptAlignAllCalloutTails(cardHost);
+  // 一定要排在對齊文字框之後：先照520px的原始大小量好、對齊，最後才把整張卡片視覺上縮小
+  // 適應手機螢幕（見fitReportCardScale的說明），順序顛倒的話量到的會是已經縮小後的錯誤數字
+  fitReportCardScale(cardHost);
 }
 function closeReportCard(){ document.getElementById('reportCardModalOverlay').classList.remove('open'); currentReportCardId = null; }
 function copyReportCardText(){
