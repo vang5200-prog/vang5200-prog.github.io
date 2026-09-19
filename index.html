@@ -1022,7 +1022,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-43 ・ 修正一個重要的根本問題：報告卡片以前是「跟著螢幕寬度縮放」的（width:100%），導致同一位客戶的報告書，用電腦送出跟用手機送出，文字換行位置、頁數完全不一樣（電腦3頁、手機可能變6頁），脈輪圖上相鄰的發光點（例如頂輪、眉心輪）在手機窄螢幕上也會擠在一起變成重疊。原因是報告卡片內容的排版全部是照卡片「當下實際寬度」去計算的，螢幕越窄，字越容易換行、佔的高度越多，頁數自然變多。修法：報告卡片固定用520px的寬度去計算內容、分頁（不管在哪種裝置上，內容、頁數保證一致），螢幕比520px窄的話（例如手機），改成畫面上把整張卡片等比例縮小顯示（跟縮放PDF頁面一樣，文字內容、換行都不變，只是看起來變小），「產生圖片」「寄送EMAIL」則永遠照520px的原始大小拍照，不受畫面縮小影響、畫質也不會變差', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-44 ・ 兩個調整：①脈輪發光的柔光改回9層版本（笑笑比較後還是喜歡41版這個效果，28層那版拿掉了）；②修正一個重要的根本問題：報告卡片以前是「跟著螢幕寬度縮放」的（width:100%），導致同一位客戶的報告書，用電腦送出跟用手機送出，文字換行位置、頁數完全不一樣（電腦3頁、手機可能變6頁），脈輪圖上相鄰的發光點（例如頂輪、眉心輪）在手機窄螢幕上也會擠在一起變成重疊。修法：報告卡片固定用520px的寬度去計算內容、分頁（不管在哪種裝置上，內容、頁數保證一致），螢幕比520px窄的話（例如手機），改成畫面上把整張卡片等比例縮小顯示（跟縮放PDF頁面一樣，文字內容、換行都不變，只是看起來變小），「產生圖片」「寄送EMAIL」則永遠照520px的原始大小拍照，不受畫面縮小影響、畫質也不會變差', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2860,22 +2860,11 @@ function chakraDiagramSvg(selectedList){
     // 這裡曾經試過用CSS漸層（radial-gradient）＋十字線條畫這個圓形光暈，結果實際拍出來的圖片
     // 反而變成一朵尖角分明的「太陽花／齒輪」形狀，不是柔和的光暈——原因是抓圖工具（html2canvas）
     // 對「漸層」的處理本來就不精準（這也是整份程式一直把其他地方的漸層背景統一換成實心色的原因，
-    // 見上面 stripAllGradientsForCapture 的說明）。改用很多層「純色圓形」疊出柔光的做法方向是對的，
-    // 但一開始只疊了9層、每層之間的半徑差距太大，近看（例如把圖片放大來檢查）還是能清楚看到
-    // 一圈一圈邊界分明的「靶心」痕跡，不是真正的柔光，這正是笑笑放大檢查後發現「三張圖根本不一樣」
-    // 的原因之一。改成疊28層，每層之間的半徑差距縮小到原本的三分之一以下，色階變化更細緻，
-    // 肉眼（甚至放大檢查）看起來才會是真正平滑漸層變淡的柔光，不再有明顯的一圈一圈邊界。
-    const CAPTURE_HALO_RING_COUNT = 28;
-    const CAPTURE_HALO_MAX_R = 21;
-    const CAPTURE_HALO_MIN_R = 2.6;
-    let captureHalo = '';
-    for(let ringI=0; ringI<CAPTURE_HALO_RING_COUNT; ringI++){
-      const t = ringI/(CAPTURE_HALO_RING_COUNT-1); // 0（最外層、最淡）～1（最內層、最濃）
-      const r = CAPTURE_HALO_MAX_R - t*(CAPTURE_HALO_MAX_R-CAPTURE_HALO_MIN_R);
-      const alpha = Math.round(255*Math.pow(t,2.3));
-      const alphaHex = alpha.toString(16).padStart(2,'0').toUpperCase();
-      captureHalo += `<div style="position:absolute; left:50%; top:50%; width:${(r*2).toFixed(2)}px; height:${(r*2).toFixed(2)}px; margin:${(-r).toFixed(2)}px 0 0 ${(-r).toFixed(2)}px; border-radius:50%; background-color:${color}${alphaHex};"></div>`;
-    }
+    // 見上面 stripAllGradientsForCapture 的說明）。改用很多層「純色圓形」疊出柔光。
+    // 曾經試過把層數從9層加到28層（層與層之間差距縮小，放大檢查看不到一圈一圈的邊界），
+    // 但笑笑實際比較後還是比較喜歡原本9層這版本看起來的樣子，所以改回9層。
+    const glowRing = (r, alphaHex) => `<div style="position:absolute; left:50%; top:50%; width:${r*2}px; height:${r*2}px; margin:${-r}px 0 0 ${-r}px; border-radius:50%; background-color:${color}${alphaHex};"></div>`;
+    const captureHalo = `${glowRing(20,'12')}${glowRing(17,'18')}${glowRing(14,'22')}${glowRing(11.5,'30')}${glowRing(9.5,'42')}${glowRing(7.5,'5C')}${glowRing(5.8,'7E')}${glowRing(4.2,'A8')}${glowRing(3,'FF')}`;
     return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);">
       <div class="rpt-chakra-halo-capture" style="display:none;">${captureHalo}</div>
       <svg class="rpt-chakra-star-svg" viewBox="0 0 24 24" width="22" height="22" style="position:relative; display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
