@@ -510,14 +510,15 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 報告書內文區塊（標題橫線之下、結尾橫線之上）的容器，浮水印會用絕對定位鋪滿這個範圍，
    這樣浮水印的上下範圍就一定不會超出「標題下方橫線」到「結尾上方橫線」之間 */
 .rpt-body-wrap{ position:relative; display:flex; flex-direction:column; }
-/* 這一頁最後一個區塊（通常是「注意事項」的文字框）不管文字多寡，固定往下撐滿到快接近結尾金線的地方，
-   不會因為文字少就整個文字框連同左邊金條、底色陰影都在文字結束的地方就硬生生停住，
-   下面留一大塊完全空白（只有浮水印）看起來像沒寫完一樣。文字框底部只留約一個字大小（16px）的呼吸空間，
-   再加上結尾區塊自己精簡過的留白，整體效果就是文字框幾乎一路撐到「願此次相會...」那行字的正上方。
-   這裡只調整文字框自己的margin-bottom，完全不去動RPT_PAGE_BODY_HEIGHT那個640px的分頁高度預算，
-   所以不會有文字內容被算超過、被下面overflow:hidden切掉的風險。 */
-.rpt-body-wrap > .rpt-section:last-child{ flex:1 1 auto; display:flex; flex-direction:column; min-height:0; }
-.rpt-body-wrap > .rpt-section:last-child > .rpt-callout{ flex:1 1 auto; margin-bottom:0; min-height:0; border-radius:0 10px 0 0; }
+/* 這一頁最後一個區塊（通常是「注意事項」的文字框）改成只依文字實際多寡決定高度，不再無條件
+   撐滿到接近結尾金線的地方——因為文字量本來就是分頁演算法算出「這頁能塞的量」，如果又要求
+   文字框的底色一定要撐到快接近頁尾，遇到這頁剛好只塞得下一兩句話的情況（尤其手機螢幕窄、
+   每行字少，這種情況更常發生），底色就會被撐出一大片完全空白的區域，反而讓客戶覺得「這頁
+   明明還有空間，為什麼這麼快就跳頁了」。改成不強制撐滿之後，底色的延伸範圍改由
+   rptAlignCalloutTail 用JS量出「文字實際結束的地方」再加一小段呼吸空間決定（見下面說明），
+   維持「文字框底部不會突然硬生生停住」的效果，但不會再有整頁大片空白的狀況。 */
+.rpt-body-wrap > .rpt-section:last-child{ display:flex; flex-direction:column; min-height:0; }
+.rpt-body-wrap > .rpt-section:last-child > .rpt-callout{ margin-bottom:0; min-height:0; border-radius:0 10px 0 0; }
 /* 淡淡的浮水印文字，鋪滿報告書標題橫線到結尾橫線之間的整個範圍，顏色非常淺、疊在所有內容跟圖片「之上」（z-index比內容區塊高），
    營造真正蓋在畫面上的浮水印感，但因為顏色很淡+pointer-events:none，不會擋到閱讀也不會擋到點擊；
    字級大小固定由 RPT_WATERMARK_FONT_SIZE 算好直接寫進每一頁，這裡的 font-size 只是還沒套用前的預設值 */
@@ -996,7 +997,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-18-29 ・ 修正：注意事項等文字框快到頁尾才開頭時，不再只塞一兩句話就跳頁；金色收尾線改用純色拼接，修好「產生圖片」漏頁與當機的問題', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-30 ・ 修正：手機窄螢幕排版時文字框還沒寫滿就跳頁、或跳到新頁卻只有一兩句話的問題（連根拔起，不再強制文字框撐滿整頁）；脈輪發光效果調亮', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2823,7 +2824,7 @@ function chakraDiagramSvg(selectedList){
     // 這套抓圖工具（html2canvas）對「SVG標籤自己就是絕對定位」這種寫法支援不好，
     // 常常整個不畫出來（不是位置錯誤，是完全消失），改成外層div定位、SVG只負責畫圖案，
     // 兩種瀏覽器畫面看起來一模一樣，但抓圖時就不會再讓發光效果不見了。
-    return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);">
+    return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 4px ${color}) drop-shadow(0 0 9px ${color}cc) drop-shadow(0 0 16px ${color}99) drop-shadow(0 0 26px ${color}66);">
       <svg viewBox="0 0 24 24" width="22" height="22" style="display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
         <path d="M 12.00 0.50 L 12.84 9.97 L 16.24 7.76 L 14.03 11.16 L 21.50 12.00 L 14.03 12.84 L 15.54 15.54 L 12.84 14.03 L 12.00 23.00 L 11.16 14.03 L 7.40 16.60 L 9.97 12.84 L 3.50 12.00 L 9.97 11.16 L 8.11 8.11 L 11.16 9.97 Z" fill="${color}"/>
         <path d="M 12.00 6.83 L 12.38 11.09 L 13.91 10.09 L 12.91 11.62 L 16.27 12.00 L 12.91 12.38 L 13.59 13.59 L 12.38 12.91 L 12.00 16.95 L 11.62 12.91 L 9.93 14.07 L 11.09 12.38 L 8.18 12.00 L 11.09 11.62 L 10.25 10.25 L 11.62 11.09 Z" fill="${light}"/>
@@ -2872,7 +2873,10 @@ var RPT_WATERMARK_FONT_SIZE = Math.max(20, Math.floor((RPT_PAGE_BODY_HEIGHT * 0.
    還有空間卻莫名其妙跳頁。這裡設一個「這頁至少要塞得下多高的內容，才值得在這頁開始」的門檻，
    塞不到這個高度、又還有剩要接下一頁，就乾脆整段留到下一頁從頭開始（下一頁預算是完整的一整頁，
    通常就夠塞下大半甚至全部），避免這種「一兩句話+一大片空白」的畫面。 */
-var RPT_ORPHAN_MIN_HEIGHT = 130;
+var RPT_ORPHAN_MIN_HEIGHT = 170;
+/* 文字框底色往下延伸的「呼吸空間」，見rptAlignCalloutTail的說明：文字結束的地方往下
+   再多蓋這麼多px的底色，看起來不會突然硬生生停住，但也不會像以前那樣硬撐到接近頁尾。 */
+var RPT_CALLOUT_TAIL_CUSHION = 48;
 
 /* 把單一頁的內容包成一張完整的卡片（框、固定大小、浮水印、頁碼都齊全），
    給客戶看的報告書會拆成好幾張這樣大小完全一致的卡片，而不是一長串捲不完的內容 */
@@ -2921,9 +2925,18 @@ function rptAlignCalloutTail(pageEl){
   const wrapRect = wrap.getBoundingClientRect();
   const topY = lastCallout ? lastCallout.getBoundingClientRect().top : wrapRect.bottom;
   const midY = (closingRect.bottom + who2Rect.top) / 2;
+  // 底色的延伸範圍不再無條件一路撐到midY（快接近品牌名的地方）——文字框（.rpt-callout）
+  // 現在改成不強制撐滿、只依文字實際多寡決定高度（見CSS的說明），所以這裡量出來的
+  // lastCallout.bottom就是「文字實際結束的地方」。底色只往下多留一小段呼吸空間
+  // （RPT_CALLOUT_TAIL_CUSHION），維持「不會突然硬生生停住」的效果，但也不會因為
+  // 這頁剛好只塞得下一兩句話，就把底色硬撐出一大片完全空白、看起來像明明有空間卻莫名跳頁。
+  // 如果量出來的自然結尾本來就已經很接近midY（文字量夠多、原本就快撐滿整頁），
+  // 就直接用midY，不會因為多加這段呼吸空間反而超過原本設計好的底線。
+  const naturalBottom = lastCallout ? lastCallout.getBoundingClientRect().bottom : wrapRect.bottom;
+  const cushionedBottom = Math.min(midY, naturalBottom + RPT_CALLOUT_TAIL_CUSHION);
   // top／height都取整數px，避免小數點位置讓抓圖工具在交界處畫出模糊的半透明鋸齒。
   tail.style.top = Math.round(topY - cardRect.top) + 'px';
-  tail.style.height = Math.max(0, Math.round(midY - topY)) + 'px';
+  tail.style.height = Math.max(0, Math.round(cushionedBottom - topY)) + 'px';
 }
 function rptAlignAllCalloutTails(rootEl){
   const pages = (rootEl || document).querySelectorAll('.rpt-page-card');
@@ -3060,13 +3073,32 @@ function reportCardHtml(rec, rep){
       const availOnCurrent = RPT_PAGE_BODY_HEIGHT - currentHeight - gapNeeded;
       // 不管目前這頁是空的還是已經有東西，都先試著把文字盡量塞進「這頁剩餘的空間」，
       // 塞不下（等於這頁已經沒空間了）才換頁，這樣才不會漏掉可以利用的剩餘空間
-      const { fit, rest } = rptFitTextToHeight(remain, contentWidth, availOnCurrent, wrapOpen, wrapClose);
+      let { fit, rest } = rptFitTextToHeight(remain, contentWidth, availOnCurrent, wrapOpen, wrapClose);
       // 孤兒段落保險（見RPT_ORPHAN_MIN_HEIGHT的說明）：只在「這是全新標題的第一次嘗試、
       // 這頁已經有別的內容、又還有剩要接下一頁」時才檢查，續頁（isFirst=false）一定是
       // 剛換到全新一頁、預算是完整一整頁，不會有這個問題
       if(isFirst && current.length && fit && rest){
         const fitHeight = rptMeasureBlockHeight(wrapOpen + esc(fit) + wrapClose, contentWidth);
         if(fitHeight < RPT_ORPHAN_MIN_HEIGHT){ flushPage(); continue; }
+      }
+      // 「遺孀」段落保險：這一頁盡量塞好塞滿之後，如果剩下要接到下一頁的內容('rest')量少到
+      // 量出來的高度不到一定份量，代表下一頁會變成「幾乎整頁空白、只有一點點字」的樣子——
+      // 手機螢幕比較窄，一行字塞的字數比較少，這種情況特別容易發生（同樣一段文字在窄螢幕上
+      // 换算出來的「一頁」份量比較少，越容易在段落尾端切出一小截孤零零留到下一頁）。
+      // 與其這樣，不如這一頁「少放一點」，把幾句話讓給下一頁，讓下一頁至少有基本份量的文字，
+      // 不會讓客戶覺得「怎麼這頁還沒寫滿就跳頁了」。
+      if(rest){
+        let shrinkTry = 0;
+        while(rest && shrinkTry < 6){
+          const restHeight = rptMeasureBlockHeight(wrapOpen + esc(rest) + wrapClose, contentWidth);
+          if(restHeight >= RPT_ORPHAN_MIN_HEIGHT) break;
+          const smallerMax = availOnCurrent - (shrinkTry + 1) * 60;
+          if(smallerMax < RPT_ORPHAN_MIN_HEIGHT) break;
+          const attempt = rptFitTextToHeight(remain, contentWidth, smallerMax, wrapOpen, wrapClose);
+          if(!attempt.fit) break; // 再縮下去這頁會整段放不下東西，不能再縮了
+          fit = attempt.fit; rest = attempt.rest;
+          shrinkTry++;
+        }
       }
       if(!fit && current.length){ flushPage(); continue; }
       // 保險：萬一連全新一頁都塞不下第一句（極端情況），寧可整段放上去、靠 overflow:hidden 裁掉，也不要卡住不動
