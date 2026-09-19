@@ -1012,7 +1012,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-36 ・ 修正文字欄底色只有「這一頁最後一個」才看得到的問題（現在每個文字欄都有自己的底色）；拿掉孤兒段落保險機制（現在改成盡量塞多少算多少，不再整段留白跳頁）；脈輪發光光暈改成兩層漸層，模仿原本模糊光暈的暈開感', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-37 ・ 找到脈輪發光「歪一邊」的真正原因：星星形狀本身四個角長度本來就不一樣長（不是抓圖工具的問題），平常畫面上有模糊光暈把不對稱蓋過去看不出來，但產生圖片、寄送EMAIL時模糊效果會不見，不對稱就完全露出來；改成四個角長度、角度都對稱的星形，不管有沒有模糊都是正的', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2855,9 +2855,14 @@ function chakraDiagramSvg(selectedList){
     const captureHalo = `<div style="position:absolute; left:50%; top:50%; width:36px; height:36px; margin:-18px 0 0 -18px; border-radius:50%; background:radial-gradient(circle, ${color}66 0%, ${color}33 40%, ${color}00 72%);"></div><div style="position:absolute; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%; background:radial-gradient(circle, ${color}FF 0%, ${color}FF 30%, ${color}00 80%);"></div>`;
     return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);">
       <div class="rpt-chakra-halo-capture" style="display:none;">${captureHalo}</div>
+      <!-- 這裡的星星形狀改成用數學算出來的正八角放射狀（四個長角、四個短角，角度、長度都對稱），
+           不是原本手畫的星星（原本每個角長度都不一樣：上尖角比左尖角長快3成）。畫面上看得到的
+           發光效果本來靠CSS模糊光暈（filter）把這種不對稱「揉」得看不出來，但拍照工具
+           （html2canvas）完全不支援filter、只能把模糊拿掉直接畫星星本身，不對稱的地方就完全
+           露出來，變成笑笑說的「歪一邊」。換成對稱星形之後，不管有沒有模糊，看起來都是正的。 -->
       <svg viewBox="0 0 24 24" width="22" height="22" style="position:relative; display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 12.00 0.50 L 12.84 9.97 L 16.24 7.76 L 14.03 11.16 L 21.50 12.00 L 14.03 12.84 L 15.54 15.54 L 12.84 14.03 L 12.00 23.00 L 11.16 14.03 L 7.40 16.60 L 9.97 12.84 L 3.50 12.00 L 9.97 11.16 L 8.11 8.11 L 11.16 9.97 Z" fill="${color}"/>
-        <path d="M 12.00 6.83 L 12.38 11.09 L 13.91 10.09 L 12.91 11.62 L 16.27 12.00 L 12.91 12.38 L 13.59 13.59 L 12.38 12.91 L 12.00 16.95 L 11.62 12.91 L 9.93 14.07 L 11.09 12.38 L 8.18 12.00 L 11.09 11.62 L 10.25 10.25 L 11.62 11.09 Z" fill="${light}"/>
+        <path d="M 12.00 0.50 L 12.84 9.97 L 16.24 7.76 L 14.03 11.16 L 23.50 12.00 L 14.03 12.84 L 16.24 16.24 L 12.84 14.03 L 12.00 23.50 L 11.16 14.03 L 7.76 16.24 L 9.97 12.84 L 0.50 12.00 L 9.97 11.16 L 7.76 7.76 L 11.16 9.97 Z" fill="${color}"/>
+        <path d="M 12.00 7.00 L 12.38 11.08 L 13.84 10.16 L 12.92 11.62 L 17.00 12.00 L 12.92 12.38 L 13.84 13.84 L 12.38 12.92 L 12.00 17.00 L 11.62 12.92 L 10.16 13.84 L 11.08 12.38 L 7.00 12.00 L 11.08 11.62 L 10.16 10.16 L 11.62 11.08 Z" fill="${light}"/>
       </svg>
     </div>`;
   }).join('');
