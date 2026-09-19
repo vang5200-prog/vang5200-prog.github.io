@@ -526,7 +526,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
    rptFitTextToHeight的說明：現在改成連句子都塞不下時，還會逐字往下試，盡量把這頁塞好塞滿），
    底色統一撐滿到底，才不會被誤會成「還有空間卻不塞」。 */
 .rpt-body-wrap > .rpt-section:last-child{ display:flex; flex-direction:column; min-height:0; flex:1 1 auto; }
-.rpt-body-wrap > .rpt-section:last-child > .rpt-callout{ margin-bottom:0; min-height:0; border-radius:0 10px 0 0; flex:1 1 auto; }
+.rpt-body-wrap > .rpt-section:last-child > .rpt-callout{ background:transparent; margin-bottom:0; min-height:0; border-radius:0 10px 0 0; flex:1 1 auto; }
 /* 淡淡的浮水印文字，鋪滿報告書標題橫線到結尾橫線之間的整個範圍，顏色非常淺、疊在所有內容跟圖片「之上」（z-index比內容區塊高），
    營造真正蓋在畫面上的浮水印感，但因為顏色很淡+pointer-events:none，不會擋到閱讀也不會擋到點擊；
    字級大小固定由 RPT_WATERMARK_FONT_SIZE 算好直接寫進每一頁，這裡的 font-size 只是還沒套用前的預設值 */
@@ -547,7 +547,14 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
    想辦法對齊接起來」，不管怎麼對，兩塊交接的地方就是容易因為畫面渲染的極小誤差，
    露出一條淺色縫隙或看起來變深的接縫線——這次直接把「畫底色」這件事整個交給同一個元素，
    從根本上不會再有「兩塊東西接起來」這件事，自然就不會再有接縫線。 */
-.rpt-callout{ background:transparent; border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
+/* 找到另一個bug：這個底色本來設計成「只有這一頁最後一個文字框才畫」（其餘一律透明，
+   靠.rpt-callout-tail一個元素從頭畫到尾），但一頁如果同時有兩個以上的文字框（例如「諮詢重點
+   與建議」後面接著「此次需要注意的脈輪」），排在前面、不是這一頁最後一個的文字框就完全沒有
+   底色可言——文字內容一少，這個問題就特別明顯，變成「陰影（底色）不見了」。改成每個文字框
+   預設都有自己的底色（依文字實際多寡自然決定範圍），只有真正「這一頁最後一個」的那個文字框
+   才把自己的底色關掉、改交給.rpt-callout-tail負責延伸到底（見下面的說明），這樣不管一頁裡有
+   幾個文字框，每一個都看得到底色。 */
+.rpt-callout{ background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
 /* 文字框往下的延伸底色：接在.rpt-body-wrap下緣，一路蓋到結尾祝福語文字附近（實際top/height由JS量出來直接寫死），
    z-index比結尾文字(.rpt-footer, z-index:1)低，文字才會一直保持在最上面清楚看得到 */
 .rpt-callout-tail{ position:absolute; left:30px; right:30px; z-index:0; background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 0 10px 0; pointer-events:none; }
@@ -1005,7 +1012,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-35 ・ 修正上一版新bug：脈輪位置圖後面接的文字整段留到下一頁時，不再留一塊「浮空」的空白色塊在畫面中間；脈輪發光光暈調亮一些（維持柔邊、避免頂輪/眉心輪疊在一起變硬色塊）', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-36 ・ 修正文字欄底色只有「這一頁最後一個」才看得到的問題（現在每個文字欄都有自己的底色）；拿掉孤兒段落保險機制（現在改成盡量塞多少算多少，不再整段留白跳頁）；脈輪發光光暈改成兩層漸層，模仿原本模糊光暈的暈開感', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2838,14 +2845,14 @@ function chakraDiagramSvg(selectedList){
     // 這套抓圖工具（html2canvas）對「SVG標籤自己就是絕對定位」這種寫法支援不好，
     // 常常整個不畫出來（不是位置錯誤，是完全消失），改成外層div定位、SVG只負責畫圖案，
     // 兩種瀏覽器畫面看起來一模一樣，但抓圖時就不會再讓發光效果不見了。
-    // 拍照專用的替代光暈（平常隱藏）：改用「放射狀漸層、邊緣自然淡出透明」畫出來，不是疊好幾層
-    // 實心圓點——圖上「頂輪」跟「眉心輪」兩個位置本來就緊挨在一起（三脈七輪示意圖本身的比例
-    // 就是這樣），兩個光暈原本用實心圓點疊出來，光暈邊緣是硬的，兩顆挨在一起看起來就像撞在一起
-    // 的色塊、很醜；改成邊緣漸淡到全透明，就算兩個光暈的範圍真的稍微疊到，看起來也只是兩團柔和
-    // 光暈自然融在一起，而不是兩塊顏色生硬地黏在一起。中心維持不透明、範圍夠大才夠亮、看得清楚，
-    // 只有靠外緣的地方才開始淡出，減少緊鄰的脈輪互相蓋到對方的機會。這個效果抓圖工具
+    // 拍照專用的替代光暈（平常隱藏）：畫面上看到的發光效果，其實是CSS的模糊光暈（filter），
+    // 抓圖工具完全不支援，只能用別的方式「模仿」出接近的效果，不可能一模一樣。改成兩層放射狀
+    // 漸層疊在一起：外層範圍大、顏色淡，模仿原本模糊光暈「暈開一大片」的感覺；內層範圍小、
+    // 顏色深，對應星星本身的亮點——兩層都設計成邊緣自然淡出透明，不是硬邊實心圓點，這樣
+    // 「頂輪」跟「眉心輪」這種本來就緊挨在一起的位置，就算範圍重疊，看起來也是兩團光自然暈開
+    // 融在一起，而不是硬邊色塊互相截斷、變成「歪一邊」的怪形狀。這個效果抓圖工具
     // （html2canvas）能正確畫出來（漸層背景本來就支援）。
-    const captureHalo = `<div style="position:absolute; left:50%; top:50%; width:24px; height:24px; margin:-12px 0 0 -12px; border-radius:50%; background:radial-gradient(circle, ${color}FF 0%, ${color}FF 32%, ${color}AA 52%, ${color}00 78%);"></div>`;
+    const captureHalo = `<div style="position:absolute; left:50%; top:50%; width:36px; height:36px; margin:-18px 0 0 -18px; border-radius:50%; background:radial-gradient(circle, ${color}66 0%, ${color}33 40%, ${color}00 72%);"></div><div style="position:absolute; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%; background:radial-gradient(circle, ${color}FF 0%, ${color}FF 30%, ${color}00 80%);"></div>`;
     return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);">
       <div class="rpt-chakra-halo-capture" style="display:none;">${captureHalo}</div>
       <svg viewBox="0 0 24 24" width="22" height="22" style="position:relative; display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
@@ -2889,15 +2896,6 @@ function autoGrowTextarea(el){
 var RPT_PAGE_BODY_HEIGHT = 640;
 var RPT_BLOCK_GAP = 16;
 var RPT_WATERMARK_FONT_SIZE = Math.max(20, Math.floor((RPT_PAGE_BODY_HEIGHT * 0.99 - 4 * 2) / 3));
-/* 「孤兒段落」保險：一段新內容（例如注意事項）如果剛好在一頁快結束時才開始，這一頁能塞的
-   空間可能只夠放標題+一兩句話，其餘大部分都要接到下一頁。這種情況下文字框會因為「撐滿剩餘
-   空間」的設計（見rptAlignCalloutTail的說明）硬是把底色拉得很長，畫面看起來就會變成「標題
-   底下只有一兩句話，下面卻拖著一大片空白底色，然後就跳頁了」，客戶會覺得很奇怪、像是明明
-   還有空間卻莫名其妙跳頁。這裡設一個「這頁至少要塞得下多高的內容，才值得在這頁開始」的門檻，
-   塞不到這個高度、又還有剩要接下一頁，就乾脆整段留到下一頁從頭開始（下一頁預算是完整的一整頁，
-   通常就夠塞下大半甚至全部），避免這種「一兩句話+一大片空白」的畫面。 */
-var RPT_ORPHAN_MIN_HEIGHT = 170;
-
 /* 把單一頁的內容包成一張完整的卡片（框、固定大小、浮水印、頁碼都齊全），
    給客戶看的報告書會拆成好幾張這樣大小完全一致的卡片，而不是一長串捲不完的內容 */
 function reportCardPageHtml(pageNum, totalPages, bodyHtml, showFooter){
@@ -3116,13 +3114,11 @@ function reportCardHtml(rec, rep){
       // 不管目前這頁是空的還是已經有東西，都先試著把文字盡量塞進「這頁剩餘的空間」，
       // 塞不下（等於這頁已經沒空間了）才換頁，這樣才不會漏掉可以利用的剩餘空間
       let { fit, rest } = rptFitTextToHeight(remain, contentWidth, availOnCurrent, wrapOpen, wrapClose);
-      // 孤兒段落保險（見RPT_ORPHAN_MIN_HEIGHT的說明）：電腦版、手機版都適用。只在
-      // 「這是全新標題的第一次嘗試、這頁已經有別的內容、又還有剩要接下一頁」時才檢查，
-      // 續頁（isFirst=false）一定是剛換到全新一頁、預算是完整一整頁，不會有這個問題
-      if(isFirst && current.length && fit && rest){
-        const fitHeight = rptMeasureBlockHeight(wrapOpen + esc(fit) + wrapClose, contentWidth);
-        if(fitHeight < RPT_ORPHAN_MIN_HEIGHT){ flushPage(); continue; }
-      }
+      // 這裡曾經有一個「孤兒段落保險」：這頁剩餘空間如果塞不到一個門檻高度，就乾脆整段留到
+      // 下一頁開頭。拿掉的原因：現在每個文字框都有自己的底色（見CSS .rpt-callout的說明），
+      // 不再是只有「這一頁最後一個」才有底色，就算這裡塞進去的只有短短一兩句話，也不會是
+      // 「一大片空白底色」，而是一個大小剛好、自然收尾的文字框；硬要整段留到下一頁，反而
+      // 讓這一頁明明還有空間卻多留一塊真正的空白（沒有底色、什麼都沒有），比塞一點文字更奇怪。
       // 曾經在這裡加過一個「遺孀段落保險」：如果這一頁塞好塞滿之後，剩下要接到下一頁的內容
       // 量太少，就故意讓這一頁「少放一點」、把幾句話讓給下一頁。拿掉了，原因是：這個保險的
       // 代價，就是讓「這一頁」明明還有空間卻不塞滿、提早留白換頁——這正好是「還沒寫滿就跳頁」
