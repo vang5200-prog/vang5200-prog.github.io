@@ -1015,7 +1015,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-39 ・ 文字欄底色從0.07加深到0.14，範圍更看得出來、不會再被誤會成空白跳頁（有用「大光明」浮水印字比對過，確認每頁最後一個文字欄都有確實延伸到底，只是原本顏色太淺看不出來）；產生圖片、EMAIL的脈輪發光再調得更鮮豔飽和一點；並修正一個排列順序寫反的bug，讓拍照專用的柔和光暈能正確顯示（之前因為順序問題，光暈會被誤判成「量不到尺寸」而變成死板的實心圓點）', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-41 ・ 兩個調整：①「產生圖片、寄送EMAIL」的脈輪發光，上一版拿掉尖角星星只留柔光，結果變成一片單純暈開的色塊、沒有放射感，這次把星星（已經是對稱、不會歪的形狀）疊回柔光上面一起拍，兼顧柔和暈開＋放射尖角的感覺；②「此次需要注意的脈輪」圖表跟緊接在下面的「脈輪問題」文字欄之間，間距從跟其他文字欄一樣的16px，加大到30px，讓兩者看起來明顯分開、不像黏在一起（只調整這一處的間距，其他文字欄之間的距離不受影響）', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2848,17 +2848,20 @@ function chakraDiagramSvg(selectedList){
     // 這套抓圖工具（html2canvas）對「SVG標籤自己就是絕對定位」這種寫法支援不好，
     // 常常整個不畫出來（不是位置錯誤，是完全消失），改成外層div定位、SVG只負責畫圖案，
     // 兩種瀏覽器畫面看起來一模一樣，但抓圖時就不會再讓發光效果不見了。
-    // 拍照專用的替代光暈（平常隱藏，發現星星本身的形狀不管怎麼調都無法跟編輯畫面100%一致，
-    // 因為星星是尖角形狀，只要沒有模糊，尖角一定會有幾個角看起來比較長、比較短，肉眼就會覺得
-    // 「歪一邊」——這是形狀本身的問題，不是抓圖工具的問題，也不是位置算錯，換過兩次尖角座標
-    // 都還是這樣。改成拍照時乾脆不畫尖角星星，只用「圓形」的光暈＋一個用CSS畫出來的十字＋
-    // 對角十字（4條線，每條角度都是精準的0°/45°/90°/135°，用電腦畫，不是用滑鼠點座標，
-    // 絕對不會有一邊長一邊短的問題）疊出來的「閃亮」感，形狀單純很多，但保證不管怎麼看都是正的、
-    // 置中的，不會再有任何一邊比較長、看起來偏一邊的問題。 */
-    const sparkleLine = (deg, len) => `<div style="position:absolute; left:50%; top:50%; width:2.8px; height:${len}px; margin:${-len/2}px 0 0 -1.4px; border-radius:2px; background:linear-gradient(${color}00, ${color}FF 38%, ${color}FF 62%, ${color}00); transform:rotate(${deg}deg);"></div>`;
-    // 笑笑覺得產生圖片裡的發光還要更鮮豔一點，這裡把外層柔光的濃度加深（55/28→8C/50），
-    // 中心亮點也加大、疊了三層由近到遠的暈光（原本只有兩層），整體看起來更飽和、更亮眼。
-    const captureHalo = `<div style="position:absolute; left:50%; top:50%; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:50%; background:radial-gradient(circle, ${color}8C 0%, ${color}50 42%, ${color}00 74%);"></div>${sparkleLine(0,28)}${sparkleLine(90,28)}${sparkleLine(45,19)}${sparkleLine(135,19)}<div style="position:absolute; left:50%; top:50%; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; background:${color}; box-shadow:0 0 4px #fff, 0 0 8px ${color}, 0 0 14px ${color}DD, 0 0 20px ${color}99;"></div>`;
+    // 拍照專用的柔光底（平常隱藏，拍照時打開，疊在尖角星星下面當柔和的背景光暈）。
+    // 這裡曾經試過用CSS漸層（radial-gradient）＋十字線條畫這個圓形光暈，結果實際拍出來的圖片
+    // 反而變成一朵尖角分明的「太陽花／齒輪」形狀，不是柔和的光暈——原因是抓圖工具（html2canvas）
+    // 對「漸層」的處理本來就不精準（這也是整份程式一直把其他地方的漸層背景統一換成實心色的原因，
+    // 見上面 stripAllGradientsForCapture 的說明），漸層畫小範圍的光暈時，色階會被拍成一圈一圈
+    // 有稜有角的色塊，十字線條的漸層淡出效果也會被拍成硬邊，兩者疊在一起看起來就像一朵花，
+    // 完全不是柔光的感覺。真正的解法：光暈不要用漸層，改成用很多層「純色圓形」由大到小、
+    // 由淡到濃疊在一起（跟畫面上文字欄底色一樣都是實心色，抓圖工具畫實心色一向很準確），
+    // 層數夠多，疊出來的效果肉眼看起來就是一圈一圈自然變淡的柔光，不會再有漸層造成的鋸齒或花瓣狀。
+    // 曾經拍照時把尖角星星整個藏起來、只留這圈柔光，結果變成一片單純暈開的色塊，沒有放射感，
+    // 笑笑看了覺得「太醜」；現在改成星星（尖角、對稱、負責放射感）疊在這圈柔光（負責柔和暈開感）
+    // 上面一起拍，兩個效果疊起來，才會比較接近編輯、成品畫面「星星＋柔光」的感覺。
+    const glowRing = (r, alphaHex) => `<div style="position:absolute; left:50%; top:50%; width:${r*2}px; height:${r*2}px; margin:${-r}px 0 0 ${-r}px; border-radius:50%; background-color:${color}${alphaHex};"></div>`;
+    const captureHalo = `${glowRing(20,'12')}${glowRing(17,'18')}${glowRing(14,'22')}${glowRing(11.5,'30')}${glowRing(9.5,'42')}${glowRing(7.5,'5C')}${glowRing(5.8,'7E')}${glowRing(4.2,'A8')}${glowRing(3,'FF')}`;
     return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);">
       <div class="rpt-chakra-halo-capture" style="display:none;">${captureHalo}</div>
       <svg class="rpt-chakra-star-svg" viewBox="0 0 24 24" width="22" height="22" style="position:relative; display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
@@ -3062,7 +3065,10 @@ function reportCardHtml(rec, rep){
   // 脈輪介紹（文字）固定左半、脈輪圖固定右半，左右各半呈現，整塊固定在一起（一定同一頁）；
   // 下面脈輪出現的問題文字則獨立開來，跟諮詢重點與建議、注意事項一樣可以往下展開塞滿整頁、
   // 塞不下才自動換頁接續，不會因為文字多就無故被推去下一頁
-  const chakraTopHtml = chakraList.length ? `<div class="rpt-section" style="margin-bottom:0;">
+  // margin-bottom特意給14px（其他文字欄之間的間距固定是16px，這裡等於多留了將近兩倍的距離），
+  // 讓「脈輪圖」跟緊接在下面的「脈輪問題」文字欄之間看起來明顯分開、不會像黏在一起，
+  // 這個間距只影響脈輪圖下面這一段，不會動到其他文字欄彼此之間的間距
+  const chakraTopHtml = chakraList.length ? `<div class="rpt-section" style="margin-bottom:14px;">
     <h4>此次需要注意的脈輪</h4>
     <div style="display:flex; align-items:flex-start; gap:10px;">
       <div style="flex:1; min-width:0;">${chakraInfoBlocksHtml(chakraList)}</div>
@@ -3343,11 +3349,11 @@ function stripAllGradientsForCapture(rootEl){
   // 「量出來是0大小的漸層」，把光暈本來設計好的柔和漸層直接換成一整塊死板的實心色，
   // 变成硬邊圓點、完全沒有柔和暈開的感覺（這正是「歪一邊」之外，另一個曾經發生過的問題）。
   rootEl.querySelectorAll('.rpt-chakra-halo-capture').forEach(el=>{ el.style.display = 'block'; });
-  // 尖角星星本身的形狀（.rpt-chakra-star-svg）拿掉模糊之後，尖角一定會有幾邊看起來比較長、
-  // 比較短（形狀本身的關係，見chakraDiagramSvg的說明），肉眼會覺得「歪一邊」。拍照時乾脆把
-  // 這個尖角星星整個藏起來，只留上面那個用CSS畫的圓形光暈＋十字閃亮效果，形狀簡單、
-  // 保證不會歪。畫面上（編輯、成品）看到的還是原本的尖角星星，這裡不影響。
-  rootEl.querySelectorAll('.rpt-chakra-star-svg').forEach(el=>{ el.style.display = 'none'; });
+  // 尖角星星本身（.rpt-chakra-star-svg）現在維持顯示，不再拍照時隱藏起來：星星形狀已經在
+  // 前面（v2026-09-19-37）改成四個角完全對稱，本身不會再「歪一邊」；之前拍照時把它整個藏起來
+  // 只留圓形光暈，結果變成一片單純的暈開色塊，笑笑看了覺得「太醜、沒有發光的放射感」，
+  // 所以改回：拍照時光暈（柔和的底）＋星星本身（有尖角、看起來有放射感的上層）兩個疊在一起，
+  // 讓「圖片、EMAIL」拍出來的效果既有柔光又有放射感，比較接近編輯、成品畫面看到的樣子。
   // 保險：再掃一次整份內容，任何「量出來寬或高是0、但背景還是漸層色」的元素，一樣直接換成實心色
   const all = rootEl.querySelectorAll('*');
   for(const el of all){
