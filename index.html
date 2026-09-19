@@ -1005,7 +1005,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-34 ・ 拿掉手機/電腦分開處理的機制，改成統一修好「分頁塞字」的根本問題（塞不下一整句就逐字盡量塞滿，不再一句沒塞完就整句留白跳頁）；文字框底色統一都撐到底（含最後一頁，固定貼齊祝福語跟品牌名中間）；脈輪發光光暈改成柔邊漸層，避免緊鄰的脈輪（頂輪/眉心輪）疊在一起變成硬色塊；新增防快取設定', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-35 ・ 修正上一版新bug：脈輪位置圖後面接的文字整段留到下一頁時，不再留一塊「浮空」的空白色塊在畫面中間；脈輪發光光暈調亮一些（維持柔邊、避免頂輪/眉心輪疊在一起變硬色塊）', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2842,9 +2842,10 @@ function chakraDiagramSvg(selectedList){
     // 實心圓點——圖上「頂輪」跟「眉心輪」兩個位置本來就緊挨在一起（三脈七輪示意圖本身的比例
     // 就是這樣），兩個光暈原本用實心圓點疊出來，光暈邊緣是硬的，兩顆挨在一起看起來就像撞在一起
     // 的色塊、很醜；改成邊緣漸淡到全透明，就算兩個光暈的範圍真的稍微疊到，看起來也只是兩團柔和
-    // 光暈自然融在一起，而不是兩塊顏色生硬地黏在一起。同時把範圍縮小一些，減少緊鄰的脈輪
-    // 互相蓋到對方的機會。這個效果抓圖工具（html2canvas）能正確畫出來（漸層背景本來就支援）。
-    const captureHalo = `<div style="position:absolute; left:50%; top:50%; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:50%; background:radial-gradient(circle, ${color}CC 0%, ${color}66 40%, ${color}00 72%);"></div>`;
+    // 光暈自然融在一起，而不是兩塊顏色生硬地黏在一起。中心維持不透明、範圍夠大才夠亮、看得清楚，
+    // 只有靠外緣的地方才開始淡出，減少緊鄰的脈輪互相蓋到對方的機會。這個效果抓圖工具
+    // （html2canvas）能正確畫出來（漸層背景本來就支援）。
+    const captureHalo = `<div style="position:absolute; left:50%; top:50%; width:24px; height:24px; margin:-12px 0 0 -12px; border-radius:50%; background:radial-gradient(circle, ${color}FF 0%, ${color}FF 32%, ${color}AA 52%, ${color}00 78%);"></div>`;
     return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);">
       <div class="rpt-chakra-halo-capture" style="display:none;">${captureHalo}</div>
       <svg viewBox="0 0 24 24" width="22" height="22" style="position:relative; display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
@@ -2937,12 +2938,18 @@ function rptAlignCalloutTail(pageEl){
   const closingRect = closing.getBoundingClientRect();
   const who2Rect = who2.getBoundingClientRect();
   // 找「最後一個文字框」（諮詢重點與建議／此次需要注意的脈輪／注意事項，看哪個排在這一頁最後面）；
-  // 如果這一頁最後一段不是文字框（例如是脈輪位置圖），就沒有東西可以當起點，退回用內文區塊的
-  // 下緣當起點（維持舊的做法，至少不會整個掛掉）。
+  // 如果這一頁最後一段不是文字框（例如剛好用脈輪位置圖收尾，這一頁沒放任何文字框），
+  // 表示這頁根本沒有文字框需要延伸底色——這種情況不要硬畫一塊「浮空」的色塊出來
+  // （曾經這樣做過，結果變成畫面中間憑空多一塊跟任何文字都接不起來的粉色方塊，
+  // 比原本的空白更奇怪），直接不畫這個延伸底色，這頁維持乾淨的樣子就好。
   const lastSection = wrap.querySelector(':scope > .rpt-section:last-child');
   const lastCallout = lastSection ? lastSection.querySelector(':scope > .rpt-callout') : null;
-  const wrapRect = wrap.getBoundingClientRect();
-  const topY = lastCallout ? lastCallout.getBoundingClientRect().top : wrapRect.bottom;
+  if(!lastCallout){
+    tail.style.top = '0px';
+    tail.style.height = '0px';
+    return;
+  }
+  const topY = lastCallout.getBoundingClientRect().top;
   const midY = (closingRect.bottom + who2Rect.top) / 2;
   // 底色無條件一路撐到midY（快接近品牌名的地方），電腦版、手機版都一樣，不分裝置
   // （這裡曾經試過手機另外只依文字多寡決定高度，結果反而讓「這頁還有空間卻跳頁」的
