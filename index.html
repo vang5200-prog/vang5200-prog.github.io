@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 這三行是為了避免瀏覽器把舊版頁面留在快取裡，明明已經上傳新版本，重新整理卻還是看到
+     舊的樣子——加上這幾行請瀏覽器每次都重新跟伺服器要最新的檔案，不要用存起來的舊版本。
+     不是每種瀏覽器都完全遵守這幾行設定，如果之後又遇到「明明是新版本，畫面卻還是舊的」，
+     最保險的做法還是：手機請整個關掉分頁重開，電腦請按 Ctrl+Shift+R（Mac是Cmd+Shift+R）
+     強制重新整理一次。 -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>讀心分析</title>
 <style>
 :root{
@@ -510,16 +518,15 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 報告書內文區塊（標題橫線之下、結尾橫線之上）的容器，浮水印會用絕對定位鋪滿這個範圍，
    這樣浮水印的上下範圍就一定不會超出「標題下方橫線」到「結尾上方橫線」之間 */
 .rpt-body-wrap{ position:relative; display:flex; flex-direction:column; }
-/* 電腦版維持原本設計不變（笑笑說電腦版已經是最完美的呈現，絕對不要動到）：這一頁最後一個
-   區塊的文字框底色，一律撐滿到接近結尾金線的地方（flex:1 1 auto）。
-   只有手機窄螢幕（.rpt-narrow，由JS依卡片實際量出的寬度判斷、自動加上，不需要妳手動切換）
-   才改成只依文字實際多寡決定高度，不再無條件撐滿——因為手機每行字少，這頁剛好只塞得下
-   一兩句話的情況比電腦版常見很多，硬要撐滿的話底色會被撐出一大片完全空白，反而讓客戶覺得
-   「這頁明明還有空間，為什麼這麼快就跳頁了」。這個改動只套用在窄螢幕，電腦版完全不受影響。 */
+/* 這一頁最後一個區塊的文字框底色，一律撐滿到接近結尾金線的地方（flex:1 1 auto），
+   電腦版、手機版統一都是這個樣子，不分裝置——之前試過手機另外改成「只依文字實際多寡決定
+   高度」，結果反而讓客戶覺得「這頁明明還有空間，為什麼這麼快就跳頁了」更明顯（因為底色
+   老實反映出真正塞進去的文字量，一旦某頁剛好只塞得下一兩句話，底色跟著縮得很短，看起來
+   就更像是提早跳頁）。真正該解決的是「這頁到底能塞多少文字」這件事本身（見
+   rptFitTextToHeight的說明：現在改成連句子都塞不下時，還會逐字往下試，盡量把這頁塞好塞滿），
+   底色統一撐滿到底，才不會被誤會成「還有空間卻不塞」。 */
 .rpt-body-wrap > .rpt-section:last-child{ display:flex; flex-direction:column; min-height:0; flex:1 1 auto; }
 .rpt-body-wrap > .rpt-section:last-child > .rpt-callout{ margin-bottom:0; min-height:0; border-radius:0 10px 0 0; flex:1 1 auto; }
-.rpt-narrow .rpt-body-wrap > .rpt-section:last-child{ flex:0 1 auto; }
-.rpt-narrow .rpt-body-wrap > .rpt-section:last-child > .rpt-callout{ flex:0 1 auto; }
 /* 淡淡的浮水印文字，鋪滿報告書標題橫線到結尾橫線之間的整個範圍，顏色非常淺、疊在所有內容跟圖片「之上」（z-index比內容區塊高），
    營造真正蓋在畫面上的浮水印感，但因為顏色很淡+pointer-events:none，不會擋到閱讀也不會擋到點擊；
    字級大小固定由 RPT_WATERMARK_FONT_SIZE 算好直接寫進每一頁，這裡的 font-size 只是還沒套用前的預設值 */
@@ -998,7 +1005,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-33 ・ 電腦版排版與脈輪發光完全還原成原本的樣子（不受任何影響）；所有排版調整只在手機窄螢幕才生效；圖片/EMAIL抓錯畫面、拍照發光消失這兩個bug修正維持', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-34 ・ 拿掉手機/電腦分開處理的機制，改成統一修好「分頁塞字」的根本問題（塞不下一整句就逐字盡量塞滿，不再一句沒塞完就整句留白跳頁）；文字框底色統一都撐到底（含最後一頁，固定貼齊祝福語跟品牌名中間）；脈輪發光光暈改成柔邊漸層，避免緊鄰的脈輪（頂輪/眉心輪）疊在一起變成硬色塊；新增防快取設定', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2831,13 +2838,13 @@ function chakraDiagramSvg(selectedList){
     // 這套抓圖工具（html2canvas）對「SVG標籤自己就是絕對定位」這種寫法支援不好，
     // 常常整個不畫出來（不是位置錯誤，是完全消失），改成外層div定位、SVG只負責畫圖案，
     // 兩種瀏覽器畫面看起來一模一樣，但抓圖時就不會再讓發光效果不見了。
-    // 拍照專用的替代光暈（平常隱藏）：純色圓點疊透明度，是抓圖工具能正確畫出來的效果。
-    const captureHalo = [
-      { size: 26, op: 0.10 },
-      { size: 21, op: 0.15 },
-      { size: 17, op: 0.22 },
-      { size: 13, op: 0.32 }
-    ].map(h=>`<div style="position:absolute; left:50%; top:50%; width:${h.size}px; height:${h.size}px; margin:${-h.size/2}px 0 0 ${-h.size/2}px; border-radius:50%; background:${color}; opacity:${h.op};"></div>`).join('');
+    // 拍照專用的替代光暈（平常隱藏）：改用「放射狀漸層、邊緣自然淡出透明」畫出來，不是疊好幾層
+    // 實心圓點——圖上「頂輪」跟「眉心輪」兩個位置本來就緊挨在一起（三脈七輪示意圖本身的比例
+    // 就是這樣），兩個光暈原本用實心圓點疊出來，光暈邊緣是硬的，兩顆挨在一起看起來就像撞在一起
+    // 的色塊、很醜；改成邊緣漸淡到全透明，就算兩個光暈的範圍真的稍微疊到，看起來也只是兩團柔和
+    // 光暈自然融在一起，而不是兩塊顏色生硬地黏在一起。同時把範圍縮小一些，減少緊鄰的脈輪
+    // 互相蓋到對方的機會。這個效果抓圖工具（html2canvas）能正確畫出來（漸層背景本來就支援）。
+    const captureHalo = `<div style="position:absolute; left:50%; top:50%; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:50%; background:radial-gradient(circle, ${color}CC 0%, ${color}66 40%, ${color}00 72%);"></div>`;
     return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);">
       <div class="rpt-chakra-halo-capture" style="display:none;">${captureHalo}</div>
       <svg viewBox="0 0 24 24" width="22" height="22" style="position:relative; display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
@@ -2889,18 +2896,13 @@ var RPT_WATERMARK_FONT_SIZE = Math.max(20, Math.floor((RPT_PAGE_BODY_HEIGHT * 0.
    塞不到這個高度、又還有剩要接下一頁，就乾脆整段留到下一頁從頭開始（下一頁預算是完整的一整頁，
    通常就夠塞下大半甚至全部），避免這種「一兩句話+一大片空白」的畫面。 */
 var RPT_ORPHAN_MIN_HEIGHT = 170;
-/* 文字框底色往下延伸的「呼吸空間」，見rptAlignCalloutTail的說明：文字結束的地方往下
-   再多蓋這麼多px的底色，看起來不會突然硬生生停住，但也不會像以前那樣硬撐到接近頁尾。 */
-var RPT_CALLOUT_TAIL_CUSHION = 48;
 
 /* 把單一頁的內容包成一張完整的卡片（框、固定大小、浮水印、頁碼都齊全），
    給客戶看的報告書會拆成好幾張這樣大小完全一致的卡片，而不是一長串捲不完的內容 */
-function reportCardPageHtml(pageNum, totalPages, bodyHtml, showFooter, isNarrow){
+function reportCardPageHtml(pageNum, totalPages, bodyHtml, showFooter){
   // 結尾祝福語的區塊每一頁都「畫」出來、只是沒輪到的頁面用 visibility:hidden 藏起來（不是整塊拿掉），
   // 這樣每一頁保留的空間完全一樣，卡片高度才會全部一致，不會因為有沒有結尾語而忽高忽低
-  // isNarrow：手機窄螢幕才加上的class（見CSS .rpt-narrow的說明），電腦版不會加這個class，
-  // 排版邏輯完全跟原本一樣，不會受任何影響
-  return `<div class="rpt-card rpt-page-card${isNarrow?' rpt-narrow':''}">
+  return `<div class="rpt-card rpt-page-card">
     ${rptCardCornersHtml()}
     ${RPT_CARD_CREST_HTML}
     ${rptEyebrowHtml()}
@@ -2942,20 +2944,10 @@ function rptAlignCalloutTail(pageEl){
   const wrapRect = wrap.getBoundingClientRect();
   const topY = lastCallout ? lastCallout.getBoundingClientRect().top : wrapRect.bottom;
   const midY = (closingRect.bottom + who2Rect.top) / 2;
-  // 電腦版（沒有.rpt-narrow這個class）維持原本設計：底色無條件一路撐到midY（快接近品牌名
-  // 的地方），跟這個功能剛做出來時一模一樣，不受任何影響。
-  // 只有手機窄螢幕（.rpt-narrow）才改成：文字框（.rpt-callout）不強制撐滿、只依文字實際
-  // 多寡決定高度（見CSS的說明），這裡量出來的lastCallout.bottom就是「文字實際結束的地方」，
-  // 底色只往下多留一小段呼吸空間（RPT_CALLOUT_TAIL_CUSHION），維持「不會突然硬生生停住」
-  // 的效果，但也不會因為這頁剛好只塞得下一兩句話，就把底色硬撐出一大片完全空白。
-  const isNarrowPage = pageEl.classList.contains('rpt-narrow');
-  let cushionedBottom;
-  if(isNarrowPage){
-    const naturalBottom = lastCallout ? lastCallout.getBoundingClientRect().bottom : wrapRect.bottom;
-    cushionedBottom = Math.min(midY, naturalBottom + RPT_CALLOUT_TAIL_CUSHION);
-  } else {
-    cushionedBottom = midY;
-  }
+  // 底色無條件一路撐到midY（快接近品牌名的地方），電腦版、手機版都一樣，不分裝置
+  // （這裡曾經試過手機另外只依文字多寡決定高度，結果反而讓「這頁還有空間卻跳頁」的
+  // 感覺更明顯，已經拿掉，改成從文字塞得夠不夠這個根本原因去解決，見rptFitTextToHeight）。
+  const cushionedBottom = midY;
   // top／height都取整數px，避免小數點位置讓抓圖工具在交界處畫出模糊的半透明鋸齒。
   tail.style.top = Math.round(topY - cardRect.top) + 'px';
   tail.style.height = Math.max(0, Math.round(cushionedBottom - topY)) + 'px';
@@ -2989,6 +2981,7 @@ function rptSplitSentences(text){
   return parts;
 }
 /* 把一段文字盡量塞進 maxHeight 高度以內：先用段落（換行）切，一段還是太長就再用句子切，
+   一句還是太長（或差一點點塞不下）就再逐字用二分搜尋盡量塞滿，
    回傳 {fit, rest}：fit是這頁塞得下的部分，rest是塞不下、要接到下一頁繼續的部分 */
 function rptFitTextToHeight(text, width, maxHeight, wrapOpen, wrapClose){
   const wholeHtml = wrapOpen + esc(text) + wrapClose;
@@ -3008,6 +3001,22 @@ function rptFitTextToHeight(text, width, maxHeight, wrapOpen, wrapClose){
       const combined = fit ? (fit + '\n\n' + sCandidate) : sCandidate;
       const sh = rptMeasureBlockHeight(wrapOpen + esc(combined) + wrapClose, width);
       if(sh <= maxHeight){ sFit = sCandidate; } else break;
+    }
+    // 還有下一句塞不下的話，不要整句放棄、直接留到下一頁：中文本來就能在任何字與字之間
+    // 換行斷句，不像英文一定要保留完整單字，這裡改成在那一句裡面用二分搜尋，找出還能
+    // 再多塞進幾個字，把這一頁剩餘的空間盡量塞好塞滿。這才是真正解決「明明這頁還有空間，
+    // 卻只塞了一兩句話就跳頁」的根本做法——之前只切到句子這個粒度太粗，常常一句沒塞完
+    // 整句就整句留白不用，浪費掉這一頁本來還塞得下的空間。
+    if(sFit.length < paras[i].length){
+      const leftover = paras[i].slice(sFit.length);
+      let lo = 0, hi = leftover.length;
+      while(lo < hi){
+        const mid = Math.ceil((lo + hi) / 2);
+        const candidate2 = (fit ? fit + '\n\n' : '') + sFit + leftover.slice(0, mid);
+        const ch = rptMeasureBlockHeight(wrapOpen + esc(candidate2) + wrapClose, width);
+        if(ch <= maxHeight){ lo = mid; } else { hi = mid - 1; }
+      }
+      if(lo > 0){ sFit = sFit + leftover.slice(0, lo); }
     }
     const restParas = paras.slice(i+1);
     if(sFit){
@@ -3058,20 +3067,19 @@ function reportCardHtml(rec, rep){
   if(cardHostForMeasure && modalOverlayForMeasure){
     const prevHostHtml = cardHostForMeasure.innerHTML;
     const prevVisibility = modalOverlayForMeasure.style.visibility;
+    const wasOpen = modalOverlayForMeasure.classList.contains('open');
     modalOverlayForMeasure.style.visibility = 'hidden';
     cardHostForMeasure.innerHTML = reportCardPageHtml(1, 1, '', false);
     modalOverlayForMeasure.classList.add('open');
     const wrapEl = cardHostForMeasure.querySelector('.rpt-body-wrap');
     if(wrapEl && wrapEl.clientWidth) contentWidth = wrapEl.clientWidth;
-    modalOverlayForMeasure.classList.remove('open');
+    // 量完要把彈窗還原成「量之前本來的樣子」，不是無條件關掉——如果量測發生的當下這個彈窗
+    // 本來就已經是打開的（理論上不太會發生，但保險起見還是處理），量完應該維持打開，
+    // 不能被這裡的量測動作意外關掉。
+    if(!wasOpen) modalOverlayForMeasure.classList.remove('open');
     modalOverlayForMeasure.style.visibility = prevVisibility;
     cardHostForMeasure.innerHTML = prevHostHtml;
   }
-  // 手機窄螢幕才啟用「不強制撐滿文字框」「避免孤兒段落」這些新的排版邏輯；電腦版（量出來的
-  // 寬度遠大於一般手機螢幕）完全不會進到這個分支，排版邏輯維持原本沒有改過的樣子。
-  // 458是電腦版常見量出來的寬度、182~290是常見手機直向螢幕量出來的寬度（已經實際測過
-  // iPhone等常見尺寸），350取在兩者中間，不會誤判。
-  const isNarrow = contentWidth < 350;
 
   const pages = [];
   let current = [];
@@ -3101,11 +3109,10 @@ function reportCardHtml(rec, rep){
       // 不管目前這頁是空的還是已經有東西，都先試著把文字盡量塞進「這頁剩餘的空間」，
       // 塞不下（等於這頁已經沒空間了）才換頁，這樣才不會漏掉可以利用的剩餘空間
       let { fit, rest } = rptFitTextToHeight(remain, contentWidth, availOnCurrent, wrapOpen, wrapClose);
-      // 孤兒段落保險（見RPT_ORPHAN_MIN_HEIGHT的說明）：只在手機窄螢幕才會啟用（電腦版排版
-      // 邏輯維持原本沒有改過的樣子，不會有這個檢查）。只在「這是全新標題的第一次嘗試、
-      // 這頁已經有別的內容、又還有剩要接下一頁」時才檢查，續頁（isFirst=false）一定是
-      // 剛換到全新一頁、預算是完整一整頁，不會有這個問題
-      if(isNarrow && isFirst && current.length && fit && rest){
+      // 孤兒段落保險（見RPT_ORPHAN_MIN_HEIGHT的說明）：電腦版、手機版都適用。只在
+      // 「這是全新標題的第一次嘗試、這頁已經有別的內容、又還有剩要接下一頁」時才檢查，
+      // 續頁（isFirst=false）一定是剛換到全新一頁、預算是完整一整頁，不會有這個問題
+      if(isFirst && current.length && fit && rest){
         const fitHeight = rptMeasureBlockHeight(wrapOpen + esc(fit) + wrapClose, contentWidth);
         if(fitHeight < RPT_ORPHAN_MIN_HEIGHT){ flushPage(); continue; }
       }
@@ -3143,7 +3150,7 @@ function reportCardHtml(rec, rep){
   // 不管最後一頁的內文塞了多少都不會被擠到，所以不需要因為最後一頁內容較多，
   // 就多開一頁空白頁來放結尾——那樣反而會出現一頁幾乎全空、很奇怪的畫面。
   const total = pages.length;
-  const pagesHtml = pages.map((blocks,i)=>reportCardPageHtml(i+1, total, blocks.join(''), i===total-1, isNarrow)).join('');
+  const pagesHtml = pages.map((blocks,i)=>reportCardPageHtml(i+1, total, blocks.join(''), i===total-1)).join('');
   return `<div id="rptCardInner">${pagesHtml}</div>`;
 }
 function reportCardTextOf(rec, rep){
