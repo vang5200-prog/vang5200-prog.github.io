@@ -561,13 +561,13 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
    預設都有自己的底色（依文字實際多寡自然決定範圍），只有真正「這一頁最後一個」的那個文字框
    才把自己的底色關掉、改交給.rpt-callout-tail負責延伸到底（見下面的說明），這樣不管一頁裡有
    幾個文字框，每一個都看得到底色。 */
-/* 這個底色原本設定成0.07（很淡），跟卡片本身淡粉色的底混在一起，肉眼幾乎看不出來——
-   笑笑好幾次都以為「這裡是空白的、跳頁跳太早」，其實文字框跟延伸底色都有畫、範圍也對，
-   只是顏色太淺看不出來。改成0.14（深一倍），讓文字框的範圍看起來更明確，不會再被誤會成空白。 */
-.rpt-callout{ background:rgba(154,127,190,0.14); border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
+/* 底色維持原本的0.07（很淡，跟卡片本身淡粉色的底融在一起）。之前有一版誤把這個底色
+   當成笑笑在問的「為什麼跳頁」的原因，擅自改深成0.14，但笑笑要問的其實是文字內容本身
+   的長短，不是底色深淺，所以改回原本的0.07。 */
+.rpt-callout{ background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 10px 10px 0; padding:12px 14px; }
 /* 文字框往下的延伸底色：接在.rpt-body-wrap下緣，一路蓋到結尾祝福語文字附近（實際top/height由JS量出來直接寫死），
    z-index比結尾文字(.rpt-footer, z-index:1)低，文字才會一直保持在最上面清楚看得到 */
-.rpt-callout-tail{ position:absolute; left:30px; right:30px; z-index:0; background:rgba(154,127,190,0.14); border-left:3px solid var(--gold-border); border-radius:0 0 10px 0; pointer-events:none; }
+.rpt-callout-tail{ position:absolute; left:30px; right:30px; z-index:0; background:rgba(154,127,190,0.07); border-left:3px solid var(--gold-border); border-radius:0 0 10px 0; pointer-events:none; }
 .rpt-transcript{ background:rgba(154,127,190,0.05); border:1px solid #EADFC8; border-radius:12px; padding:13px 15px; }
 .rpt-transcript .body{ font-size:13.5px; color:#6B5A45; }
 .rpt-footer{ position:relative; z-index:1; text-align:center; margin-top:2px; }
@@ -1022,7 +1022,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-44 ・ 兩個調整：①脈輪發光的柔光改回9層版本（笑笑比較後還是喜歡41版這個效果，28層那版拿掉了）；②修正一個重要的根本問題：報告卡片以前是「跟著螢幕寬度縮放」的（width:100%），導致同一位客戶的報告書，用電腦送出跟用手機送出，文字換行位置、頁數完全不一樣（電腦3頁、手機可能變6頁），脈輪圖上相鄰的發光點（例如頂輪、眉心輪）在手機窄螢幕上也會擠在一起變成重疊。修法：報告卡片固定用520px的寬度去計算內容、分頁（不管在哪種裝置上，內容、頁數保證一致），螢幕比520px窄的話（例如手機），改成畫面上把整張卡片等比例縮小顯示（跟縮放PDF頁面一樣，文字內容、換行都不變，只是看起來變小），「產生圖片」「寄送EMAIL」則永遠照520px的原始大小拍照，不受畫面縮小影響、畫質也不會變差', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-45 ・ 把文字欄的底色改回原本的0.07（之前誤把笑笑問「為什麼跳頁」當成底色太淺看不見的問題，擅自加深成0.14，這次改回來）；文字欄底色深淺跟跳頁時機無關——跳頁是看「這段文字實際內容有多少」決定的，不是看底色', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
