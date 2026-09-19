@@ -997,7 +997,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-30 ・ 修正：手機窄螢幕排版時文字框還沒寫滿就跳頁、或跳到新頁卻只有一兩句話的問題（連根拔起，不再強制文字框撐滿整頁）；脈輪發光效果調亮', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-31 ・ 修正根本原因：找到「產生圖片／寄送EMAIL」跟「編輯／成品」內容不一致的真正原因（重複id導致抓錯畫面，已改成明確指定正確來源）；脈輪發光效果改用抓圖工具也能正確畫出來的方式（不再被「產生圖片」拍照時整個吃掉）', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2815,7 +2815,13 @@ function chakraDiagramSvg(selectedList){
   selectedList = selectedList || [];
   const allOn = selectedList.includes(CHAKRA_ALL_LABEL);
   /* 發光效果是鑽石被光照到的放射感：不規則的放射狀星芒（像"＊"字，長短尖角交錯，不是規則的十字），
-     再用較大範圍的 drop-shadow 做柔和光暈，這樣勾選到的脈輪才會明顯比圖片上其他沒選到的脈輪更突出、更像在發光 */
+     外圍再疊幾層「純色圓點、透明度由淡到濃」的光暈，這樣勾選到的脈輪才會明顯比圖片上其他沒選到的
+     脈輪更突出、更像在發光。
+     這裡改用「疊圓點」而不是CSS的filter:drop-shadow()來做光暈——因為filter這個效果，這套抓圖工具
+     （html2canvas，「產生圖片」跟寄送EMAIL都是靠它拍照）幾乎不支援，拍出來的圖片裡光暈會直接整個
+     消失、只剩下星星本身的顏色（這正是之前「圖片、EMAIL裡脈輪不發光」的真正原因：不是暗，是整個
+     被拍圖工具吃掉了）。改成純色圓點疊透明度，這招在一般瀏覽器畫面上、跟拍圖工具產生的圖片上，
+     兩邊呈現的效果一模一樣，才能保證編輯、成品、產生圖片、寄送EMAIL這四個地方看到的發光效果真正一致。 */
   const dots = CHAKRA_DIAGRAM_ORDER.filter(name=>allOn || selectedList.includes(name)).map(name=>{
     const yPct = CHAKRA_BODY_IMG_POS[name];
     const color = CHAKRA_BODY_IMG_COLOR[name] || reportChakraMeta(name).color;
@@ -2824,8 +2830,17 @@ function chakraDiagramSvg(selectedList){
     // 這套抓圖工具（html2canvas）對「SVG標籤自己就是絕對定位」這種寫法支援不好，
     // 常常整個不畫出來（不是位置錯誤，是完全消失），改成外層div定位、SVG只負責畫圖案，
     // 兩種瀏覽器畫面看起來一模一樣，但抓圖時就不會再讓發光效果不見了。
-    return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 4px ${color}) drop-shadow(0 0 9px ${color}cc) drop-shadow(0 0 16px ${color}99) drop-shadow(0 0 26px ${color}66);">
-      <svg viewBox="0 0 24 24" width="22" height="22" style="display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
+    // 光暈：四層由大到小、透明度由淡到濃的純色圓點疊在星星後面，純色+透明度是抓圖工具能正確
+    // 畫出來的效果（不像filter模糊或漸層那麼容易出狀況），疊起來看起來就像柔和放射的光暈。
+    const halo = [
+      { size: 34, op: 0.16 },
+      { size: 27, op: 0.26 },
+      { size: 21, op: 0.40 },
+      { size: 15, op: 0.62 }
+    ].map(h=>`<div style="position:absolute; left:50%; top:50%; width:${h.size}px; height:${h.size}px; margin:${-h.size/2}px 0 0 ${-h.size/2}px; border-radius:50%; background:${color}; opacity:${h.op};"></div>`).join('');
+    return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px;">
+      ${halo}
+      <svg viewBox="0 0 24 24" width="22" height="22" style="position:relative; display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
         <path d="M 12.00 0.50 L 12.84 9.97 L 16.24 7.76 L 14.03 11.16 L 21.50 12.00 L 14.03 12.84 L 15.54 15.54 L 12.84 14.03 L 12.00 23.00 L 11.16 14.03 L 7.40 16.60 L 9.97 12.84 L 3.50 12.00 L 9.97 11.16 L 8.11 8.11 L 11.16 9.97 Z" fill="${color}"/>
         <path d="M 12.00 6.83 L 12.38 11.09 L 13.91 10.09 L 12.91 11.62 L 16.27 12.00 L 12.91 12.38 L 13.59 13.59 L 12.38 12.91 L 12.00 16.95 L 11.62 12.91 L 9.93 14.07 L 11.09 12.38 L 8.18 12.00 L 11.09 11.62 L 10.25 10.25 L 11.62 11.09 Z" fill="${light}"/>
       </svg>
@@ -3360,7 +3375,20 @@ function withOffscreenClone(el, fn){
   return Promise.resolve(fn(clone)).finally(()=>{ wrap.remove(); });
 }
 async function captureReportCardPageBlobs(){
-  const container = document.getElementById('rptCardInner');
+  // 找到了！「產生圖片」跟「寄送EMAIL」拍出來的內容常常跟畫面上看到的（編輯預覽、正式報告書）
+  // 不一樣，真正原因在這裡：reportCardHtml()產生的HTML裡面固定包了一個id="rptCardInner"的容器，
+  // 而「填寫報告書」畫面下方的即時預覽（rfLivePreview）跟「報告卡片」正式彈窗（reportCardEl）
+  // 兩邊都各自呼叫過這個函式，所以整個網頁裡同時存在兩個一模一樣id="rptCardInner"的元素
+  // （id理論上應該是唯一的，但瀏覽器不會阻止妳寫出重複的id，只是行為會變得不可預期）。
+  // document.getElementById('rptCardInner')在有重複id時，只會抓「網頁原始碼裡最先出現的那一個」，
+  // 而「填寫報告書」的彈窗在網頁原始碼裡剛好排在「報告卡片」彈窗的前面，所以只要妳曾經打開過
+  // 「編輯報告書」畫面（幾乎每次都會），這裡抓到的永遠是編輯畫面裡那份「舊的、可能是拍照當下
+  // 已經看不到」的預覽內容，而不是妳實際打開、正在看的正式報告卡片——這才是手機上「編輯、成品」
+  // 看起來一種樣子，但「產生圖片、寄出的EMAIL」卻是另一種樣子（甚至頁數都不一樣）的真正原因。
+  // 修法：不要再用網頁全域的id去找，改成明確指定只在「報告卡片」正式彈窗（#reportCardEl）裡面找，
+  // 這樣不管妳有沒有開過編輯畫面、開過幾次，抓到的永遠保證是妳眼前這張正式報告卡片本身。
+  const cardHost = document.getElementById('reportCardEl');
+  const container = cardHost ? cardHost.querySelector('#rptCardInner') : null;
   const pages = container ? Array.from(container.querySelectorAll('.rpt-page-card')) : [];
   if(!pages.length || !window.html2canvas) return [];
   const blobs = [];
