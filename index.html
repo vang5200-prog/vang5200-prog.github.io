@@ -1022,7 +1022,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-45 ・ 把文字欄的底色改回原本的0.07（之前誤把笑笑問「為什麼跳頁」當成底色太淺看不見的問題，擅自加深成0.14，這次改回來）；文字欄底色深淺跟跳頁時機無關——跳頁是看「這段文字實際內容有多少」決定的，不是看底色', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-47 ・ 接續上一版的孤兒行修正，再補兩個調整：①脈輪問題文字欄如果被換到新的一頁重新開始（不再緊跟在脈輪圖後面），現在會自動補上「此次需要注意的脈輪（續）」標題，不會讓客戶看到一段沒頭沒尾的文字；②「此次需要注意的脈輪」標題原本跟上面的文字欄（例如諮詢重點與建議）完全貼在一起，現在加了一點上方間距，看起來不會那麼緊貼', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2912,6 +2912,13 @@ var RPT_BLOCK_GAP = 16;
    頁數、換行位置才會保證完全一樣 */
 var RPT_CANONICAL_CARD_WIDTH = 520;
 var RPT_WATERMARK_FONT_SIZE = Math.max(20, Math.floor((RPT_PAGE_BODY_HEIGHT * 0.99 - 4 * 2) / 3));
+/* 「孤兒行」保險：一個文字欄換頁時，如果這一頁只剩一點點空間，塞了第一段文字進去卻只有一兩行就要
+   接到下一頁（續），畫面看起來很奇怪、很醜。這裡規定：接在別的內容後面開始的文字欄，第一段至少要能
+   放滿3行文字，才准許就地塞入；塞不到3行的話，寧可整段留到下一頁重新開始（下一頁一定有完整一整頁
+   640px可以用，正常情況都放得下），不要留下只有一兩行的畸零文字框。只在「接在別的內容後面」時才檢查
+   （這一頁本來就是空的、從頭開始放的時候不用管，反正沒有別的選擇）。 */
+var RPT_MIN_ORPHAN_LINES = 3;
+var RPT_LINE_HEIGHT_PX = 27; // 對應 .rpt-section .body 的 font-size:15px、line-height:1.8（15*1.8=27）
 /* 把單一頁的內容包成一張完整的卡片（框、固定大小、浮水印、頁碼都齊全），
    給客戶看的報告書會拆成好幾張這樣大小完全一致的卡片，而不是一長串捲不完的內容 */
 function reportCardPageHtml(pageNum, totalPages, bodyHtml, showFooter){
@@ -3108,10 +3115,12 @@ function reportCardHtml(rec, rep){
   // 脈輪介紹（文字）固定左半、脈輪圖固定右半，左右各半呈現，整塊固定在一起（一定同一頁）；
   // 下面脈輪出現的問題文字則獨立開來，跟諮詢重點與建議、注意事項一樣可以往下展開塞滿整頁、
   // 塞不下才自動換頁接續，不會因為文字多就無故被推去下一頁
-  // margin-bottom特意給14px（其他文字欄之間的間距固定是16px，這裡等於多留了將近兩倍的距離），
-  // 讓「脈輪圖」跟緊接在下面的「脈輪問題」文字欄之間看起來明顯分開、不會像黏在一起，
-  // 這個間距只影響脈輪圖下面這一段，不會動到其他文字欄彼此之間的間距
-  const chakraTopHtml = chakraList.length ? `<div class="rpt-section" style="margin-bottom:14px;">
+  // margin-bottom特意給14px，讓「脈輪圖」跟緊接在下面的「脈輪問題」文字欄之間看起來明顯分開、
+  // 不會像黏在一起；margin-top也特意加14px，是因為前一個文字欄（例如「諮詢重點與建議」）
+  // 結尾跟「此次需要注意的脈輪」標題原本完全貼在一起（中間0間距，緊貼），加上margin-top
+  // 讓標題整體往下挪一點、跟上面的文字欄拉開距離。這兩個間距都只影響脈輪這一段的上下，
+  // 不會動到其他文字欄彼此之間的間距
+  const chakraTopHtml = chakraList.length ? `<div class="rpt-section" style="margin-top:14px; margin-bottom:14px;">
     <h4>此次需要注意的脈輪</h4>
     <div style="display:flex; align-items:flex-start; gap:10px;">
       <div style="flex:1; min-width:0;">${chakraInfoBlocksHtml(chakraList)}</div>
@@ -3159,9 +3168,15 @@ function reportCardHtml(rec, rep){
     let remain = text;
     let isFirst = true;
     while(true){
-      // hideFirstHeading：給「上面已經有大標題」的接續文字用（例如脈輪問題接在脈輪圖之後），
-      // 第一段不要重複顯示標題，換頁接續時才顯示「標題（續）」讓客戶看得懂
-      const headingHtml = (hideFirstHeading && isFirst) ? '' : `<h4>${esc(heading)}${isFirst?'':'（續）'}</h4>`;
+      // hideFirstHeading：給「上面已經有大標題」的接續文字用（例如脈輪問題接在脈輪圖之後）。
+      // 但這只適用在「真的緊接在那個大標題後面、同一頁」的情況（onFreshPage是false）；
+      // 如果因為孤兒行保險或版面不夠而被换到新的一頁開頭（onFreshPage是true），代表這一段已經
+      // 跟上面的大標題、脈輪圖不在同一頁、視覺上斷開了，這時候還是要把標題顯示出來，
+      // 而且要用「（續）」，讓客戶知道這是接續前一頁「此次需要注意的脈輪」的內容，不是新的一段
+      const onFreshPage = current.length === 0;
+      const suppressHeading = hideFirstHeading && isFirst && !onFreshPage;
+      const showContinuedSuffix = !isFirst || (hideFirstHeading && onFreshPage);
+      const headingHtml = suppressHeading ? '' : `<h4>${esc(heading)}${showContinuedSuffix?'（續）':''}</h4>`;
       const wrapOpen = `<div class="rpt-section" style="margin-bottom:0;">${headingHtml}<div class="${bodyClass}">`;
       const wrapClose = `</div></div>`;
       const gapNeeded = current.length ? RPT_BLOCK_GAP : 0;
@@ -3169,6 +3184,15 @@ function reportCardHtml(rec, rep){
       // 不管目前這頁是空的還是已經有東西，都先試著把文字盡量塞進「這頁剩餘的空間」，
       // 塞不下（等於這頁已經沒空間了）才換頁，這樣才不會漏掉可以利用的剩餘空間
       let { fit, rest } = rptFitTextToHeight(remain, contentWidth, availOnCurrent, wrapOpen, wrapClose);
+      // 孤兒行保險（見上面RPT_MIN_ORPHAN_LINES的說明）：只在「這是這個文字欄的第一段、且這一頁
+      // 已經有別的內容」時檢查——如果塞得進去的第一段文字還不到3行、後面又還有要接的內容，
+      // 代表這是那種「放一兩行就(續)」的畸零情況，乾脆整段留到下一頁開頭重新放。
+      if(isFirst && current.length && fit && rest){
+        const chromeHeight = rptMeasureBlockHeight(wrapOpen + wrapClose, contentWidth);
+        const minAcceptable = chromeHeight + RPT_MIN_ORPHAN_LINES * RPT_LINE_HEIGHT_PX;
+        const fitHeight = rptMeasureBlockHeight(wrapOpen + esc(fit) + wrapClose, contentWidth);
+        if(fitHeight < minAcceptable){ flushPage(); continue; }
+      }
       // 這裡曾經有一個「孤兒段落保險」：這頁剩餘空間如果塞不到一個門檻高度，就乾脆整段留到
       // 下一頁開頭。拿掉的原因：現在每個文字框都有自己的底色（見CSS .rpt-callout的說明），
       // 不再是只有「這一頁最後一個」才有底色，就算這裡塞進去的只有短短一兩句話，也不會是
