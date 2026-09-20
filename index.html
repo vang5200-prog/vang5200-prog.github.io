@@ -1026,7 +1026,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-50 ・ 修好「後台手動新增預約」的一個漏洞：手動新增的客戶（例如臨時、非線上預約的客戶）以前沒有自動產生「預約代碼」，之後要幫這位客戶「填寫報告書」時就會被系統擋下來，等於手動新增的客戶完全沒辦法寫報告書。現在手動新增時也會自動產生代碼，跟線上預約的客戶一樣，新增後就能直接填寫報告書。（後台「預約列表」頁面右上角本來就有「＋新增」按鈕，可以直接用這個功能）', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-51 ・ 接續上一版「後台手動新增預約」的修正，這次補上更重要的一塊：手動新增的預約，現在也會自動同步一份到雲端試算表（需要搭配更新過的Code.gs才會生效）。原因：①以前手動新增的資料只存在這台裝置本機，後台按「🔄同步」時清單會整批換成雲端資料，這筆資料就會憑空消失；②如果手動新增的是「善的力量」義診客戶，「半年內不得再約」這個規則是靠雲端試算表的紀錄判斷的，資料沒同步過去，這個規則就完全抓不到這一筆。另外也修好「確認預約」按鈕：如果這筆資料剛好不在雲端試算表裡（例如同步失敗），以前會跳出「找不到對應代碼」的錯誤訊息卡住，現在會直接把狀態改成已確認（不發LINE通知），不會再卡住', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2566,7 +2566,12 @@ function quickStatus(id,status){
           toast('已取消，未確認這筆預約');
         }
       } else if(res.error==='not_found'){
-        toast('雲端試算表找不到對應代碼，請確認Code.gs已更新');
+        // 雲端試算表裡沒有這筆代碼對應的資料——最常見的原因是這筆是後台手動新增、
+        // 但當初同步到雲端失敗（或還沒設定雲端網址）的預約，本來就不存在雲端試算表裡。
+        // 這種情況不用當成錯誤擋住妳，直接在本機把狀態改成「已確認」即可（客戶本來就是
+        // 妳自己確認過才手動新增的，不需要再透過LINE通知一次）。
+        r.status='已確認'; saveRecords(records); renderList(); renderDashboard();
+        toast('已確認（這筆資料不在雲端試算表裡，只更新本機狀態，不會發送LINE通知）');
       } else {
         toast('確認失敗，請檢查雲端設定');
       }
@@ -3665,10 +3670,43 @@ function saveAdminForm(){
     // 就能正常使用，不用再另外處理。
     let code = generateBookingCode();
     while(records.some(r=>r.code===code)) code = generateBookingCode();
-    records.push({id:uid(), code, createdAt:Date.now(), ...data});
+    const newRec = {id:uid(), code, createdAt:Date.now(), ...data};
+    records.push(newRec);
     toast('已新增');
+    // 手動新增的預約也要同步一份到雲端試算表，理由有兩個：
+    // 1) 後台按「🔄同步」的時候，清單會整個換成雲端試算表回傳的資料——如果這筆手動新增的
+    //    資料只存在這台裝置本機、沒有真的送到雲端，下次一同步，這筆資料就會直接消失不見。
+    // 2) 如果這位客戶用的是「善的力量」義診名額，「半年內不得再約」這個規則是靠雲端試算表
+    //    裡的紀錄去判斷的，只存在本機的話，之後這位客戶自己上網重新預約義診名額，系統會
+    //    完全看不到這次手動新增的紀錄，等於半年限制形同虛設。
+    // 所以這裡新增後會盡量把這筆資料也送一份到雲端，送不成功（例如還沒設定雲端網址、
+    // 網路問題）會另外跳出提醒，讓妳知道這筆資料目前只在這台裝置上，之後同步時可能會不見。
+    syncManualBookingToCloud(newRec);
   }
   saveRecords(records); closeForm(); renderList(); renderDashboard();
+}
+async function syncManualBookingToCloud(rec){
+  if(!webhookUrl){
+    toast('⚠️ 尚未設定雲端網址，這筆手動新增的資料目前只存在這台裝置上，之後按「同步」可能會不見');
+    return;
+  }
+  try{
+    const res = await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        type:'addManualBooking', password: sessionStorage.getItem('rt_admin_pw')||'',
+        name: rec.name, email: rec.email, datetime: rec.datetime, serviceName: rec.serviceName,
+        addonNames: rec.addonNames||[], price: rec.price||0, method: rec.method||'',
+        question: rec.question||'', other: rec.other||'', code: rec.code, status: rec.status||'已確認'
+      })
+    });
+    const data = await res.json();
+    if(!data || !data.ok){
+      toast('⚠️ 這筆手動新增的資料同步到雲端試算表失敗，目前只存在這台裝置上，之後按「同步」可能會不見');
+    }
+  }catch(err){
+    toast('⚠️ 這筆手動新增的資料同步到雲端試算表失敗（網路問題），目前只存在這台裝置上，之後按「同步」可能會不見');
+  }
 }
 
 /* ============================================================
