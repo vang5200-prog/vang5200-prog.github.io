@@ -499,9 +499,13 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
    固定寬度以後，不管用電腦還是手機，內容、分頁保證完全一致；手機螢幕比520px窄的話，
    靠下面 fitReportCardScale() 這個函式把整張卡片「等比例縮小顯示」（跟看PDF縮放頁面一樣，
    文字內容、換行都不變，只是畫面上看起來變小），不會影響實際送出、產生圖片的內容。 */
+/* 卡片底色原本是淡淡的漸層（中間偏白、邊緣偏粉），但拍照工具（html2canvas）對漸層本來就處理
+   不精準，抓圖時一律會被換成一個固定的實色（見下面stripAllGradientsForCapture的說明），造成
+   編輯／成品畫面看到的（漸層）跟產生圖片／EMAIL拍出來的（實色）底色不是完全一樣。這裡直接把
+   畫面上的底色也改成跟拍照時同一個實色，兩邊保證一模一樣，不再有落差。 */
 .rpt-card{
   position:relative; width:520px; margin:0 auto;
-  background:radial-gradient(ellipse at 50% 42%, #FEFCFE 0%, #F8EEF6 55%, #EEDCEA 100%); border:1px solid var(--gold-border);
+  background:#F8EEF6; border:1px solid var(--gold-border);
   border-radius:20px; padding:40px 30px 28px; box-shadow:0 14px 34px rgba(122,59,82,0.14);
   font-family:-apple-system, BlinkMacSystemFont, sans-serif; box-sizing:border-box; overflow:hidden;
 }
@@ -521,7 +525,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rpt-eyebrow-zh{ font-size:16px; font-weight:800; letter-spacing:.06em; color:var(--gold-text); }
 .rpt-eyebrow-en{ font-size:10.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold-text); margin-top:4px; }
 .rpt-eyebrow-note{ font-size:11px; font-weight:400; color:#999; margin-top:6px; }
-.rpt-rule{ position:relative; z-index:1; height:1px; background:linear-gradient(to right, transparent, #D4AF37 20%, #D4AF37 80%, transparent); margin:9px 0 20px; }
+.rpt-rule{ position:relative; z-index:1; display:flex; height:1px; margin:9px 0 20px; }
 /* 報告書內文區塊（標題橫線之下、結尾橫線之上）的容器，浮水印會用絕對定位鋪滿這個範圍，
    這樣浮水印的上下範圍就一定不會超出「標題下方橫線」到「結尾上方橫線」之間 */
 .rpt-body-wrap{ position:relative; display:flex; flex-direction:column; }
@@ -540,7 +544,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rpt-watermark{ position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; line-height:1; font-size:90px; font-weight:900; color:rgba(198,168,90,0.10); pointer-events:none; user-select:none; overflow:hidden; }
 .rpt-meta{ position:relative; z-index:1; display:flex; justify-content:flex-end; font-size:13px; color:#9C8868; margin-bottom:16px; }
 .rpt-client{ position:relative; z-index:1; display:flex; align-items:stretch; gap:12px; margin-bottom:14px; }
-.rpt-client .bar{ width:4px; border-radius:4px; background:linear-gradient(180deg,#D4AF37,#7A3B52); }
+.rpt-client .bar{ width:4px; border-radius:4px; display:flex; flex-direction:column; overflow:hidden; }
 .rpt-client .who{ display:flex; flex-direction:column; gap:5px; justify-content:center; }
 .rpt-client .who .n{ font-size:22px; font-weight:800; color:var(--brown); }
 .rpt-client .tag{ font-size:12.5px; color:var(--gold-text); background:#FFF6E0; border-radius:999px; padding:2px 10px; display:inline-block; width:fit-content; }
@@ -571,7 +575,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rpt-transcript{ background:rgba(154,127,190,0.05); border:1px solid #EADFC8; border-radius:12px; padding:13px 15px; }
 .rpt-transcript .body{ font-size:13.5px; color:#6B5A45; }
 .rpt-footer{ position:relative; z-index:1; text-align:center; margin-top:2px; }
-.rpt-footer .rule2{ height:1px; background:linear-gradient(to right, transparent, #D4AF37, transparent); margin-bottom:6px; }
+.rpt-footer .rule2{ display:flex; height:1px; margin-bottom:6px; }
 .rpt-footer .closing{ font-size:13.5px; color:#6B5A45; line-height:1.7; margin-bottom:6px; }
 .rpt-footer .who2{ font-size:12px; color:#9C8868; letter-spacing:.03em; }
 .rpt-footer .who2 b{ color:var(--gold-text); font-weight:700; }
@@ -1022,7 +1026,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-47 ・ 接續上一版的孤兒行修正，再補兩個調整：①脈輪問題文字欄如果被換到新的一頁重新開始（不再緊跟在脈輪圖後面），現在會自動補上「此次需要注意的脈輪（續）」標題，不會讓客戶看到一段沒頭沒尾的文字；②「此次需要注意的脈輪」標題原本跟上面的文字欄（例如諮詢重點與建議）完全貼在一起，現在加了一點上方間距，看起來不會那麼緊貼', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-49 ・ 接續上一版脈輪發光的統一，這次把報告卡片剩下幾個「畫面上用漸層色、拍照時才臨時換成另一種畫法」的地方也一併統一掉：卡片底色（原本淡淡漸層，改成跟拍照一致的實色）、標題下面的金色細線、客戶資訊左邊的直條色塊、結尾祝福語上面的細線，這幾個現在都改成一開始就用「一整排純色小方塊」拼出來，不再是CSS漸層、也不再需要拍照時臨時替換。這樣編輯、成品畫面看到的整張卡片，跟產生圖片、寄送EMAIL拍出來的，應該已經完全一模一樣，不會再有任何底色、線條上的落差', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -2840,14 +2844,14 @@ function shadeColor(hex, percent){
 function chakraDiagramSvg(selectedList){
   selectedList = selectedList || [];
   const allOn = selectedList.includes(CHAKRA_ALL_LABEL);
-  /* 發光效果是鑽石被光照到的放射感：不規則的放射狀星芒（像"＊"字，長短尖角交錯，不是規則的十字），
-     再用較大範圍的 drop-shadow 做柔和光暈，這樣勾選到的脈輪才會明顯比圖片上其他沒選到的脈輪更突出、
-     更像在發光。這裡維持笑笑已經確認滿意的原始做法完全不變（電腦版、手機版畫面上看到的都是這個）。
-     另外多藏了一份「拍照專用」的純色圓點光暈（.rpt-chakra-halo-capture，平常display:none看不到），
-     只有在「產生圖片」「寄送EMAIL」實際拍照時才會被打開、同時把這個filter效果拿掉——因為filter
-     這個效果，抓圖工具（html2canvas）幾乎不支援，拍出來的圖片裡光暈會直接整個消失、只剩下星星
-     本身的顏色（這正是之前「圖片、EMAIL裡脈輪不發光」的真正原因）。這樣畫面上看到的發光效果
-     （不管電腦或手機）完全不受影響，只有拍照結果從「完全不發光」變成「用另一種方式呈現發光」。 */
+  /* 發光效果統一只用「一層層純色圓形疊出來的柔光」＋上面的尖角星星，編輯、成品、產生圖片、
+     寄送EMAIL全部都是用同一份HTML/CSS畫出來的，不再區分「畫面上看到的」跟「拍照拍到的」兩種
+     做法。原本畫面上用的是filter:drop-shadow做柔光（好看，但抓圖工具html2canvas幾乎不支援，
+     拍出來的圖片裡光暈會整個消失），拍照當下才臨時把柔光換成另一組純色圓圈——兩種做法看起來
+     相似但不是完全一樣，笑笑反映編輯／成品看到的效果跟實際產出的圖片、EMAIL有落差，編輯版面
+     時常常搞不清楚最後印出來到底會是哪個樣子。現在統一都用純色圓圈疊出的柔光，不再用filter，
+     畫面上看到的（電腦、手機、編輯、成品）跟實際拍出來的（圖片、EMAIL）保證是同一份HTML、
+     同一個樣子，不會再不一致。 */
   const dots = CHAKRA_DIAGRAM_ORDER.filter(name=>allOn || selectedList.includes(name)).map(name=>{
     const yPct = CHAKRA_BODY_IMG_POS[name];
     const color = CHAKRA_BODY_IMG_COLOR[name] || reportChakraMeta(name).color;
@@ -2856,17 +2860,14 @@ function chakraDiagramSvg(selectedList){
     // 這套抓圖工具（html2canvas）對「SVG標籤自己就是絕對定位」這種寫法支援不好，
     // 常常整個不畫出來（不是位置錯誤，是完全消失），改成外層div定位、SVG只負責畫圖案，
     // 兩種瀏覽器畫面看起來一模一樣，但抓圖時就不會再讓發光效果不見了。
-    // 拍照專用的柔光底（平常隱藏，拍照時打開，疊在尖角星星下面當柔和的背景光暈）。
-    // 這裡曾經試過用CSS漸層（radial-gradient）＋十字線條畫這個圓形光暈，結果實際拍出來的圖片
-    // 反而變成一朵尖角分明的「太陽花／齒輪」形狀，不是柔和的光暈——原因是抓圖工具（html2canvas）
-    // 對「漸層」的處理本來就不精準（這也是整份程式一直把其他地方的漸層背景統一換成實心色的原因，
-    // 見上面 stripAllGradientsForCapture 的說明）。改用很多層「純色圓形」疊出柔光。
-    // 曾經試過把層數從9層加到28層（層與層之間差距縮小，放大檢查看不到一圈一圈的邊界），
-    // 但笑笑實際比較後還是比較喜歡原本9層這版本看起來的樣子，所以改回9層。
+    // 柔光的畫法：很多層「純色圓形」疊出來（曾經試過CSS漸層radial-gradient，抓圖工具畫出來
+    // 反而變成一朵尖角分明的「太陽花／齒輪」形狀，不是柔和的光暈，見下面 stripAllGradientsForCapture
+    // 的說明）。層數維持笑笑比較後選定的9層。這個柔光現在編輯、成品畫面上也會直接顯示（不再
+    // 只有拍照時才打開），才能保證跟拍出來的圖片一致。
     const glowRing = (r, alphaHex) => `<div style="position:absolute; left:50%; top:50%; width:${r*2}px; height:${r*2}px; margin:${-r}px 0 0 ${-r}px; border-radius:50%; background-color:${color}${alphaHex};"></div>`;
-    const captureHalo = `${glowRing(20,'12')}${glowRing(17,'18')}${glowRing(14,'22')}${glowRing(11.5,'30')}${glowRing(9.5,'42')}${glowRing(7.5,'5C')}${glowRing(5.8,'7E')}${glowRing(4.2,'A8')}${glowRing(3,'FF')}`;
-    return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px; filter:drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px ${color}99) drop-shadow(0 0 13px ${color}77) drop-shadow(0 0 20px ${color}44);">
-      <div class="rpt-chakra-halo-capture" style="display:none;">${captureHalo}</div>
+    const halo = `${glowRing(20,'12')}${glowRing(17,'18')}${glowRing(14,'22')}${glowRing(11.5,'30')}${glowRing(9.5,'42')}${glowRing(7.5,'5C')}${glowRing(5.8,'7E')}${glowRing(4.2,'A8')}${glowRing(3,'FF')}`;
+    return `<div style="position:absolute; left:${CHAKRA_BODY_IMG_X}%; top:${yPct}%; width:22px; height:22px; margin:-11px 0 0 -11px;">
+      <div class="rpt-chakra-halo-capture">${halo}</div>
       <svg class="rpt-chakra-star-svg" viewBox="0 0 24 24" width="22" height="22" style="position:relative; display:block; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
         <path d="M 12.00 0.50 L 12.84 9.97 L 16.24 7.76 L 14.03 11.16 L 23.50 12.00 L 14.03 12.84 L 16.24 16.24 L 12.84 14.03 L 12.00 23.50 L 11.16 14.03 L 7.76 16.24 L 9.97 12.84 L 0.50 12.00 L 9.97 11.16 L 7.76 7.76 L 11.16 9.97 Z" fill="${color}"/>
         <path d="M 12.00 7.00 L 12.38 11.08 L 13.84 10.16 L 12.92 11.62 L 17.00 12.00 L 12.92 12.38 L 13.84 13.84 L 12.38 12.92 L 12.00 17.00 L 11.62 12.92 L 10.16 13.84 L 11.08 12.38 L 7.00 12.00 L 11.08 11.62 L 10.16 10.16 L 11.62 11.08 Z" fill="${light}"/>
@@ -2928,14 +2929,14 @@ function reportCardPageHtml(pageNum, totalPages, bodyHtml, showFooter){
     ${rptCardCornersHtml()}
     ${RPT_CARD_CREST_HTML}
     ${rptEyebrowHtml()}
-    <div class="rpt-rule"></div>
+    <div class="rpt-rule">${RPT_HEADER_RULE_SEGMENTS_HTML}</div>
     <div class="rpt-body-wrap" style="height:${RPT_PAGE_BODY_HEIGHT}px; overflow:hidden;">
       <div class="rpt-watermark" style="font-size:${RPT_WATERMARK_FONT_SIZE}px;"><span>大</span><span>光</span><span>明</span></div>
       ${bodyHtml}
     </div>
     <div class="rpt-callout-tail"></div>
     <div class="rpt-footer"${showFooter?'':' style="visibility:hidden;"'}>
-      <div class="rule2"></div>
+      <div class="rule2">${RPT_RULE2_FADE_SEGMENTS_HTML}</div>
       <div class="closing">${esc(reportClosing)}</div>
       <div class="who2"><b>${esc(reportBrandName)}</b>${reportIgHandle?'　'+esc(reportIgHandle):''}</div>
     </div>
@@ -3105,7 +3106,7 @@ function reportCardHtml(rec, rep){
   const headerHtml = `
     <div class="rpt-meta"><span>${esc(fmtDt(rec.datetime))}</span></div>
     <div class="rpt-client">
-      <span class="bar"></span>
+      <span class="bar">${RPT_CLIENT_BAR_SEGMENTS_HTML}</span>
       <div class="who">
         <span class="n">${esc(rec.name||'')}</span>
         <span class="tag">${esc(rec.serviceName||'未分類')}</span>
@@ -3378,52 +3379,59 @@ function fallbackCopyText(text, done){
    現在文字框已經不畫自己的底色了（底色統一交給.rpt-callout-tail一個元素從頭畫到尾，
    見rptAlignCalloutTail的說明），文字框畫多高、有沒有撐滿，畫面上完全看不出差別，
    這個「補高度」的步驟就不再需要了，抓圖時保留flex排版原樣即可。 */
-/* 「願此次相會...」上面那條細線（.rpt-footer .rule2）兩端漸淡的效果，抓圖用的複製品裡
-   改用「一整排極細的純色小方塊、透明度從兩端到中間漸漸變深」拼出來，取代原本的CSS漸層色。
-   每個小方塊都是純色、沒有漸層，肉眼在這麼細的一條線上幾乎看不出跟真的漸層有差別。 */
-var RPT_RULE2_FADE_SEGMENTS_HTML = (function(){
-  var n = 40, out = '';
-  for(var i=0;i<n;i++){
-    var p = (i + 0.5) / n;
-    var op = Math.max(0, 1 - Math.abs(2*p - 1));
-    out += '<span style="flex:1 1 0; align-self:stretch; background:#D4AF37; opacity:'+op.toFixed(3)+';"></span>';
+/* 報告卡片上幾條裝飾用的細線／色條，原本都是用CSS漸層畫的（兩端透明中間實色的細線、
+   金色過渡到酒紅色的直條），但拍照工具（html2canvas）對CSS漸層處理本來就不精準，之前都是
+   「畫面上用真的CSS漸層、拍照當下才臨時換成一排純色小方塊拼出來的近似效果」，這樣編輯／成品
+   畫面看到的跟產生圖片／EMAIL拍出來的就會有落差。現在改成一開始產生HTML的時候，就直接用
+   「一整排純色小方塊」拼出這些線條／色條，不再依賴CSS漸層、也不需要拍照時才臨時替換，
+   畫面上看到的（電腦、手機、編輯、成品）跟實際拍出來的（圖片、EMAIL）永遠是同一份HTML、
+   保證一模一樣。每個小方塊都是純色，肉眼在這麼細的線條上幾乎看不出跟真的漸層有差別。 */
+function rptFadeSegmentsHtml(color, opacityFn, n){
+  n = n || 40;
+  let out = '';
+  for(let i=0;i<n;i++){
+    const p = (i + 0.5) / n;
+    const op = Math.max(0, Math.min(1, opacityFn(p)));
+    out += `<span style="flex:1 1 0; align-self:stretch; background:${color}; opacity:${op.toFixed(3)};"></span>`;
   }
   return out;
-})();
+}
+function rptMixHexColor(hex1, hex2, t){
+  const p = (h)=>{ h = h.replace('#',''); return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)]; };
+  const [r1,g1,b1] = p(hex1), [r2,g2,b2] = p(hex2);
+  const mix = (a,b)=> Math.round(a + (b-a)*t).toString(16).padStart(2,'0');
+  return '#' + mix(r1,r2) + mix(g1,g2) + mix(b1,b2);
+}
+function rptColorBlendSegmentsHtml(color1, color2, n){
+  n = n || 20;
+  let out = '';
+  for(let i=0;i<n;i++){
+    const t = (i + 0.5) / n;
+    out += `<span style="flex:1 1 0; align-self:stretch; background:${rptMixHexColor(color1, color2, t)};"></span>`;
+  }
+  return out;
+}
+// 「願此次相會...」上面那條細線（.rpt-footer .rule2）：兩端透明、中間實色，三角形的漸淡曲線
+var RPT_RULE2_FADE_SEGMENTS_HTML = rptFadeSegmentsHtml('#D4AF37', p => 1 - Math.abs(2*p - 1));
+// 標題下面那條細線（.rpt-rule）：兩端透明、20%~80%維持全實色，梯形的漸淡曲線
+var RPT_HEADER_RULE_SEGMENTS_HTML = rptFadeSegmentsHtml('#D4AF37', p => p<0.2 ? p/0.2 : (p>0.8 ? (1-p)/0.2 : 1));
+// 客戶資訊左邊那條直的色條（.rpt-client .bar）：金色過渡到酒紅色
+var RPT_CLIENT_BAR_SEGMENTS_HTML = rptColorBlendSegmentsHtml('#D4AF37', '#7A3B52', 20);
 function stripAllGradientsForCapture(rootEl){
-  // 已知報告書卡片裡幾個會用到漸層色的地方，量出來的尺寸是0時，一律直接換成實心色，避免整頁失敗。
+  // 已知報告書卡片裡還會用到漸層色的地方，量出來的尺寸是0時，一律直接換成實心色，避免整頁失敗。
+  // （.rpt-rule、.rpt-client .bar已經改用純色小方塊拼出來，不再是CSS漸層，這裡不用再處理）
   const known = [
-    { sel: null, color: '#F8EEF6' }, // rootEl 自己（卡片底色，原本是淡粉漸層）
-    { sel: '.rpt-rule', color: '#D4AF37' },
-    { sel: '.rpt-client .bar', color: '#D4AF37' }
+    { sel: null, color: '#F8EEF6' } // rootEl 自己（卡片底色，原本是淡粉漸層，現在也已經改成實色，這裡保留當保險）
   ];
   known.forEach(({sel, color})=>{
     const els = sel ? Array.from(rootEl.querySelectorAll(sel)) : [rootEl];
     els.forEach(el=>{ el.style.backgroundImage = 'none'; el.style.backgroundColor = color; });
   });
-  // 「願此次相會...」上面那條細線（.rpt-footer .rule2）只有1px高，這套抓圖工具(html2canvas)
-  // 在複製品裡量測「只有1px高又是漸層背景」的元素時，偶爾會量到0高度——量到0之後它自己內部
-  // 用來畫漸層的暫存畫布也會跟著變成0x0，一去貼上就直接整頁失敗（這正是上面「known」清單原本
-  // 要擋掉的那類問題；曾經為了保留兩端漸淡的質感把這條線移出清單，結果讓這個已知的當機風險
-  // 又跑回來，害「產生圖片」整頁失敗、少了一頁）。改用上面拼好的純色小方塊排版，徹底不再用
-  // 漸層/材質貼圖畫這條線，兩端漸淡的視覺效果保留，同時不會再有這個當機風險。
-  rootEl.querySelectorAll('.rpt-footer .rule2').forEach(el=>{
-    el.style.backgroundImage = 'none';
-    el.style.backgroundColor = 'transparent';
-    el.style.display = 'flex';
-    el.innerHTML = RPT_RULE2_FADE_SEGMENTS_HTML;
-  });
-  // 先把「拍照專用」的脈輪光暈換上、尖角星星藏起來（見chakraDiagramSvg的說明），一定要在
-  // 下面「掃描整份內容、把量出來是0大小的漸層換成實心色」這一步之前先做——因為光暈平常是
-  // display:none藏起來的，量測當下如果還沒打開，量到的寬高一定是0，會被下面那段誤判成
-  // 「量出來是0大小的漸層」，把光暈本來設計好的柔和漸層直接換成一整塊死板的實心色，
-  // 变成硬邊圓點、完全沒有柔和暈開的感覺（這正是「歪一邊」之外，另一個曾經發生過的問題）。
-  rootEl.querySelectorAll('.rpt-chakra-halo-capture').forEach(el=>{ el.style.display = 'block'; });
-  // 尖角星星本身（.rpt-chakra-star-svg）現在維持顯示，不再拍照時隱藏起來：星星形狀已經在
-  // 前面（v2026-09-19-37）改成四個角完全對稱，本身不會再「歪一邊」；之前拍照時把它整個藏起來
-  // 只留圓形光暈，結果變成一片單純的暈開色塊，笑笑看了覺得「太醜、沒有發光的放射感」，
-  // 所以改回：拍照時光暈（柔和的底）＋星星本身（有尖角、看起來有放射感的上層）兩個疊在一起，
-  // 讓「圖片、EMAIL」拍出來的效果既有柔光又有放射感，比較接近編輯、成品畫面看到的樣子。
+  // 「願此次相會...」上面那條細線（.rpt-footer .rule2）現在產生HTML的當下就已經是純色小方塊
+  // 拼出來的（見上面RPT_RULE2_FADE_SEGMENTS_HTML的說明），不再是CSS漸層，這裡不用再處理，
+  // 也不會再有「量到0高度、漸層畫到一半整頁失敗」的風險。
+  // 脈輪的柔光（.rpt-chakra-halo-capture）現在編輯、成品畫面上本來就是顯示的（見chakraDiagramSvg
+  // 的說明，跟拍照用的是同一份HTML），不用再像以前那樣在拍照當下才臨時打開，這裡不需要處理。
   // 保險：再掃一次整份內容，任何「量出來寬或高是0、但背景還是漸層色」的元素，一樣直接換成實心色
   const all = rootEl.querySelectorAll('*');
   for(const el of all){
