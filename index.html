@@ -541,7 +541,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 淡淡的浮水印文字，鋪滿報告書標題橫線到結尾橫線之間的整個範圍，顏色非常淺、疊在所有內容跟圖片「之上」（z-index比內容區塊高），
    營造真正蓋在畫面上的浮水印感，但因為顏色很淡+pointer-events:none，不會擋到閱讀也不會擋到點擊；
    字級大小固定由 RPT_WATERMARK_FONT_SIZE 算好直接寫進每一頁，這裡的 font-size 只是還沒套用前的預設值 */
-.rpt-watermark{ position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; line-height:1; font-size:90px; font-weight:900; color:rgba(198,168,90,0.10); pointer-events:none; user-select:none; overflow:hidden; }
+.rpt-watermark{ position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; line-height:1; font-size:90px; font-weight:900; color:rgba(198,168,90,0.06); pointer-events:none; user-select:none; overflow:hidden; }
 .rpt-meta{ position:relative; z-index:1; display:flex; justify-content:flex-end; font-size:13px; color:#9C8868; margin-bottom:16px; }
 .rpt-client{ position:relative; z-index:1; display:flex; align-items:stretch; gap:12px; margin-bottom:14px; }
 .rpt-client .bar{ width:4px; border-radius:4px; display:flex; flex-direction:column; overflow:hidden; }
@@ -1026,7 +1026,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-52 ・ 這次是兩個跟「善的力量」義診名額有關、跟一個網站無關的LINE提醒功能：①原本「使用過一次後半年內不得再約」的規則改成「一年內不得再約」，網站上顯示的相關文字（彈出的說明、預約表單上的須知、超過限制時的提示訊息）也一起改成「一年」了；②新增一個每天晚上9點自動用LINE提醒自己「明天有哪些預約」的功能——這個是Code.gs那邊的功能，需要妳自己去Apps Script的「觸發條件」多加一個每天的觸發設定才會開始運作，詳細步驟我在回覆裡會說明。這個版本index.html本身的畫面、排版都沒有改動，只有上面說的義診文字更新', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-19-53 ・ 兩個修正：①浮水印「大光明」顏色再調淡一點；②報告書寄Email的方式改掉了——以前如果「拍照」產生圖片失敗，會自動退回寄一個「文字重新排版」的版本，但那個版本的文字是可以被整段選取、複製、修改的，等於報告書內容有一份可以被竄改的文字副本外流。現在改成：只要沒有成功拍到圖片，就直接不寄、跳出提示請妳重新整理頁面再試一次，絕對不會再寄出「文字版」；就連信件裡當備用的純文字欄位，現在也只放一句「請用可顯示圖片的信箱開啟」，不會放完整報告內容。Code.gs那邊也同步加了同一道防線，就算網頁還沒更新到這一版，雲端那邊也不會放行沒有圖片的寄信請求。這兩個修正都需要搭配更新過的Code.gs才會完整生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -3587,32 +3587,39 @@ async function sendReportCardEmail(){
   if(!confirm(`確定要把上面這份報告書直接寄給「${rec.name}」（${email}）嗎？\n送出後會立刻寄出，請先確認卡片內容都正確無誤。${draftNote}`)) return;
   if(!webhookUrl){ toast('尚未設定雲端網址，無法寄送'); return; }
   const subject = '妳的諮詢報告書｜' + (rec.name||'');
-  const body = reportCardTextOf(rec, rep); // 純文字版本，當備用內容
+  // 這裡故意「不」把完整報告書內容（諮詢重點、注意事項…）放進純文字備用內容裡：
+  // Email本來就會同時夾帶一份「純文字版」給收不到圖片/HTML的信箱當備用，如果這份純文字版
+  // 放的是完整報告內容，就等於報告書內容還是有一份「文字、可以被複製/竄改」的版本躺在信件裡，
+  // 跟「所有內文都不得被修改」這個目標矛盾。所以這裡只放不含報告內容的簡短提示文字。
+  const body = `${rec.name||''}的讀心諮詢報告書｜${fmtDt(rec.datetime)}\n\n這封信的完整內容是圖片格式，請使用可以顯示圖片的信箱或裝置開啟查看。`;
   const btn = document.getElementById('reportEmailBtn');
   const originalHtml = btn.innerHTML;
   btn.disabled = true; btn.innerHTML = '寄送中...';
   try{
-    // 優先把畫面上這份卡片直接「拍」成圖片寄出去——這樣客戶收到的信，畫面一定跟妳現在
-    // 看到的一模一樣（浮水印、力量符號邊框、脈輪圖都在），不會有另外排版出來、長得不太一樣的問題。
-    // 只有在拍照失敗（例如瀏覽器的「產生圖片」功能本身出問題）時，才退回文字排版的版本，
-    // 至少先讓客戶收得到內容，之後「產生圖片」功能一修好，寄出的信就會自動變回一模一樣的圖片版。
+    // 把畫面上這份卡片直接「拍」成圖片寄出去——這樣客戶收到的信，畫面一定跟妳現在看到的
+    // 一模一樣（浮水印、力量符號邊框、脈輪圖都在），而且圖片沒辦法像文字一樣被複製、修改內容，
+    // 報告書才不會有被竄改後冒充是妳寄出的風險。
+    // 如果拍照失敗，不會退回「文字排版版本」寄送——因為那個版本的文字是可以被選取、複製、
+    // 修改的，等於報告書內容外流成可竄改的文字，跟「所有內文都不得被修改」這個原則矛盾。
+    // 所以拍照失敗時直接不寄，請妳重新整理頁面、確認「產生圖片」功能正常後再試一次。
     const blobs = await captureReportCardPageBlobs();
     const allOk = blobs.length>0 && blobs.every(b=>!!b);
-    let payload;
-    if(allOk){
-      const pageImages = [];
-      for(const b of blobs){ pageImages.push(await blobToBase64(b)); }
-      payload = { type:'sendReportEmail', password: sessionStorage.getItem('rt_admin_pw')||'', email, subject, body, pageImages };
-    } else {
-      payload = { type:'sendReportEmail', password: sessionStorage.getItem('rt_admin_pw')||'', email, subject, body, htmlBody: reportCardEmailHtml(rec, rep) };
+    if(!allOk){
+      toast('圖片產生失敗，為了避免報告書用「可複製文字」的方式寄出，這次先不寄送。請重新整理頁面後再試一次');
+      return;
     }
+    const pageImages = [];
+    for(const b of blobs){ pageImages.push(await blobToBase64(b)); }
+    const payload = { type:'sendReportEmail', password: sessionStorage.getItem('rt_admin_pw')||'', email, subject, body, pageImages };
     const res = await fetch(webhookUrl, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify(payload)
     });
     const data = await res.json();
     if(data && data.ok){
-      toast(allOk ? '已成功寄出Email給客戶（圖片版，跟畫面一模一樣）🎉' : '已寄出Email（因為圖片功能異常，這次是用文字排版版本寄送）');
+      toast('已成功寄出Email給客戶（圖片版，跟畫面一模一樣）🎉');
+    } else if(data && data.error === 'no_images'){
+      toast('寄送失敗：雲端那邊沒收到圖片，Code.gs可能還是舊版本，請重新部署後再試一次');
     } else {
       toast('寄送失敗：' + ((data&&data.error)||'請稍後再試，或改用「複製文字」自行傳送'));
     }
