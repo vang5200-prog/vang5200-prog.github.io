@@ -626,6 +626,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <h2>服務方案</h2>
   <div id="serviceCardsWrap"></div>
   <div id="addonCardWrap"></div>
+  <p id="serviceDisclaimerWrap" style="font-size:12.5px; color:#999; line-height:1.8; text-align:left; margin:18px 4px 0; opacity:.85;"></p>
 
   <!-- 立即預約按鈕：捲動到下方預約表單 -->
   <button class="btn" style="margin-top:32px;" onclick="scrollToBooking()">線上預約諮詢</button>
@@ -794,6 +795,13 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
           <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">客戶按「送出預約」後、看到的「請確認妳的預約內容」畫面上，會用粉色小字顯示這段文字，例如取消與爽約規範。</p>
           <textarea id="setBookingPolicy" style="min-height:110px;"></textarea>
           <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveBookingPolicy()">儲存注意事項</button>
+        </div>
+
+        <div class="panel">
+          <h3>⚠️ 服務頁面免責聲明（顯示在所有方案卡片最下方）</h3>
+          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">固定用小字顯示在「服務方案」區塊、所有方案卡片下方，例如提醒客戶「不能取代正統醫療」這類聲明。就算把這裡清空，也會自動改用預設的提醒文字，不會整段消失。想在文字裡加紅色劃線（例如標示原價），把要劃線的部分前後各打兩個波浪號，例如：原價~~NT$3,600~~。</p>
+          <textarea id="setServiceDisclaimer" style="min-height:110px;"></textarea>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveServiceDisclaimer()">儲存免責聲明</button>
         </div>
 
         <div class="panel">
@@ -1026,7 +1034,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-19-53 ・ 兩個修正：①浮水印「大光明」顏色再調淡一點；②報告書寄Email的方式改掉了——以前如果「拍照」產生圖片失敗，會自動退回寄一個「文字重新排版」的版本，但那個版本的文字是可以被整段選取、複製、修改的，等於報告書內容有一份可以被竄改的文字副本外流。現在改成：只要沒有成功拍到圖片，就直接不寄、跳出提示請妳重新整理頁面再試一次，絕對不會再寄出「文字版」；就連信件裡當備用的純文字欄位，現在也只放一句「請用可顯示圖片的信箱開啟」，不會放完整報告內容。Code.gs那邊也同步加了同一道防線，就算網頁還沒更新到這一版，雲端那邊也不會放行沒有圖片的寄信請求。這兩個修正都需要搭配更新過的Code.gs才會完整生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-24-59 ・ 「寄送報告書」按鈕現在會多帶一個預約代碼給雲端，讓Code.gs那邊可以記下「這筆諮詢的報告書已經寄出」，用來配合Code.gs新增的「每晚9點提醒」功能——除了原本的「明天有哪些預約」，現在還會提醒妳①最近已經諮詢過、但報告書還沒寄出的客戶、②最近已經諮詢過、是包套方案但還沒點「標記完成」的客戶。這個版本需要搭配更新過的Code.gs才會完整生效，單獨更新index.html不會出現這個提醒（提醒訊息完全是Code.gs端運算並發送的，前台只是多傳一個代碼過去）', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -1046,8 +1054,14 @@ function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&
 function protectStarPairs(escapedText){
   return escapedText.replace(/⭐([^⭐\n]*)⭐/g, '<span style="white-space:nowrap;">⭐$1⭐</span>');
 }
-/* 給客戶看的多行說明文字用：先跳脫HTML特殊字元、保護星星裝飾不被拆行，最後把手動按的Enter換行轉成<br> */
-function richText(s){ return protectStarPairs(esc(s)).replace(/\n/g,'<br>'); }
+/* 讓後台在方案說明、展開選項裡打「~~文字~~」（前後各兩個波浪號），就能讓這段文字自動變成
+   紅色劃掉的線，最常拿來標示「原價」，例如：原價~~NT$3,600~~。在esc()跳脫過後的文字上做
+   替換，所以不會有HTML被注入的疑慮。 */
+function protectStrikePairs(escapedText){
+  return escapedText.replace(/~~([^~\n]+)~~/g, '<del style="color:#c0392b; text-decoration:line-through; opacity:.75;">$1</del>');
+}
+/* 給客戶看的多行說明文字用：先跳脫HTML特殊字元、保護星星裝飾跟劃線價格不被拆行/失效，最後把手動按的Enter換行轉成<br> */
+function richText(s){ return protectStrikePairs(protectStarPairs(esc(s))).replace(/\n/g,'<br>'); }
 function parseTiers(tiers){
   return (tiers||[]).map(t=>{
     const parts = t.split('→').map(p=>p.trim());
@@ -1156,6 +1170,14 @@ function defaultCharityBookingPolicy(){
 }
 function loadBookingPolicy(){ return localStorage.getItem(K_POLICY) || defaultBookingPolicy(); }
 function saveBookingPolicy(){ const v=document.getElementById('setBookingPolicy').value.trim()||defaultBookingPolicy(); localStorage.setItem(K_POLICY, v); bookingPolicy=v; pushRemoteSettings(); toast('預約注意事項已儲存'); }
+const K_SERVICE_DISCLAIMER='rt_service_disclaimer';
+/* 服務頁面最下方、所有方案卡片之後固定顯示的小字聲明。用 || 保底預設值，就算欄位被清空
+   也一定會顯示這段文字，不會整段消失不見。 */
+function defaultServiceDisclaimer(){
+  return '⚠️ 貼心提醒：\n本服務屬於能量平衡與靈性輔助範疇，旨在透過頻率共振促進整體的和諧與放鬆。靈氣服務不能取代正統的醫學診斷、心理諮商或醫療行為。若妳有任何生理或心理之疾病，請務必尋求專業合格醫師的協助。';
+}
+function loadServiceDisclaimer(){ return localStorage.getItem(K_SERVICE_DISCLAIMER) || defaultServiceDisclaimer(); }
+function saveServiceDisclaimer(){ const v=document.getElementById('setServiceDisclaimer').value.trim()||defaultServiceDisclaimer(); localStorage.setItem(K_SERVICE_DISCLAIMER, v); serviceDisclaimer=v; pushRemoteSettings(); renderServiceCards(); toast('免責聲明已儲存'); }
 
 /* 諮詢報告卡片設定：卡片最下方顯示的品牌名稱／IG帳號／祝福語，妳可以自己調整措辭 */
 const K_REPORT_BRAND='rt_report_brand';
@@ -1323,6 +1345,7 @@ async function pullRemoteSettings(){
     if(data && typeof data.igLink === 'string'){ igLink = data.igLink; localStorage.setItem(K_IG, igLink); changed = true; }
     if(data && typeof data.welcomeMsg === 'string' && data.welcomeMsg){ welcomeMsg = data.welcomeMsg; localStorage.setItem(K_WELCOME, welcomeMsg); changed = true; }
     if(data && typeof data.bookingPolicy === 'string' && data.bookingPolicy){ bookingPolicy = data.bookingPolicy; localStorage.setItem(K_POLICY, bookingPolicy); changed = true; }
+    if(data && typeof data.serviceDisclaimer === 'string' && data.serviceDisclaimer){ serviceDisclaimer = data.serviceDisclaimer; localStorage.setItem(K_SERVICE_DISCLAIMER, serviceDisclaimer); changed = true; }
     if(data && data.hero){ heroContent = {...defaultHeroContent(), ...data.hero}; saveHeroContentLocal(heroContent); changed = true; }
     if(data && data.availability){ availability = {...defaultAvailability(), ...data.availability}; saveAvailabilityLocal(availability); changed = true; }
     if(data && typeof data.reportBrandName === 'string' && data.reportBrandName){ reportBrandName = data.reportBrandName; localStorage.setItem(K_REPORT_BRAND, reportBrandName); changed = true; }
@@ -1344,7 +1367,7 @@ function pushRemoteSettings(){
     fetch(webhookUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo, welcomeMsg, bookingPolicy, igLink, reportBrandName, reportIgHandle, reportClosing, reportChakraImageUrl, reportChakraMeanings })
+      body: JSON.stringify({ type:'settings', password: sessionStorage.getItem('rt_admin_pw')||'', services, addons, methods, line: lineLink, hero: heroContent, availability, paymentInfo, welcomeMsg, bookingPolicy, serviceDisclaimer, igLink, reportBrandName, reportIgHandle, reportClosing, reportChakraImageUrl, reportChakraMeanings })
     }).catch(err=>console.warn('雲端設定同步失敗', err));
   }catch(err){ console.warn('雲端設定同步失敗', err); }
 }
@@ -1357,6 +1380,7 @@ let paymentInfo = loadPaymentInfo();
 let igLink = loadIGLink();
 let welcomeMsg = loadWelcomeMsg();
 let bookingPolicy = loadBookingPolicy();
+let serviceDisclaimer = loadServiceDisclaimer();
 let webhookUrl = loadWebhook();
 let heroContent = loadHeroContent();
 let availability = loadAvailability();
@@ -1383,7 +1407,7 @@ function renderServiceCards(){
       ${s.subtitle?`<div class="card-subtitle">${esc(s.subtitle)}</div>`:''}
       <p class="card-desc">${richText(s.desc||'')}</p>
       ${s.locationNote?`<p class="card-desc" style="margin-top:6px; opacity:.8;">${richText(s.locationNote)}</p>`:''}
-      ${(s.tiers&&s.tiers.length)?`<div class="tier-list">${parseTiers(s.tiers).map(t=>`<div class="tier-row${t.label.includes('⭐')?' recommended':''}">${protectStarPairs(esc(t.label))}</div>`).join('')}</div>`:''}
+      ${(s.tiers&&s.tiers.length)?`<div class="tier-list">${parseTiers(s.tiers).map(t=>`<div class="tier-row${t.label.includes('⭐')?' recommended':''}">${protectStrikePairs(protectStarPairs(esc(t.label)))}</div>`).join('')}</div>`:''}
       ${s.note?`<p class="card-note">${richText(s.note)}</p>`:''}
     </div>`).join('');
   document.getElementById('addonCardWrap').innerHTML = addons.length ? `
@@ -1391,6 +1415,7 @@ function renderServiceCards(){
       <div class="addon-label">＋ 加購選項</div>
       ${addons.map(a=>`<div class="addon-item" style="cursor:default; display:block;"><div><strong>${esc(a.name)}</strong>｜${a.isFree?'免費':'NT$'+Number(a.price).toLocaleString()}</div>${a.desc?`<div style="font-size:14.5px; color:#888; margin-top:2px;">${esc(a.desc)}</div>`:''}</div>`).join('')}
     </div>` : '';
+  document.getElementById('serviceDisclaimerWrap').innerHTML = richText(serviceDisclaimer);
 }
 function renderHeroContent(){
   document.getElementById('heroTitle').innerHTML = esc(heroContent.title).replace(/\n/g,'<br>');
@@ -1442,7 +1467,7 @@ function publicFieldsHTML(){
     <div class="field"><label>預約項目 <span class="req">*</span></label>
       <select id="pf_service" onchange="onServiceChange()">${svcOptions}</select>
     </div>
-    <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview(); updateQuestionField(); checkChakraTierNotice(); if(document.getElementById('pf_date').value) loadSlotsForDate();"></select></div>
+    <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview(); updateQuestionField(); checkChakraTierNotice(); checkMultiSessionTierNotice(); if(document.getElementById('pf_date').value) loadSlotsForDate();"></select></div>
     <div class="field full" id="chakraCheckWrap" style="display:none;">
       <label id="chakraCheckLabel">請勾選妳想療癒的脈輪 <span class="req">*</span></label>
       <div id="chakraCheckList" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px;"></div>
@@ -1812,6 +1837,31 @@ function checkChakraTierNotice(){
     hideChakraCheckWrap();
   }
 }
+/* 選到「3次／6次」這種要分好幾天才能做完的方案時，跳出提醒：這次預約選的時段只是「第一次」，
+   之後每一次要另外再約時間，避免客戶誤以為選這個方案、療癒就會在這次預約的時段一次做完。
+   判斷方式：選項文字裡只要抓得到「大於等於2的數字＋次」就算（例如「3次」「6次」「共6次」），
+   「單次」不會被抓到（因為「單」不是數字），不用另外排除。如果客戶不同意，就把這個選項清掉、
+   讓她重新選。 */
+async function checkMultiSessionTierNotice(){
+  const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
+  const tierEl = document.getElementById('pf_tier');
+  if(!svc || !tierEl || !tierEl.value) return;
+  const tiers = parseTiers(svc.tiers);
+  const t = tiers[Number(tierEl.value)];
+  if(!t) return;
+  const m = t.label.match(/(\d+)\s*次/);
+  if(!m || Number(m[1]) < 2) return;
+  const proceed = await showStyledConfirm(
+    '預約說明',
+    '本次預約時間為「第一次」時段，下一次預約時間於療癒後，另外跟妳約定',
+    '同意，繼續預約',
+    '取消'
+  );
+  if(!proceed){
+    tierEl.value = '';
+    updatePricePreview(); updateQuestionField(); checkChakraTierNotice();
+  }
+}
 function updateMethodField(){
   const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
   const methodEl = document.getElementById('pf_method');
@@ -1820,11 +1870,13 @@ function updateMethodField(){
   methodEl.innerHTML = allowed.map(m=>`<option value="${m}">${m}</option>`).join('');
   if(allowed.includes(current)) methodEl.value = current;
 }
-function showStyledConfirm(title, message){
+function showStyledConfirm(title, message, okLabel, cancelLabel){
   return new Promise(resolve=>{
     const overlay = document.getElementById('charityModalOverlay');
     document.getElementById('charityModalTitle').textContent = title;
     document.getElementById('charityModalText').textContent = message;
+    document.getElementById('charityModalOk').textContent = okLabel || '確定';
+    document.getElementById('charityModalCancel').textContent = cancelLabel || '取消';
     overlay.classList.add('open');
     document.getElementById('charityModalOk').onclick = ()=>{ overlay.classList.remove('open'); resolve(true); };
     document.getElementById('charityModalCancel').onclick = ()=>{ overlay.classList.remove('open'); resolve(false); };
@@ -2472,6 +2524,7 @@ function renderList(){
       <div class="rec-actions">
         ${r.status==='待確認'?`<button class="primary" onclick="quickStatus('${r.id}','已確認')">確認預約</button>`:''}
         ${r.status==='已確認'?`<button class="primary" onclick="quickStatus('${r.id}','已完成')">標記完成</button>`:''}
+        ${r.status==='已完成'?`<button onclick="openFollowupForm('${r.id}')">📅 安排下一次</button>`:''}
         ${r.status==='已確認'?`<button class="danger" onclick="quickStatus('${r.id}','無故爽約')">標記無故爽約</button>`:''}
         ${r.status==='已確認'?`<button onclick="quickStatus('${r.id}','臨時取消')">標記臨時取消</button>`:''}
         ${r.status==='待確認'?`<button class="danger" onclick="rejectBookingFull('${r.id}')">婉拒（時段已滿）</button>`:''}
@@ -2581,6 +2634,60 @@ function quickStatus(id,status){
   r.status=status; saveRecords(records); renderList(); renderDashboard();
   updateStatusRemote(r.code, status);
   toast('狀態已更新為「'+status+'」');
+  // 標記完成後，如果這筆是「3次／6次」這種要分好幾次才能做完的包套方案，自動用LINE發一則訊息
+  // 給客戶，讓她知道這是第幾次、該安排下一次了——不用妳在諮詢結束當下馬上跟客戶討論時間、
+  // 耽誤到下一位客戶，之後妳有空再透過LINE或後台「＋新增」實際安排下一次的時間就好。
+  if(status==='已完成') notifyPackageProgress(r);
+}
+/* 判斷這筆「已完成」的預約是不是「3次／6次」這種包套方案裡的一次，是的話算出這是第幾次、
+   總共幾次，自動用LINE通知客戶。
+   算法：從服務項目文字（去掉「服務名稱 - 」那段展開選項的前綴後）比對出「N次」（N>=2 才算包套，
+   「單次」不會比對到），接著在同一位客戶（同Email）、完全相同服務項目文字的所有預約裡，
+   依時間排序找出這筆排第幾個，用「排到第幾個」除以「總共N次」取餘數的方式回推這是「這一輪」
+   的第幾次——這樣同一個客戶之後如果又重新買一輪同樣的包套方案，次數也會從1重新算，不會
+   一直往上累加。不需要另外在資料裡存「第幾次」這種欄位，用現有的預約紀錄就能算出來。
+   沒有LINE身份（lineUserId）的客戶沒辦法自動發送，會另外用toast提醒妳要自己聯絡。 */
+async function notifyPackageProgress(rec){
+  const fullLabel = rec.serviceName || '';
+  const m = fullLabel.match(/(\d+)\s*次/);
+  const total = m ? Number(m[1]) : 0;
+  if(total < 2) return; // 不是包套方案（例如單次），不用發任何通知
+  const displayName = fullLabel.split(' - ')[0].trim();
+
+  const siblings = records.filter(r=>
+    r.serviceName === rec.serviceName &&
+    r.email && rec.email && r.email.trim().toLowerCase() === rec.email.trim().toLowerCase() &&
+    (r.status==='已完成' || r.status==='已確認')
+  ).sort((a,b)=> new Date(a.datetime) - new Date(b.datetime));
+  const pos = siblings.findIndex(r=>r.id===rec.id);
+  if(pos === -1) return;
+  const index = (pos % total) + 1; // 這一輪的第幾次（1-based，超過total會自動從1重新算）
+
+  if(!rec.lineUserId){
+    toast(`「${rec.name}」還沒有加LINE好友核對身份，沒辦法自動通知安排第${index<total?index+1:'下一輪'}次，記得自己聯絡她 🙏`);
+    return;
+  }
+  if(!webhookUrl){ toast('尚未設定雲端網址，無法自動通知客戶'); return; }
+
+  // 附上的預約連結會自動帶入姓名跟Email，客戶點開後只需要重新選項目跟時間就好，
+  // 接下來就是原本一模一樣的預約流程（送出代碼、核對身份、確認等），不需要另外特別處理
+  const bookingLink = `https://vang5200-prog.github.io/?prefill_name=${encodeURIComponent(rec.name||'')}&prefill_email=${encodeURIComponent(rec.email||'')}`;
+  const text = index < total
+    ? `💛 妳的第${index}次「${displayName}」已經完成囉！準備安排第${index+1}次的預約時間，請點下方連結，幫自己選一個方便的時段哦 🙏\n${bookingLink}`
+    : `🎉 恭喜完成全部${total}次的「${displayName}」療程！這段時間辛苦妳了，有任何想跟我分享的感受，都歡迎在這裡告訴我 💛`;
+
+  try{
+    const res = await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'pushCustomerText', password: sessionStorage.getItem('rt_admin_pw')||'', lineUserId: rec.lineUserId, text })
+    });
+    const data = await res.json();
+    if(data && data.ok){
+      toast(index < total ? `已自動用LINE通知「${rec.name}」安排第${index+1}次的時間，並附上預約連結 📲` : `已自動用LINE恭喜「${rec.name}」完成整個療程 🎉`);
+    } else {
+      toast('自動通知客戶失敗，請自己用LINE聯絡她');
+    }
+  }catch(err){ toast('自動通知客戶失敗（網路問題），請自己用LINE聯絡她'); }
 }
 async function rejectBookingFull(id){
   const r=records.find(x=>x.id===id); if(!r)return;
@@ -3610,7 +3717,7 @@ async function sendReportCardEmail(){
     }
     const pageImages = [];
     for(const b of blobs){ pageImages.push(await blobToBase64(b)); }
-    const payload = { type:'sendReportEmail', password: sessionStorage.getItem('rt_admin_pw')||'', email, subject, body, pageImages };
+    const payload = { type:'sendReportEmail', password: sessionStorage.getItem('rt_admin_pw')||'', email, subject, body, pageImages, code: rec.code||'' };
     const res = await fetch(webhookUrl, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify(payload)
@@ -3649,6 +3756,37 @@ function openForm(id=null){
     <div class="field full"><label>其他備註</label><textarea id="af_other">${esc(rec.other||'')}</textarea></div>
   `;
   if(!id) afUpdatePrice();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+/* 在已完成的預約列表按「📅 安排下一次」時，直接幫她開一筆「新增預約」，預先帶入同一位客戶的
+   姓名、Email、服務項目、諮詢方式，只需要挑新的日期時間就好，就像醫生幫病人掛下一次回診一樣。
+   這個按鈕不會自動彈出，是妳自己看時機（例如客戶已經回覆方便的時間）再手動點的。
+   跟一般「＋新增」不同的地方：
+   1) 價格預設是0，不是原價——因為3次/6次這種包套方案，客戶在第一次就已經付過整包的錢了，
+      後面幾次不用再收費一次；如果這次其實需要另外收費（例如是全新的一筆預約），價格欄位
+      本來就可以直接手動改。
+   2) 備註欄自動帶入「接續上一次」的說明和上一次的預約代碼，方便妳自己核對。
+   這筆最後一樣是透過 saveAdminForm() 存成一筆全新的預約（editingId 保持 null），會自動產生
+   新代碼、同步到雲端試算表，跟後台原本「＋新增」的邏輯完全一樣。 */
+function openFollowupForm(sourceId){
+  const src = records.find(r=>r.id===sourceId); if(!src) return;
+  editingId = null;
+  document.getElementById('modalTitle').textContent = '安排下一次療癒｜' + src.name;
+  const svcOptions = services.map(s=>`<option value="${s.id}" ${src.serviceId===s.id?'selected':''}>${esc(s.name)}</option>`).join('');
+  const methodOptions = methods.map(m=>`<option value="${m}" ${src.method===m?'selected':''}>${m}</option>`).join('');
+  const statusOptions = STATUSES.map(s=>`<option value="${s}" ${s==='已確認'?'selected':''}>${s}</option>`).join('');
+  const followupNote = `接續 ${fmtDt(src.datetime)} 的療癒（上一次預約代碼：${src.code||'無'}）。如果這次也需要另外收費，記得改價格。`;
+  document.getElementById('adminFormFields').innerHTML = `
+    <div class="field full"><label>客戶姓名 *</label><input id="af_name" value="${esc(src.name||'')}"></div>
+    <div class="field"><label>Email</label><input id="af_email" value="${esc(src.email||'')}"></div>
+    <div class="field"><label>預約時間 *</label><input id="af_datetime" type="datetime-local" value=""></div>
+    <div class="field"><label>服務項目</label><select id="af_service" onchange="afUpdatePrice()">${svcOptions}</select></div>
+    <div class="field"><label>價格 (NT$)</label><input id="af_price" type="number" value="0"></div>
+    <div class="field"><label>諮詢方式</label><select id="af_method">${methodOptions}</select></div>
+    <div class="field"><label>狀態</label><select id="af_status">${statusOptions}</select></div>
+    <div class="field full"><label>諮詢問題</label><textarea id="af_question">${esc(src.question||'')}</textarea></div>
+    <div class="field full"><label>其他備註</label><textarea id="af_other">${esc(followupNote)}</textarea></div>
+  `;
   document.getElementById('modalOverlay').classList.add('open');
 }
 function afUpdatePrice(){ const svc=services.find(s=>s.id===document.getElementById('af_service').value); if(svc) document.getElementById('af_price').value=svc.price; }
@@ -3733,6 +3871,7 @@ function renderSettings(){
     if(el) el.value = reportChakraMeanings[name] || '';
   });
   document.getElementById('setBookingPolicy').value = bookingPolicy;
+  document.getElementById('setServiceDisclaimer').value = serviceDisclaimer;
   document.getElementById('setWebhook').value = webhookUrl;
   document.getElementById('setHeroTitle').value = heroContent.title;
   document.getElementById('setHeroSubtitle').value = heroContent.subtitle;
