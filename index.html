@@ -1034,7 +1034,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-24-59 ・ 「寄送報告書」按鈕現在會多帶一個預約代碼給雲端，讓Code.gs那邊可以記下「這筆諮詢的報告書已經寄出」，用來配合Code.gs新增的「每晚9點提醒」功能——除了原本的「明天有哪些預約」，現在還會提醒妳①最近已經諮詢過、但報告書還沒寄出的客戶、②最近已經諮詢過、是包套方案但還沒點「標記完成」的客戶。這個版本需要搭配更新過的Code.gs才會完整生效，單獨更新index.html不會出現這個提醒（提醒訊息完全是Code.gs端運算並發送的，前台只是多傳一個代碼過去）', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-09-24-60 ・ 後台「編輯服務項目」新增一個「＋ 開放加購選項」勾選框（預設是打勾，舊資料不會受影響）。取消勾選某個服務項目的這個選項後，客戶在預約表單選到那個服務時，整個「加購選項」欄位會直接消失，不會顯示、也不能選任何加購項目；勾選的服務則跟以前一樣正常顯示加購選項。這個版本不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -1903,9 +1903,13 @@ async function onServiceChange(){
   if(document.getElementById('pf_date').value) loadSlotsForDate();
 }
 /* 選到「善的力量」義診名額時，加購選項（例如延長諮詢）直接隱藏並取消勾選，
-   改顯示「此項目為免費服務，暫不提供加購」的提示；換回一般項目時恢復正常 */
+   改顯示「此項目為免費服務，暫不提供加購」的提示；
+   選到後台設定為「不開放加購」的方案時（例如遠距靈氣），直接把整個「加購選項」欄位
+   （連標題都）藏起來，跟義診那種「有欄位、但顯示免費服務提示」的情況不一樣，
+   單純這個方案沒有加購選項可以選；換回一般項目時恢復正常 */
 function applyCharityAddonConstraint(){
   const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
+  const fieldWrap = document.getElementById('addonFieldWrap');
   const checksWrap = document.getElementById('addonChecksWrap');
   const notice = document.getElementById('addonFreeNotice');
   const rulesNotice = document.getElementById('charityRulesNotice');
@@ -1913,6 +1917,14 @@ function applyCharityAddonConstraint(){
   const rulesNoticeText = document.getElementById('charityRulesNoticeText');
   if(rulesNoticeText && svc && svc.isCharity) rulesNoticeText.textContent = svc.charityRulesNotice || defaultCharityRulesNotice();
   if(!checksWrap || !notice) return;
+
+  if(svc && svc.allowAddons===false && !svc.isCharity){
+    document.querySelectorAll('.pf-addon:checked').forEach(el=>{ el.checked = false; });
+    if(fieldWrap) fieldWrap.style.display = 'none';
+    return;
+  }
+  if(fieldWrap) fieldWrap.style.display = '';
+
   if(svc && svc.isCharity){
     document.querySelectorAll('.pf-addon:checked').forEach(el=>{ el.checked = false; });
     checksWrap.style.display = 'none';
@@ -4055,6 +4067,12 @@ function openServiceEdit(id){
     <div class="field full"><label>此服務專屬的預約問題標題（選填，沒有子選項時使用）</label><input id="svc_questionLabel" value="${esc(s.questionLabel||'')}" placeholder="例如：想諮詢的問題"></div>
     <div class="field full"><label>此服務專屬的預約問題提示文字（選填）</label><input id="svc_questionPlaceholder" value="${esc(s.questionPlaceholder||'')}" placeholder="例如：簡單告訴我目前想處理的是什麼事情。"></div>
     <div class="field full"><label>限定諮詢方式（選填，若指定則客戶只能選這些方式，用逗號分隔，需與下方「諮詢方式管理」的名稱完全一致，例如：視訊通話）</label><input id="svc_allowedMethods" value="${esc((s.allowedMethods||[]).join('、'))}" placeholder="留空表示不限制"></div>
+    <div class="field full">
+      <label style="display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; color:var(--brown); cursor:pointer;">
+        <input type="checkbox" id="svc_allowAddons" ${s.allowAddons===false?'':'checked'} style="width:16px; height:16px; accent-color:var(--gold-border);">
+        ＋ 開放加購選項（取消勾選代表客戶預約這個服務時，看不到、也不能選任何加購項目）
+      </label>
+    </div>
     <div style="grid-column:1/-1; margin-top:6px; padding-top:14px; border-top:1px dashed #EADFC8;">
       <label style="display:flex; align-items:center; gap:8px; font-size:15.5px; font-weight:700; color:var(--brown); cursor:pointer;">
         <input type="checkbox" id="svc_isCharity" ${s.isCharity?'checked':''} style="width:16px; height:16px; accent-color:var(--gold-border);" onchange="document.getElementById('svcCharityFields').style.display=this.checked?'grid':'none';">
@@ -4118,6 +4136,8 @@ function saveSvcModal(){
     if(qpEl) s.questionPlaceholder = qpEl.value.trim();
     const amEl = document.getElementById('svc_allowedMethods');
     if(amEl) s.allowedMethods = amEl.value.split(/[、,，]/).map(m=>m.trim()).filter(Boolean);
+    const allowAddonsEl = document.getElementById('svc_allowAddons');
+    if(allowAddonsEl) s.allowAddons = allowAddonsEl.checked;
     const charityEl = document.getElementById('svc_isCharity');
     if(charityEl){
       s.isCharity = charityEl.checked;
