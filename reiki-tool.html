@@ -89,7 +89,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
 .reiki-list-item.dragging{opacity:.55}
 .reiki-sort-mode .reiki-list-card{pointer-events:none}
 
-.yao-row{display:grid;grid-template-columns:34px 44px 18px 1fr 46px auto;align-items:center;column-gap:4px;padding:6px 0;font-size:16px;color:var(--dark)}
+.yao-row{display:grid;grid-template-columns:34px 44px 22px 1fr 46px auto;align-items:center;column-gap:4px;padding:6px 0;font-size:16px;color:var(--dark)}
 .yao-row+.yao-row{border-top:1px solid var(--line)}
 .yao-symbol{display:flex;align-items:center;justify-content:center}
 .yao-bar{display:inline-flex;gap:4px}
@@ -97,7 +97,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
 .yao-yang .seg{width:26px}
 .yao-yin .seg{width:11px}
 .yao-pos{white-space:nowrap}
-.yao-dash{color:var(--gray);text-align:center}
+.yao-dash{color:var(--gray);text-align:right;padding-right:2px}
 .yao-branch{white-space:nowrap}
 .yao-marker{font-weight:700;color:#c0392b;white-space:nowrap}
 .yao-rel{white-space:nowrap}
@@ -965,7 +965,7 @@ function hexLinesHtml(upper,lower){
   const marker=r.isShi?'<span class="yao-marker">⬅️【世】</span>':r.isYing?'<span class="yao-marker">⬅️【應】</span>':'';
   const relText=r.relative==='妻財'?'<span class="rel-wealth">妻財</span>':(r.relative||'');
   const rel=r.relative?`<span class="yao-rel">（身分：${relText}）</span>`:'<span class="yao-rel"></span>';
-  return `<div class="yao-row"><span class="yao-symbol">${bar}</span><span class="yao-pos">(${r.pos})</span><span class="yao-dash">──</span><span class="yao-branch">${r.branch}${r.element}</span>${marker||'<span></span>'}${rel}</div>`;
+  return `<div class="yao-row"><span class="yao-symbol">${bar}</span><span class="yao-pos">(${r.pos})</span><span class="yao-dash">•</span><span class="yao-branch">${r.branch}${r.element}</span>${marker||'<span></span>'}${rel}</div>`;
  }).join('');
  return `<div style="margin-top:10px">${lines}</div>`;
 }
