@@ -795,7 +795,7 @@ function iching(){
 <div class="card" style="margin-bottom:14px">
  <h2>客戶問題<span class="muted">（選填，供最後「一鍵複製 AI 判讀」使用）</span></h2>
  <div class="field"><label>問題類型</label>
-  <select id="qCategory"><option value="">請選擇</option>${Object.keys(QUESTION_BANK).map(cat=>`<option value="${esc(cat)}">${QUESTION_CATEGORY_EMOJI[cat]||''} ${esc(cat)}</option>`).join('')}<option value="自訂問題">✏️ 自訂問題</option></select>
+  <select id="qCategory"><option value="">請選擇</option><option value="自訂問題">✏️ 自訂問題</option>${Object.keys(QUESTION_BANK).map(cat=>`<option value="${esc(cat)}">${QUESTION_CATEGORY_EMOJI[cat]||''} ${esc(cat)}</option>`).join('')}</select>
  </div>
  <div class="field" id="qQuestionField" style="display:none"><label>常見問題</label>
   <select id="qQuestion"><option value="">請選擇</option></select>
@@ -803,6 +803,20 @@ function iching(){
  <div class="field" id="qCustomField" style="display:none"><label>自訂問題內容</label>
   <input id="qCustomText" type="text" placeholder="請輸入想問的問題">
  </div>
+</div>
+<div class="card" style="margin-bottom:14px">
+ <details id="aiRulesDetails">
+  <summary style="cursor:pointer;font-weight:700;font-size:1.05rem">⚙️ 標準判讀規則設定（可自行編輯）</summary>
+  <div style="margin-top:10px">
+   <div class="muted" style="margin-bottom:8px">以下內容會在「一鍵複製 AI 判讀」時自動附加在最後面，可依需求自行修改，按「儲存修改」後生效；複製出去的內容不會包含這段說明文字。</div>
+   <textarea id="aiRulesText" rows="14" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:15px;line-height:1.6">${esc(getAiJudgeRules())}</textarea>
+   <div class="row" style="margin-top:8px;gap:8px">
+    <button type="button" class="primary" id="saveAiRules">儲存修改</button>
+    <button type="button" class="ghost" id="resetAiRules">恢復預設版本</button>
+   </div>
+   <div id="aiRulesStatus" class="muted" style="margin-top:6px"></div>
+  </div>
+ </details>
 </div>
 <div class="card" style="margin-bottom:14px">
  <h2>輸入卦號</h2>
@@ -852,13 +866,27 @@ function iching(){
      return;
    }
    const items=QUESTION_BANK[cat]||[];
-   qQuestionSel.innerHTML='<option value="">請選擇</option>'+items.map(q=>`<option value="${esc(q)}">${esc(q)}</option>`).join('')+'<option value="自訂問題">✏️ 自訂問題</option>';
+   qQuestionSel.innerHTML='<option value="">請選擇</option><option value="自訂問題">✏️ 自訂問題</option>'+items.map(q=>`<option value="${esc(q)}">${esc(q)}</option>`).join('');
    qQuestionField.style.display='';
    qCustomField.style.display='none';
  });
  qQuestionSel.addEventListener('change',()=>{
    qCustomField.style.display=qQuestionSel.value==='自訂問題'?'':'none';
  });
+ const aiRulesText=document.getElementById('aiRulesText');
+ const aiRulesStatus=document.getElementById('aiRulesStatus');
+ document.getElementById('saveAiRules').onclick=()=>{
+   store.aiJudgeRules=aiRulesText.value;
+   save();
+   aiRulesStatus.textContent='已儲存，之後「一鍵複製 AI 判讀」會套用這個版本';
+ };
+ document.getElementById('resetAiRules').onclick=()=>{
+   if(!confirm('確定要恢復成預設版本嗎？目前編輯的內容將會被取代。'))return;
+   store.aiJudgeRules='';
+   save();
+   aiRulesText.value=DEFAULT_AI_JUDGE_RULES;
+   aiRulesStatus.textContent='已恢復為預設版本';
+ };
 }
 function guaOptions(){return[['乾','☰',1],['兌','☱',2],['離','☲',3],['震','☳',4],['巽','☴',5],['坎','☵',6],['艮','☶',7],['坤','☷',8]].map(x=>`<option value="${x[2]}">${x[0]} ${x[1]}｜${x[2]}</option>`).join('')}
 const TRIGRAM_TO_NUM={'乾':1,'兌':2,'離':3,'震':4,'巽':5,'坎':6,'艮':7,'坤':8};
@@ -1013,23 +1041,25 @@ const QUESTION_BANK={
  '身心／能量狀態':['我目前的整體狀態','我最近為什麼感覺卡住','我目前最大的能量阻礙','目前最需要調整的是什麼','我與某件事情的能量關係','這個環境是否適合我','這件事情對我的狀態有什麼影響','我目前最需要注意什麼','接下來適合把力量放在哪裡']
 };
 const QUESTION_CATEGORY_EMOJI={'感情':'❤️','金錢／財運':'💰','事業／工作':'💼','投資／投資決策':'📈','家庭':'👨‍👩‍👧','人際／朋友':'👥','合作／客戶／生意':'🤝','房子／搬遷／居住':'🏠','旅行／出行':'✈️','人生選擇／重大決策':'🔀','個人成長／人生狀態':'🌱','身心／能量狀態':'🧘'};
-const AI_JUDGE_RULES=`請僅依據以上【問題】與【卦象資料】進行判讀，判讀時請以《周易》、梅花易數、六爻論卦的傳統邏輯為主要依據，並遵守以下原則：
-
-第一段：直接給出結論，100字以內，明確指出本次卦象偏吉、偏凶、吉凶參半、暫不宜行動、或無法判定，不需要任何開場白或寒暄。
-
-第二段開始：說明判斷依據，需引用本卦、動爻、變卦、世應、六親、五行生剋合沖等卦理，若有對應爻辭請引用並說明其含義。
-
-請務必遵守以下規則：
-1. 僅能依據以上提供的問題與卦象資料進行判讀，不得使用其他來源的資訊。
-2. 不可重新起卦或更改卦象。
-3. 不可捏造卦象資料（上下卦、動爻、變卦、世應、六親、爻辭等皆不可自行編造）。
-4. 不可納入使用者的個人背景、品牌定位、人設或先前對話內容進行判讀。
-5. 不可用心理學、常識性建議或安慰性語言取代卦象本身的判斷。
-6. 不可為了讓結果顯得正面而硬將負面卦象解釋為正面，也不可誇大原本只是普通的吉象。
-7. 若為吉凶參半的卦象，請明確指出哪一部分偏吉、哪一部分偏凶，不可籠統帶過。
-8. 若卦象資料不足以判斷，請直接說明資料不足，不可憑空推測或杜撰答案。
-9. 結論必須與分析過程一致：結論須是從分析推導而來，不可先預設結論、再回頭找理由湊合。
-10. 全文語氣請保持中立、直接、客觀，避免使用空泛的安慰語句。`;
+const DEFAULT_AI_JUDGE_RULES=`請依據我提供的「客戶問題、占卜時間與完整卦象資料」，以《周易》與梅花易數＋六爻的判讀框架進行客觀分析。
+第一段先直接給最終結論，100字內。
+用白話文直接回答客戶所問的核心問題，明確說明目前偏吉、偏凶、吉凶參半、暫不宜行動，或目前無法由此卦明確判定。不要客套，不要先講理論，讓我可以第一時間直接掌握答案並回覆客戶。
+第二段開始說明判斷依據。
+依序分析本卦、動爻、變卦、世應、六親、五行、生剋、合沖及其他我所提供的卦象資料；若資料中包含爻辭，請一併引用並以白話解釋。
+重要規則：
+1. 只能依據我提供的問題與卦象資料判斷。
+2. 不得重新起卦或修改我提供的卦象。
+3. 不得自行補造不存在的卦象資料。
+4. 不得加入我的個人背景、品牌、人設或過往對話。
+5. 不得用心理學、常識或安慰性語言取代卦象判斷。
+6. 不要刻意把凶象解釋成正面，也不要把吉象誇大。
+7. 如果吉凶參半，直接說明「哪一部分吉、哪一部分凶」。
+8. 如果資料不足以判斷，直接說明「此卦資料不足，無法判定」，不要自行猜測。
+9. 結論必須與後面的卦象分析一致，不得先決定答案再尋找卦象來支持。
+10. 保持中立、直接、客觀，不提供雞湯式安慰。`;
+function getAiJudgeRules(){
+ return (store.aiJudgeRules&&String(store.aiJudgeRules).trim())?store.aiJudgeRules:DEFAULT_AI_JUDGE_RULES;
+}
 function hexLinesHtml(upper,lower){
  const rows=hexLineDetails(upper,lower);
  if(!rows.length)return'';
@@ -1146,8 +1176,8 @@ ${changeText}
 【六爻資料】（由上爻至初爻）
 ${linesText}
 
-【標準判讀規則】可隨時自行更改內容
-${AI_JUDGE_RULES}`;
+【標準判讀規則】
+${getAiJudgeRules()}`;
 }
 function copyAiJudge(){
  const text=buildAiJudgeText();
