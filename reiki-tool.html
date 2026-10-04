@@ -805,6 +805,16 @@ function iching(){
  </div>
 </div>
 <div class="card" style="margin-bottom:14px">
+ <h2>輸入卦號</h2>
+ <div class="field"><label>卦號（1–64）</label><input id="hexNumber" type="number" min="1" max="64" inputmode="numeric" placeholder="例如：34"></div>
+ <div id="hexLookupResult" class="muted">輸入卦號後，將自動帶入下方的上卦、下卦</div>
+</div>
+<div class="form">
+ <div class="field"><label>上卦</label><select id="up"><option value="">請選擇</option>${guaOptions()}</select></div>
+ <div class="field"><label>下卦</label><select id="down"><option value="">請選擇</option>${guaOptions()}</select></div>
+ <div class="field"><label>當下時辰</label><select id="hour"><option value="">請選擇</option>${hourOptions()}</select></div>
+ <button class="primary" id="calculate">開始計算</button></div><div id="result"></div>
+<div class="card" style="margin-top:14px">
  <details id="aiRulesDetails">
   <summary style="cursor:pointer;font-weight:700;font-size:1.05rem">⚙️ 標準判讀規則設定（可自行編輯）</summary>
   <div style="margin-top:10px">
@@ -817,17 +827,7 @@ function iching(){
    <div id="aiRulesStatus" class="muted" style="margin-top:6px"></div>
   </div>
  </details>
-</div>
-<div class="card" style="margin-bottom:14px">
- <h2>輸入卦號</h2>
- <div class="field"><label>卦號（1–64）</label><input id="hexNumber" type="number" min="1" max="64" inputmode="numeric" placeholder="例如：34"></div>
- <div id="hexLookupResult" class="muted">輸入卦號後，將自動帶入下方的上卦、下卦</div>
-</div>
-<div class="form">
- <div class="field"><label>上卦</label><select id="up"><option value="">請選擇</option>${guaOptions()}</select></div>
- <div class="field"><label>下卦</label><select id="down"><option value="">請選擇</option>${guaOptions()}</select></div>
- <div class="field"><label>當下時辰</label><select id="hour"><option value="">請選擇</option>${hourOptions()}</select></div>
- <button class="primary" id="calculate">開始計算</button></div><div id="result"></div>`;
+</div>`;
  document.getElementById('back').onclick=()=>{page='ichingMenu';render()};
  document.getElementById('calculate').onclick=calc;
  const hexInput=document.getElementById('hexNumber');
