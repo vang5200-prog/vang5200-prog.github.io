@@ -791,7 +791,20 @@ function ichingLines(){
  document.getElementById('back').onclick=()=>{page='ichingMenu';render()};
 }
 function iching(){
- page='iching';app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 返回易經</button></div><h1>☯️ 卦爻計算器</h1><div class="card" style="margin-bottom:14px">
+ page='iching';app.innerHTML=top()+`<div class="toolbar"><button class="ghost" id="back">← 返回易經</button></div><h1>☯️ 卦爻計算器</h1>
+<div class="card" style="margin-bottom:14px">
+ <h2>客戶問題<span class="muted">（選填，供最後「一鍵複製 AI 判讀」使用）</span></h2>
+ <div class="field"><label>問題類型</label>
+  <select id="qCategory"><option value="">請選擇</option>${Object.keys(QUESTION_BANK).map(cat=>`<option value="${esc(cat)}">${QUESTION_CATEGORY_EMOJI[cat]||''} ${esc(cat)}</option>`).join('')}<option value="自訂問題">✏️ 自訂問題</option></select>
+ </div>
+ <div class="field" id="qQuestionField" style="display:none"><label>常見問題</label>
+  <select id="qQuestion"><option value="">請選擇</option></select>
+ </div>
+ <div class="field" id="qCustomField" style="display:none"><label>自訂問題內容</label>
+  <input id="qCustomText" type="text" placeholder="請輸入想問的問題">
+ </div>
+</div>
+<div class="card" style="margin-bottom:14px">
  <h2>輸入卦號</h2>
  <div class="field"><label>卦號（1–64）</label><input id="hexNumber" type="number" min="1" max="64" inputmode="numeric" placeholder="例如：34"></div>
  <div id="hexLookupResult" class="muted">輸入卦號後，將自動帶入下方的上卦、下卦</div>
@@ -818,6 +831,34 @@ function iching(){
    hexResult.innerHTML=`<b>第 ${n} 卦｜${x[0]}</b><br><span class="muted">已自動帶入 上卦：${x[1]}　下卦：${x[2]}</span>`;
  };
  hexInput.addEventListener('input',updateHexLookup);
+ const qCategorySel=document.getElementById('qCategory');
+ const qQuestionField=document.getElementById('qQuestionField');
+ const qQuestionSel=document.getElementById('qQuestion');
+ const qCustomField=document.getElementById('qCustomField');
+ const qCustomInput=document.getElementById('qCustomText');
+ qCategorySel.addEventListener('change',()=>{
+   const cat=qCategorySel.value;
+   qCustomInput.value='';
+   if(!cat){
+     qQuestionField.style.display='none';
+     qCustomField.style.display='none';
+     qQuestionSel.innerHTML='<option value="">請選擇</option>';
+     return;
+   }
+   if(cat==='自訂問題'){
+     qQuestionField.style.display='none';
+     qCustomField.style.display='';
+     qQuestionSel.innerHTML='<option value="">請選擇</option>';
+     return;
+   }
+   const items=QUESTION_BANK[cat]||[];
+   qQuestionSel.innerHTML='<option value="">請選擇</option>'+items.map(q=>`<option value="${esc(q)}">${esc(q)}</option>`).join('')+'<option value="自訂問題">✏️ 自訂問題</option>';
+   qQuestionField.style.display='';
+   qCustomField.style.display='none';
+ });
+ qQuestionSel.addEventListener('change',()=>{
+   qCustomField.style.display=qQuestionSel.value==='自訂問題'?'':'none';
+ });
 }
 function guaOptions(){return[['乾','☰',1],['兌','☱',2],['離','☲',3],['震','☳',4],['巽','☴',5],['坎','☵',6],['艮','☶',7],['坤','☷',8]].map(x=>`<option value="${x[2]}">${x[0]} ${x[1]}｜${x[2]}</option>`).join('')}
 const TRIGRAM_TO_NUM={'乾':1,'兌':2,'離':3,'震':4,'巽':5,'坎':6,'艮':7,'坤':8};
@@ -957,6 +998,38 @@ function hexChakraHtml(upper,lower,hour){
  const sorted=CHAKRA_ANATOMICAL_ORDER.filter(c=>problems.includes(c));
  return `<div class="card" style="margin-top:10px"><h2 style="margin:0 0 8px">脈輪對照</h2><div style="font-size:1.15rem"><b>${sorted.join('、')}</b></div></div>`;
 }
+const QUESTION_BANK={
+ '感情':['對方目前對我的想法','對方對我的感情','對方目前的真實態度','對方有沒有想我','對方會不會主動聯絡我','對方為什麼突然變冷淡','我們目前的關係狀態','我們之間最大的問題','我們未來的發展','這段關係還有沒有機會','這段感情值得繼續嗎','我應該主動還是等待','對方會不會回頭','對方是否還放不下我','對方身邊是否有其他人','這段關係是否適合復合','復合後的發展','我與這個人適不適合','我跟某人的緣分','下一段感情的發展','我近期是否有新的感情機會','我什麼時候比較容易遇到對象','我目前感情最大的阻礙'],
+ '金錢／財運':['我目前的財運狀況','近期財運如何','接下來一段時間的財運','我的財運目前最大的阻礙','為什麼最近一直存不到錢','這筆錢能不能拿回來','欠我的錢能不能收回','這筆金錢往來的結果','這個合作能不能帶來收入','這個機會能不能帶來財富','我適不適合做這個賺錢機會','我目前適合增加收入還是守成','最近有沒有額外收入的機會','哪一個方向比較容易帶來收入','我的財運什麼時候比較容易改善','目前阻礙我財運的原因','這筆錢現在適不適合投入','這個金錢決策是否適合'],
+ '事業／工作':['我目前的工作發展','我目前事業的狀態','接下來事業會怎麼發展','目前工作最大的問題','我適不適合繼續待在這家公司','我適不適合換工作','現在換工作是不是好時機','這份工作適不適合我','這個工作機會值得去嗎','這個職位能不能長期發展','我在這份工作的發展空間','老闆目前對我的看法','同事／主管與我的關係','我在工作上為什麼一直卡住','我適不適合自己創業','現在適不適合創業','這個事業方向適不適合我','這個合作能不能成功','這個合作對我的事業有沒有幫助','我的事業下一個突破點','我目前事業最大的阻礙'],
+ '投資／投資決策':['這項投資目前適不適合進場','這項投資的發展','這項投資接下來的走勢','現在進場是否合適','現在退出是否合適','這筆投資值得繼續持有嗎','這項投資最大的風險','這項投資對我的結果','這個投資機會適不適合我','這個投資合作能不能進行','我現在適合投資還是觀望','這個投資決策需要注意什麼','兩個投資選項哪一個比較適合','這筆投資最後可能帶來什麼結果'],
+ '家庭':['我與家人的關係','我與父母目前的關係','父母目前對我的想法','我與孩子的關係','我與兄弟姊妹的關係','家庭目前最大的問題','家庭關係為什麼一直衝突','某位家人目前的想法','我應該如何面對這位家人','這個家庭問題接下來會怎麼發展','家庭關係是否有改善的機會','我與某位家人的關係是否會改變','這件家庭事情最後會怎麼發展','家庭中的某個決定是否適合','我在家庭裡真正卡住的地方'],
+ '人際／朋友':['某個朋友目前對我的想法','我和某個人的關係','這個人是否真心對我','這個人對我的真實態度','我們為什麼會變成現在這樣','這段關係還能不能繼續','這個人值不值得信任','這個人適不適合合作','對方為什麼突然疏遠我','對方會不會主動聯絡','我應該主動修復關係嗎','這段人際關係未來發展','我目前人際關係最大的問題','我是不是應該離開這段關係'],
+ '合作／客戶／生意':['這個合作適不適合我','我和這個人的合作關係','對方對這次合作的態度','這個合作能不能成功','這個合作最後的結果','這個合作最大的問題','對方是否值得合作','對方是否會履行承諾','這個客戶適不適合長期合作','這個合作值得繼續嗎','我應該主動談合作嗎','這個合作什麼時候比較適合推進','兩個合作對象哪個比較適合','這個合作對我的事業有什麼影響'],
+ '房子／搬遷／居住':['要不要搬家','現在適不適合搬家','這個房子適不適合我','這個居住環境適不適合我','這次搬遷的結果','這個房子值不值得租','這個房子適不適合購買','兩個房子哪個比較適合','搬到這個地方後的發展','目前居住環境最大的問題'],
+ '旅行／出行':['這趟旅行是否適合','這次出行的整體發展','這趟旅程需要注意什麼','這次行程是否順利','是否適合前往某個地方','這個行程是否值得去','兩個旅行選擇哪個比較適合','這次重要行程最後結果'],
+ '人生選擇／重大決策':['A跟B哪一個比較適合我','我現在應該選哪一個方向','現在適合做這個決定嗎','這個決定最後的發展','如果選A會怎麼發展','如果選B會怎麼發展','我現在最需要注意什麼','目前最大的阻礙','這件事情值得繼續嗎','我應該等待還是行動','現在是前進還是暫停比較適合','這個選擇對我的長期發展','我目前真正需要面對的問題'],
+ '個人成長／人生狀態':['我目前的人生狀態','我目前最大的卡點','我一直重複遇到這個問題的原因','我現在最需要面對什麼','我目前最大的阻礙','我現在適合做什麼改變','我目前應該往哪個方向走','我現在需要放下什麼','我目前需要注意什麼','接下來一段時間的人生發展'],
+ '身心／能量狀態':['我目前的整體狀態','我最近為什麼感覺卡住','我目前最大的能量阻礙','目前最需要調整的是什麼','我與某件事情的能量關係','這個環境是否適合我','這件事情對我的狀態有什麼影響','我目前最需要注意什麼','接下來適合把力量放在哪裡']
+};
+const QUESTION_CATEGORY_EMOJI={'感情':'❤️','金錢／財運':'💰','事業／工作':'💼','投資／投資決策':'📈','家庭':'👨‍👩‍👧','人際／朋友':'👥','合作／客戶／生意':'🤝','房子／搬遷／居住':'🏠','旅行／出行':'✈️','人生選擇／重大決策':'🔀','個人成長／人生狀態':'🌱','身心／能量狀態':'🧘'};
+const AI_JUDGE_RULES=`請僅依據以上【問題】與【卦象資料】進行判讀，判讀時請以《周易》、梅花易數、六爻論卦的傳統邏輯為主要依據，並遵守以下原則：
+
+第一段：直接給出結論，100字以內，明確指出本次卦象偏吉、偏凶、吉凶參半、暫不宜行動、或無法判定，不需要任何開場白或寒暄。
+
+第二段開始：說明判斷依據，需引用本卦、動爻、變卦、世應、六親、五行生剋合沖等卦理，若有對應爻辭請引用並說明其含義。
+
+請務必遵守以下規則：
+1. 僅能依據以上提供的問題與卦象資料進行判讀，不得使用其他來源的資訊。
+2. 不可重新起卦或更改卦象。
+3. 不可捏造卦象資料（上下卦、動爻、變卦、世應、六親、爻辭等皆不可自行編造）。
+4. 不可納入使用者的個人背景、品牌定位、人設或先前對話內容進行判讀。
+5. 不可用心理學、常識性建議或安慰性語言取代卦象本身的判斷。
+6. 不可為了讓結果顯得正面而硬將負面卦象解釋為正面，也不可誇大原本只是普通的吉象。
+7. 若為吉凶參半的卦象，請明確指出哪一部分偏吉、哪一部分偏凶，不可籠統帶過。
+8. 若卦象資料不足以判斷，請直接說明資料不足，不可憑空推測或杜撰答案。
+9. 結論必須與分析過程一致：結論須是從分析推導而來，不可先預設結論、再回頭找理由湊合。
+10. 全文語氣請保持中立、直接、客觀，避免使用空泛的安慰語句。`;
 function hexLinesHtml(upper,lower){
  const rows=hexLineDetails(upper,lower);
  if(!rows.length)return'';
@@ -1017,7 +1090,90 @@ function calc(){
  const hexName=found?found[0]:'未找到對應卦名';
  const change=bianGua(upper,lower,rem);
  const bianHtml=change?`<div class="card" style="margin-top:10px"><h2 style="margin:0 0 8px">變卦</h2><div style="font-size:1.15rem"><b>第 ${change.hexNo} 卦｜${change.hexName}</b></div><div class="muted" style="margin-top:5px">上卦：${change.upper}　下卦：${change.lower}</div><div class="muted" style="margin-top:8px">（${change.desc}）</div></div>`:'';
- document.getElementById('result').innerHTML=`<div class="gua-result"><div>${u} ＋ ${d} ＋ ${h} ＝ <b>${total}</b></div><div>${total} ÷ 6 → 餘 <b>${rem}</b></div><div class="big">${names[rem]}</div><div style="margin-top:12px;font-size:1.15rem"><b>第 ${hexNo} 卦｜${hexName}</b></div><div class="muted" style="margin-top:5px">上卦：${upper}　下卦：${lower}</div>${hexPalaceHtml(upper,lower)}${hexLinesHtml(upper,lower)}</div>${bianHtml}${wuxingCycleHtml()}${hexChakraHtml(upper,lower,h)}<div class="card" style="margin-top:10px"><table><tr><th>餘數</th><th>結果</th><th>代表意義</th></tr><tr><td>1</td><td>初爻（潛伏期）</td><td>不宜輕舉妄動</td></tr><tr><td>2</td><td>二爻（成長期）</td><td>可發展，多有吉利</td></tr><tr><td>3</td><td>三爻（危機期）</td><td>格外謹慎</td></tr><tr><td>4</td><td>四爻（進取期）</td><td>等待、配合</td></tr><tr><td>5</td><td>五爻（全盛期）</td><td>「九五之尊」、完美</td></tr><tr><td>0</td><td>上爻（衰退期）</td><td>物極必反、易自滿而走下坡</td></tr></table></div>`;
+ const posAll=['初爻','二爻','三爻','四爻','五爻','上爻'];
+ const moveIdx=(rem===0?6:rem)-1;
+ const moveLineName=posAll[moveIdx];
+ const rows=hexLineDetails(upper,lower);
+ window.lastIchingCalc={hexNo,hexName,upper,lower,h,rem,moveLineName,change,rows};
+ document.getElementById('result').innerHTML=`<div class="gua-result"><div>${u} ＋ ${d} ＋ ${h} ＝ <b>${total}</b></div><div>${total} ÷ 6 → 餘 <b>${rem}</b></div><div class="big">${names[rem]}</div><div style="margin-top:12px;font-size:1.15rem"><b>第 ${hexNo} 卦｜${hexName}</b></div><div class="muted" style="margin-top:5px">上卦：${upper}　下卦：${lower}</div>${hexPalaceHtml(upper,lower)}${hexLinesHtml(upper,lower)}</div>${bianHtml}${wuxingCycleHtml()}${hexChakraHtml(upper,lower,h)}<div class="card" style="margin-top:10px"><table><tr><th>餘數</th><th>結果</th><th>代表意義</th></tr><tr><td>1</td><td>初爻（潛伏期）</td><td>不宜輕舉妄動</td></tr><tr><td>2</td><td>二爻（成長期）</td><td>可發展，多有吉利</td></tr><tr><td>3</td><td>三爻（危機期）</td><td>格外謹慎</td></tr><tr><td>4</td><td>四爻（進取期）</td><td>等待、配合</td></tr><tr><td>5</td><td>五爻（全盛期）</td><td>「九五之尊」、完美</td></tr><tr><td>0</td><td>上爻（衰退期）</td><td>物極必反、易自滿而走下坡</td></tr></table></div><div class="card" style="margin-top:10px"><button type="button" class="primary" id="copyAiJudgeBtn" style="width:100%">📋 一鍵複製 AI 判讀</button><div class="muted" style="margin-top:6px">複製後，貼到新開的 ChatGPT 對話視窗送出即可</div></div>`;
+ document.getElementById('copyAiJudgeBtn').onclick=copyAiJudge;
+}
+function buildAiJudgeText(){
+ const d=window.lastIchingCalc;
+ if(!d){alert('請先完成卦爻計算');return null}
+ const qCategorySel=document.getElementById('qCategory');
+ const qQuestionSel=document.getElementById('qQuestion');
+ const qCustomInput=document.getElementById('qCustomText');
+ const qCat=qCategorySel?qCategorySel.value:'';
+ if(!qCat){
+   alert('請先在上方選擇「問題類型」，若無特定問題也請選擇最接近的類型，或選擇✏️自訂問題');
+   return null;
+ }
+ let typeLabel=qCat,questionText='';
+ if(qCat==='自訂問題'){
+   questionText=(qCustomInput?qCustomInput.value:'').trim();
+ }else{
+   const qVal=qQuestionSel?qQuestionSel.value:'';
+   if(!qVal){
+     alert('請選擇「常見問題」，或選擇✏️自訂問題後輸入內容');
+     return null;
+   }
+   questionText=qVal==='自訂問題'?(qCustomInput?qCustomInput.value:'').trim():qVal;
+ }
+ if(!questionText){
+   alert('請輸入具體的自訂問題內容');
+   return null;
+ }
+ const now=new Date();
+ const pad=n=>String(n).padStart(2,'0');
+ const timeStr=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+ const hourBranch=HOUR_BRANCHES[d.h-1]||'';
+ const linesText=d.rows.map(r=>{
+   const marker=r.isShi?'⬅️【世】':r.isYing?'⬅️【應】':'';
+   return `${r.pos}　${r.branch}${r.element}　（${r.relative||'—'}）${marker}`;
+ }).join('\n');
+ const changeText=d.change?`變卦：第 ${d.change.hexNo} 卦｜${d.change.hexName}（上卦：${d.change.upper}　下卦：${d.change.lower}）`:'變卦：（無對應資料）';
+ return `【問題類型】${typeLabel}
+【所問問題】${questionText}
+【占卜時間】${timeStr}（${hourBranch}時）
+
+【卦象資料】
+本卦：第 ${d.hexNo} 卦｜${d.hexName}
+上卦：${d.upper}　下卦：${d.lower}
+動爻：${d.moveLineName}
+${changeText}
+
+【六爻資料】（由上爻至初爻）
+${linesText}
+
+【標準判讀規則】可隨時自行更改內容
+${AI_JUDGE_RULES}`;
+}
+function copyAiJudge(){
+ const text=buildAiJudgeText();
+ if(!text)return;
+ const btn=document.getElementById('copyAiJudgeBtn');
+ const showDone=()=>{
+   if(!btn)return;
+   const old=btn.textContent;
+   btn.textContent='✅ 已複製！可到 ChatGPT 貼上';
+   setTimeout(()=>{btn.textContent=old},1800);
+ };
+ const fallbackCopy=()=>{
+   try{
+     const ta=document.createElement('textarea');
+     ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
+     document.body.appendChild(ta);ta.focus();ta.select();
+     document.execCommand('copy');
+     document.body.removeChild(ta);
+     showDone();
+   }catch(e){alert('複製失敗，請手動選取文字複製')}
+ };
+ if(navigator.clipboard&&navigator.clipboard.writeText){
+   navigator.clipboard.writeText(text).then(showDone).catch(fallbackCopy);
+ }else{
+   fallbackCopy();
+ }
 }
 const KNOW={
  chakras:{title:'七大脈輪',arr:'chakras',fields:[['name','脈輪'],['organs','器官'],['thoughts','相關思想與情感事件'],['disorders','生理機能障礙'],['lesson','課題'],['aura','氣場顏色']]},
