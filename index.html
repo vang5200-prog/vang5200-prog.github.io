@@ -1057,7 +1057,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-10-09-62 ・ 前台先隱藏「加購選項」（服務方案下方的加購卡片，以及預約表單裡的加購欄位都不顯示）。後台「開頭介紹文字」新增「前台先隱藏加購選項」勾選框，預設打勾；取消勾選並按「儲存文案」就會恢復顯示，加購資料不會被刪除。這一版不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-10-09-63 ・ 支援從官方LINE卡片直接打開指定項目：網址後面加 ?service=項目代碼（或卡片編號、項目名稱關鍵字），客戶打開後會自動選好那個項目並捲到預約表單。後台「服務方案管理」每個項目新增「複製LINE卡片連結」按鈕。這一版不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -1365,7 +1365,7 @@ function testWebhook(){
    （需要先在設定頁貼好、儲存 Google Apps Script 網址）
 ============================================================ */
 async function pullRemoteSettings(){
-  if(!webhookUrl) return;
+  if(!webhookUrl){ applyServiceDeepLink(); return; }
   try{
     const sep = webhookUrl.includes('?') ? '&' : '?';
     const data = await fetchWebhookJson(webhookUrl + sep + 'action=settings');
@@ -1392,7 +1392,8 @@ async function pullRemoteSettings(){
       if(!isAdmin) resetPublicForm();
       if(isAdmin && document.getElementById('tab-settings').classList.contains('active')) renderSettings();
     }
-  }catch(err){ console.warn('讀取雲端設定失敗，暫時使用本機資料', err); }
+    applyServiceDeepLink();
+  }catch(err){ console.warn('讀取雲端設定失敗，暫時使用本機資料', err); applyServiceDeepLink(); }
 }
 function pushRemoteSettings(){
   if(!webhookUrl) return;
@@ -1540,6 +1541,44 @@ function renderHeroContent(){
 function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoView({behavior:'smooth'}); }
 /* 點擊上方的服務方案卡片時：直接幫客戶把預約表單的項目換成這一個，並捲動到預約表單，
    避免客戶點了卡片卻沒有任何反應、誤以為網站壞掉 */
+
+/* ============================================================
+   從官方LINE的卡片點進來：網址後面帶 ?service=XXX，直接幫客戶選好那個項目並捲到預約表單
+   XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
+   改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
+============================================================ */
+let serviceDeepLinkDone = false;
+function findServiceByDeepLink(key){
+  key = String(key||'').trim();
+  if(!key) return null;
+  let svc = services.find(s=>s.id===key);
+  if(svc) return svc;
+  if(/^\d{1,2}$/.test(key)){ svc = services[Number(key)-1]; if(svc) return svc; }
+  return services.find(s=>String(s.name||'').includes(key)) || null;
+}
+function applyServiceDeepLink(){
+  if(serviceDeepLinkDone || isAdmin) return;
+  const params = new URLSearchParams(location.search);
+  const key = params.get('service') || params.get('s');
+  if(!key){ serviceDeepLinkDone = true; return; }
+  serviceDeepLinkDone = true;
+  const svc = findServiceByDeepLink(key);
+  if(!svc) return;
+  setTimeout(()=>selectServiceAndScroll(svc.id), 250);
+}
+/* 後台：複製某個服務項目專屬的LINE卡片連結 */
+function serviceDeepLinkUrl(id){
+  return location.origin + location.pathname + '?service=' + encodeURIComponent(id);
+}
+function copyServiceLink(id){
+  const url = serviceDeepLinkUrl(id);
+  const done = ()=>toast('連結已複製，可以貼到LINE卡片的連結欄位');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(()=>prompt('請複製這個連結：', url));
+  } else {
+    prompt('請複製這個連結：', url);
+  }
+}
 function selectServiceAndScroll(id){
   const sel = document.getElementById('pf_service');
   if(sel){ sel.value = id; onServiceChange(); }
@@ -3998,6 +4037,7 @@ function renderServiceSettings(){
     <div class="settings-item"><div><b>${esc(s.name)}</b><div class="d">${s.isFree?'免費':'NT$'+Number(s.price).toLocaleString()}${s.subtitle?' · '+esc(s.subtitle):''} · ${esc(s.desc||'')}${s.locationNote?' · 地點說明：'+esc(s.locationNote):''}</div></div>
       <div style="display:flex; gap:6px;">
         <button style="color:var(--gold-text); border-color:var(--gold-border);" onclick="openServiceEdit('${s.id}')">編輯</button>
+        <button onclick="copyServiceLink('${s.id}')">複製LINE卡片連結</button>
         <button onclick="removeService('${s.id}')">刪除</button>
       </div>
     </div>
