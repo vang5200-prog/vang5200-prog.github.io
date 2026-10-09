@@ -613,10 +613,28 @@ html.dl-loading{ background:#F5EFE6; }
 html.dl-loading::before{ content:'載入中…'; visibility:visible; position:fixed; left:0; right:0; top:42%; text-align:center; font-size:18px; color:#7A3B52; letter-spacing:2px; z-index:99999; }
 </style>
 <script>
+/* 讀取網址參數：除了一般的 ?service=XXX 之外，也支援 LINE 的 LIFF 連結帶進來的寫法
+   （LINE 會把原本的參數包進 liff.state，例如 ?liff.state=%3Fservice%3DXXX），還有 #service=XXX 的寫法 */
+function getLinkParam(name){
+  try{
+    var p = new URLSearchParams(location.search);
+    if(p.get(name) !== null) return p.get(name);
+    var st = p.get('liff.state');
+    if(st){
+      var i = st.indexOf('?');
+      var q2 = new URLSearchParams(i >= 0 ? st.slice(i + 1) : st);
+      if(q2.get(name) !== null) return q2.get(name);
+    }
+    if(location.hash && location.hash.length > 1){
+      var h = new URLSearchParams(location.hash.replace(/^#\??/, ''));
+      if(h.get(name) !== null) return h.get(name);
+    }
+  }catch(e){}
+  return null;
+}
 (function(){
   try{
-    var q = location.search;
-    if(/[?&](service|s)=/.test(q) && !/[?&]admin=1/.test(q)){
+    if((getLinkParam('service') || getLinkParam('s')) && getLinkParam('admin') !== '1'){
       document.documentElement.classList.add('dl-loading');
       setTimeout(function(){ document.documentElement.classList.remove('dl-loading'); }, 6000);
     }
@@ -1075,7 +1093,7 @@ html.dl-loading::before{ content:'載入中…'; visibility:visible; position:fi
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-10-09-66 ・ 新增檢查功能：LINE卡片網址最後面加 &debug=1，打開後畫面最上方會顯示網站版本、有沒有帶到項目代碼、雲端設定有沒有讀成功、有沒有對應到項目，用來排查在LINE裡沒有跳轉的原因。這一版不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-10-09-67 ・ 修正LINE卡片點進來沒帶到項目代碼：LINE會把網址參數包進 liff.state，現在也會讀這個寫法（以及 #service= 寫法）；檢查框新增顯示「實際打開的網址」。這一版不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -1566,7 +1584,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-09-66';
+const SITE_VERSION = 'v2026-10-09-67';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -1594,8 +1612,7 @@ function applyServiceDeepLink(){
   if(serviceDeepLinkDone || isAdmin){ endDeepLinkLoading(); return; }
   serviceDeepLinkDone = true;
   try{
-    const params = new URLSearchParams(location.search);
-    const key = params.get('service') || params.get('s');
+    const key = getLinkParam('service') || getLinkParam('s');
     const svc = key ? findServiceByDeepLink(key) : null;
     if(svc){
       const sel = document.getElementById('pf_service');
@@ -1607,12 +1624,12 @@ function applyServiceDeepLink(){
   requestAnimationFrame(endDeepLinkLoading);
   // 網址最後面加 &debug=1 時，在畫面最上方顯示檢查資訊（版本、有沒有帶到項目代碼、雲端有沒有讀成功），方便在LINE裡排查
   try{
-    if(new URLSearchParams(location.search).get('debug')==='1'){
-      const key = new URLSearchParams(location.search).get('service') || new URLSearchParams(location.search).get('s') || '（沒有）';
+    if(getLinkParam('debug')==='1'){
+      const key = getLinkParam('service') || getLinkParam('s') || '（沒有）';
       const hit = findServiceByDeepLink(key);
       const box = document.createElement('div');
       box.style.cssText = 'position:fixed; left:8px; right:8px; top:8px; z-index:100000; background:#fff; border:2px solid #C0392B; border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.7; color:#222; word-break:break-all;';
-      box.innerHTML = '<b>檢查資訊</b>（點一下可關閉）<br>網站版本：' + esc(SITE_VERSION) + '<br>網址帶到的項目代碼：' + esc(key) + '<br>目前網頁讀到的項目數：' + services.length + '<br>雲端設定：' + esc(cloudStatus) + '<br>有沒有對應到項目：' + (hit ? ('有（' + esc(hit.name) + '）') : '沒有');
+      box.innerHTML = '<b>檢查資訊</b>（點一下可關閉）<br>網站版本：' + esc(SITE_VERSION) + '<br>網址帶到的項目代碼：' + esc(key) + '<br>目前網頁讀到的項目數：' + services.length + '<br>雲端設定：' + esc(cloudStatus) + '<br>實際打開的網址：' + esc(location.href) + '<br>有沒有對應到項目：' + (hit ? ('有（' + esc(hit.name) + '）') : '沒有');
       box.onclick = ()=>box.remove();
       document.body.appendChild(box);
     }
