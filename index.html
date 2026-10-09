@@ -838,6 +838,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
             <button type="button" class="btn btn-outline" style="margin:6px 0 0; width:auto; padding:7px 14px; font-size:15px;" onclick="addBenefitRow()">＋ 新增一項</button>
           </div>
           <div class="field"><label>服務方案前的說明文字（要換行按 Enter）</label><textarea id="setPreServicesNote" style="min-height:80px;"></textarea></div>
+          <div class="field"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="setHideAddons" style="width:auto; margin:0;"> 前台先隱藏加購選項（勾選＝客人看不到「加購選項」；取消勾選＝恢復顯示。加購的資料不會被刪除）</label></div>
           <div class="field"><label>「服務方案」標題下方的說明（選填，要換行按 Enter，留空就不顯示）</label><textarea id="setServicesIntro" style="min-height:70px;" placeholder="例如：每一種方式的做法與適合的情況不同，可以先看看哪一種比較符合你現在的狀態。"></textarea></div>
           <div class="field"><label>「追蹤 Instagram」連結的文字（網頁最上方跟下方兩個地方都會一起換，留空會用預設文字）</label><input id="setIgLinkText" placeholder="追蹤Instagram看更多影片 →"></div>
           <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveHeroContent()">儲存文案</button>
@@ -1056,7 +1057,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-10-09-61 ・ 前台三項優化：①「追蹤Instagram」連結文字可在後台「開頭介紹文字」修改 ②「我怎麼看事情」這類區塊改成每一項獨立卡片（圖示＋標題＋說明），後台可新增／刪除／上下移動 ③「服務方案」標題下方新增可編輯的說明。這一版不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-10-09-62 ・ 前台先隱藏「加購選項」（服務方案下方的加購卡片，以及預約表單裡的加購欄位都不顯示）。後台「開頭介紹文字」新增「前台先隱藏加購選項」勾選框，預設打勾；取消勾選並按「儲存文案」就會恢復顯示，加購資料不會被刪除。這一版不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -1152,6 +1153,7 @@ function defaultHeroContent(){
     benefits: ['他現在對妳的真實想法','為什麼會變成現在這樣','妳在他心中的真實位置'],
     igLinkText: '追蹤Instagram看更多影片 →',
     servicesIntro: '',
+    hideAddons: true, // 前台是否先隱藏加購選項（預設隱藏，後台「開頭介紹文字」可取消勾選恢復）
     preServicesNote: '我會先從妳說的內容、事情的發展和人與人之間的關係去理解。\n而有些時候，在這個過程裡，我也會接收到一些妳沒有直接告訴我的感受或畫面。\n這些資訊，會成為我理解整件事情的一部分。'
   };
 }
@@ -1318,13 +1320,16 @@ function saveHeroContent(){
     benefitsTitle: document.getElementById('setBenefitsTitle').value.trim() || defaultHeroContent().benefitsTitle,
     preServicesNote: document.getElementById('setPreServicesNote').value.trim(),
     servicesIntro: document.getElementById('setServicesIntro').value.trim(),
-    igLinkText: document.getElementById('setIgLinkText').value.trim() || defaultHeroContent().igLinkText
+    igLinkText: document.getElementById('setIgLinkText').value.trim() || defaultHeroContent().igLinkText,
+    hideAddons: document.getElementById('setHideAddons').checked
   };
   // 每一項獨立卡片：標題＋說明；同時也存一份「標題：說明」的舊格式，之後想退回舊版也不會遺失內容
   heroContent.benefitCards = collectBenefitRows();
   heroContent.benefits = heroContent.benefitCards.map(c=> c.desc ? (c.title+'：'+c.desc) : c.title);
   saveHeroContentLocal(heroContent);
   renderHeroContent();
+  renderServiceCards();
+  if(!isAdmin) resetPublicForm();
   pushRemoteSettings();
   toast('文案已儲存');
 }
@@ -1411,6 +1416,7 @@ let bookingPolicy = loadBookingPolicy();
 let serviceDisclaimer = loadServiceDisclaimer();
 let webhookUrl = loadWebhook();
 let heroContent = loadHeroContent();
+function addonsHidden(){ return !!(heroContent && heroContent.hideAddons); }
 let availability = loadAvailability();
 let methods = loadMethods();
 let reportBrandName = loadReportBrandName();
@@ -1438,7 +1444,7 @@ function renderServiceCards(){
       ${(s.tiers&&s.tiers.length)?`<div class="tier-list">${parseTiers(s.tiers).map(t=>`<div class="tier-row${t.label.includes('⭐')?' recommended':''}">${protectStrikePairs(protectStarPairs(esc(t.label)))}</div>`).join('')}</div>`:''}
       ${s.note?`<p class="card-note">${richText(s.note)}</p>`:''}
     </div>`).join('');
-  document.getElementById('addonCardWrap').innerHTML = addons.length ? `
+  document.getElementById('addonCardWrap').innerHTML = (addons.length && !addonsHidden()) ? `
     <div class="addon-card">
       <div class="addon-label">＋ 加購選項</div>
       ${addons.map(a=>`<div class="addon-item" style="cursor:default; display:block;"><div><strong>${esc(a.name)}</strong>｜${a.isFree?'免費':'NT$'+Number(a.price).toLocaleString()}</div>${a.desc?`<div style="font-size:14.5px; color:#888; margin-top:2px;">${esc(a.desc)}</div>`:''}</div>`).join('')}
@@ -1558,7 +1564,7 @@ function publicFieldsHTML(){
       <div id="chakraCheckList" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px;"></div>
       <p class="sub" id="chakraCheckHint" style="margin:6px 0 0; padding:0; text-align:left; opacity:1;"></p>
     </div>
-    ${addons.length? `<div class="field" id="addonFieldWrap"><label>加購選項（可複選）</label>
+    ${(addons.length && !addonsHidden())? `<div class="field" id="addonFieldWrap"><label>加購選項（可複選）</label>
       <div id="addonChecksWrap">${addonChecks}</div>
       <p class="sub" id="addonFreeNotice" style="display:none; text-align:left; opacity:1; margin:6px 0 0; padding:0;">💛 此項目為免費服務，暫不提供加購延長諮詢方案</p>
     </div>`:''}
@@ -3981,6 +3987,7 @@ function renderSettings(){
   document.getElementById('setPainPoints').value = (heroContent.painPoints||[]).join('\n');
   document.getElementById('setPreServicesNote').value = heroContent.preServicesNote || '';
   document.getElementById('setServicesIntro').value = heroContent.servicesIntro || '';
+  document.getElementById('setHideAddons').checked = !!heroContent.hideAddons;
   document.getElementById('setIgLinkText').value = heroContent.igLinkText || '';
   renderBenefitRows(getBenefitCards(heroContent));
   renderServiceSettings(); renderAddonSettings(); renderMethodSettings();
