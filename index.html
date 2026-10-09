@@ -150,6 +150,22 @@ p {
   font-size: 17px;
 }
 
+
+/* ===== 「我怎麼看事情」這類區塊：每一項是獨立的卡片（圖示＋標題＋說明），後台可新增刪減 ===== */
+.benefit-cards .benefit-card{
+  margin: 12px 24px 0;
+  padding: 14px 18px;
+  border: 1px solid #D4AF37;
+  border-radius: 14px;
+  background: #FFFFFF;
+  transition: all 0.25s ease;
+}
+.benefit-cards .benefit-card:hover{ transform: translateY(-4px); box-shadow: 0 10px 26px rgba(0,0,0,0.13); }
+.benefit-card .bc-head{ display:flex; align-items:center; gap:10px; font-size:17.5px; font-weight:800; color:var(--soft-pink); line-height:1.5; }
+.benefit-card .bc-ico{ flex-shrink:0; width:22px; height:22px; color:var(--purple-check); }
+.benefit-card .bc-desc{ margin:6px 0 0 32px; padding:0; font-size:16px; line-height:1.8; color:var(--soft-pink); opacity:.92; }
+.benefit-card .bc-head:only-child{ }
+
 /* ===== 服務卡片 ===== */
 .service-card {
   margin: 12px 24px 0;
@@ -608,7 +624,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <a class="social-link" id="igLinkTopBtn" href="#" target="_blank" rel="noopener" style="display:none;">
     <span class="link-inline">
       <svg viewBox="0 0 24 24" width="17" height="17"><defs><linearGradient id="igGradTop" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#FFDD55"/><stop offset="50%" stop-color="#E1306C"/><stop offset="100%" stop-color="#833AB4"/></linearGradient></defs><rect x="1" y="1" width="22" height="22" rx="6" fill="url(#igGradTop)"/><circle cx="12" cy="12" r="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="#fff"/></svg>
-      追蹤Instagram看更多影片 →
+      <span id="igLinkTopText">追蹤Instagram看更多影片 →</span>
     </span>
   </a>
   <a class="btn" id="heroCta" href="https://lin.ee/5VQ5gbz">想確認他的想法</a>
@@ -620,10 +636,11 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   <p class="sub" id="painPointsNote" style="text-align:left; opacity:1; margin:14px 0 0; line-height:1.8;"></p>
 
   <h2 id="benefitsTitle"></h2>
-  <div class="box" id="benefitsWrap"></div>
+  <div class="benefit-cards" id="benefitsWrap"></div>
   <p class="sub" id="preServicesNote" style="text-align:left; opacity:1; margin:14px 0 0; line-height:1.8;"></p>
 
   <h2>服務方案</h2>
+  <p class="sub" id="servicesIntro" style="display:none; text-align:left; opacity:1; margin:10px 0 0; line-height:1.8;"></p>
   <div id="serviceCardsWrap"></div>
   <div id="addonCardWrap"></div>
   <p id="serviceDisclaimerWrap" style="font-size:12.5px; color:#999; line-height:1.8; text-align:left; margin:18px 4px 0; opacity:.85;"></p>
@@ -641,7 +658,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
     <a class="social-link" id="igLinkBtn" href="#" target="_blank" rel="noopener" style="display:none;">
       <span class="link-inline">
         <svg viewBox="0 0 24 24" width="17" height="17"><defs><linearGradient id="igGradBottom" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#FFDD55"/><stop offset="50%" stop-color="#E1306C"/><stop offset="100%" stop-color="#833AB4"/></linearGradient></defs><rect x="1" y="1" width="22" height="22" rx="6" fill="url(#igGradBottom)"/><circle cx="12" cy="12" r="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="#fff"/></svg>
-        <span class="link-text">追蹤Instagram看更多影片 →</span>
+        <span class="link-text" id="igLinkBtnText">追蹤Instagram看更多影片 →</span>
       </span>
     </a>
   </div>
@@ -816,8 +833,13 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
           <div class="field"><label>該標題下方的說明文字（要換行按 Enter）</label><textarea id="setPainPointsNote" style="min-height:70px;"></textarea></div>
           <div class="field"><label>「妳可能正在經歷」— 每一行是一項</label><textarea id="setPainPoints" style="min-height:80px;"></textarea></div>
           <div class="field"><label>「我會幫妳直接看清」區塊標題</label><input id="setBenefitsTitle" placeholder="例如：我會幫妳直接看清"></div>
-          <div class="field"><label>「我會幫妳直接看清」— 每一行是一項</label><textarea id="setBenefits" style="min-height:80px;"></textarea></div>
+          <div class="field"><label>這個區塊的內容 — 每一項是一張獨立的卡片（標題＋說明），可以新增、刪除、調整順序</label>
+            <div id="setBenefitCards"></div>
+            <button type="button" class="btn btn-outline" style="margin:6px 0 0; width:auto; padding:7px 14px; font-size:15px;" onclick="addBenefitRow()">＋ 新增一項</button>
+          </div>
           <div class="field"><label>服務方案前的說明文字（要換行按 Enter）</label><textarea id="setPreServicesNote" style="min-height:80px;"></textarea></div>
+          <div class="field"><label>「服務方案」標題下方的說明（選填，要換行按 Enter，留空就不顯示）</label><textarea id="setServicesIntro" style="min-height:70px;" placeholder="例如：每一種方式的做法與適合的情況不同，可以先看看哪一種比較符合你現在的狀態。"></textarea></div>
+          <div class="field"><label>「追蹤 Instagram」連結的文字（網頁最上方跟下方兩個地方都會一起換，留空會用預設文字）</label><input id="setIgLinkText" placeholder="追蹤Instagram看更多影片 →"></div>
           <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveHeroContent()">儲存文案</button>
         </div>
 
@@ -1034,7 +1056,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-09-24-60 ・ 後台「編輯服務項目」新增一個「＋ 開放加購選項」勾選框（預設是打勾，舊資料不會受影響）。取消勾選某個服務項目的這個選項後，客戶在預約表單選到那個服務時，整個「加購選項」欄位會直接消失，不會顯示、也不能選任何加購項目；勾選的服務則跟以前一樣正常顯示加購選項。這個版本不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-10-09-61 ・ 前台三項優化：①「追蹤Instagram」連結文字可在後台「開頭介紹文字」修改 ②「我怎麼看事情」這類區塊改成每一項獨立卡片（圖示＋標題＋說明），後台可新增／刪除／上下移動 ③「服務方案」標題下方新增可編輯的說明。這一版不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -1128,6 +1150,8 @@ function defaultHeroContent(){
     painPointsNote: '有些事情，不只是聽妳怎麼說。\n我也會從事情的發展、妳和人的互動，以及妳當下呈現出的狀態，一起去看這件事。',
     benefitsTitle: '我會幫妳直接看清',
     benefits: ['他現在對妳的真實想法','為什麼會變成現在這樣','妳在他心中的真實位置'],
+    igLinkText: '追蹤Instagram看更多影片 →',
+    servicesIntro: '',
     preServicesNote: '我會先從妳說的內容、事情的發展和人與人之間的關係去理解。\n而有些時候，在這個過程裡，我也會接收到一些妳沒有直接告訴我的感受或畫面。\n這些資訊，會成為我理解整件事情的一部分。'
   };
 }
@@ -1292,9 +1316,13 @@ function saveHeroContent(){
     painPointsNote: document.getElementById('setPainPointsNote').value.trim(),
     painPoints: document.getElementById('setPainPoints').value.split('\n').map(s=>s.trim()).filter(Boolean),
     benefitsTitle: document.getElementById('setBenefitsTitle').value.trim() || defaultHeroContent().benefitsTitle,
-    benefits: document.getElementById('setBenefits').value.split('\n').map(s=>s.trim()).filter(Boolean),
-    preServicesNote: document.getElementById('setPreServicesNote').value.trim()
+    preServicesNote: document.getElementById('setPreServicesNote').value.trim(),
+    servicesIntro: document.getElementById('setServicesIntro').value.trim(),
+    igLinkText: document.getElementById('setIgLinkText').value.trim() || defaultHeroContent().igLinkText
   };
+  // 每一項獨立卡片：標題＋說明；同時也存一份「標題：說明」的舊格式，之後想退回舊版也不會遺失內容
+  heroContent.benefitCards = collectBenefitRows();
+  heroContent.benefits = heroContent.benefitCards.map(c=> c.desc ? (c.title+'：'+c.desc) : c.title);
   saveHeroContentLocal(heroContent);
   renderHeroContent();
   pushRemoteSettings();
@@ -1417,6 +1445,57 @@ function renderServiceCards(){
     </div>` : '';
   document.getElementById('serviceDisclaimerWrap').innerHTML = richText(serviceDisclaimer);
 }
+
+/* ===== 「我怎麼看事情」這類區塊：每一項是獨立卡片（標題＋說明） ===== */
+const BENEFIT_ICONS = [
+  '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>',
+  '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7z"/>',
+  '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+  '<path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 0 0-7.1 7.1L12 21l8.8-8.3a5 5 0 0 0 0-7.1z"/>',
+  '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+  '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>'
+];
+/* 讀取卡片資料；如果是舊資料（每行一項，可能用「：」分隔標題跟說明），自動轉成卡片 */
+function getBenefitCards(hc){
+  if(Array.isArray(hc.benefitCards)) return hc.benefitCards.map(c=>({title:String(c.title||''), desc:String(c.desc||'')}));
+  return (hc.benefits||[]).map(line=>{
+    const m = String(line).match(/^([^：:]+)[：:]\s*([\s\S]*)$/);
+    return m ? {title:m[1].trim(), desc:m[2].trim()} : {title:String(line).trim(), desc:''};
+  });
+}
+function renderBenefitCards(){
+  document.getElementById('benefitsWrap').innerHTML = getBenefitCards(heroContent).filter(c=>c.title||c.desc).map((c,i)=>`
+    <div class="benefit-card">
+      <div class="bc-head"><svg class="bc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${BENEFIT_ICONS[i%BENEFIT_ICONS.length]}</svg><span>${esc(c.title)}</span></div>
+      ${c.desc?`<p class="bc-desc">${esc(c.desc).replace(/\n/g,'<br>')}</p>`:''}
+    </div>`).join('');
+}
+/* 後台：每一張卡片一列（標題＋說明），可新增、刪除、上下移動 */
+function benefitRowHtml(title, desc){
+  const bs='margin:6px 6px 0 0; width:auto; padding:5px 12px; font-size:14px;';
+  return `<div class="bc-row" style="border:1px solid #E6D9B5; border-radius:10px; padding:10px; margin-bottom:8px; background:#FFFDF6;">
+    <input class="bc-title" placeholder="標題，例如：你正在面對的問題" value="${esc(title)}" style="margin-bottom:6px;">
+    <textarea class="bc-desc-input" placeholder="說明（選填，要換行按 Enter）" style="min-height:56px;">${esc(desc)}</textarea>
+    <button type="button" class="btn btn-outline" style="${bs}" onclick="moveBenefitRow(this,-1)">上移</button><button type="button" class="btn btn-outline" style="${bs}" onclick="moveBenefitRow(this,1)">下移</button><button type="button" class="btn btn-outline" style="${bs}" onclick="this.closest('.bc-row').remove()">刪除這一項</button>
+  </div>`;
+}
+function renderBenefitRows(cards){
+  document.getElementById('setBenefitCards').innerHTML = (cards||[]).map(c=>benefitRowHtml(c.title,c.desc)).join('');
+}
+function addBenefitRow(){
+  document.getElementById('setBenefitCards').insertAdjacentHTML('beforeend', benefitRowHtml('',''));
+}
+function moveBenefitRow(btn, dir){
+  const row = btn.closest('.bc-row');
+  if(dir<0 && row.previousElementSibling) row.parentNode.insertBefore(row, row.previousElementSibling);
+  if(dir>0 && row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling, row);
+}
+function collectBenefitRows(){
+  return Array.from(document.querySelectorAll('#setBenefitCards .bc-row')).map(r=>({
+    title: r.querySelector('.bc-title').value.trim(),
+    desc: r.querySelector('.bc-desc-input').value.trim()
+  })).filter(c=>c.title||c.desc);
+}
 function renderHeroContent(){
   document.getElementById('heroTitle').innerHTML = esc(heroContent.title).replace(/\n/g,'<br>');
   document.getElementById('heroSubtitle').innerHTML = esc(heroContent.subtitle).replace(/\n/g,'<br>');
@@ -1427,8 +1506,14 @@ function renderHeroContent(){
   document.getElementById('painPointsNote').innerHTML = esc(heroContent.painPointsNote||'').replace(/\n/g,'<br>');
   document.getElementById('painPointsWrap').innerHTML = (heroContent.painPoints||[]).map(t=>`<p>${esc(t)}</p>`).join('');
   document.getElementById('benefitsTitle').textContent = heroContent.benefitsTitle || '我會幫妳直接看清';
-  document.getElementById('benefitsWrap').innerHTML = (heroContent.benefits||[]).map(t=>`<p>✔️ ${esc(t)}</p>`).join('');
+  renderBenefitCards();
   document.getElementById('preServicesNote').innerHTML = esc(heroContent.preServicesNote||'').replace(/\n/g,'<br>');
+  const svcIntro = document.getElementById('servicesIntro');
+  svcIntro.innerHTML = esc(heroContent.servicesIntro||'').replace(/\n/g,'<br>');
+  svcIntro.style.display = (heroContent.servicesIntro||'').trim() ? '' : 'none';
+  const igText = (heroContent.igLinkText||'').trim() || defaultHeroContent().igLinkText;
+  document.getElementById('igLinkTopText').textContent = igText;
+  document.getElementById('igLinkBtnText').textContent = igText;
   document.getElementById('heroCta').textContent = heroContent.ctaText || '想聽聽真正的答案';
   document.getElementById('heroCta').href = lineLink;
   document.getElementById('quietLineBtn').href = lineLink;
@@ -3895,7 +3980,9 @@ function renderSettings(){
   document.getElementById('setBenefitsTitle').value = heroContent.benefitsTitle || '';
   document.getElementById('setPainPoints').value = (heroContent.painPoints||[]).join('\n');
   document.getElementById('setPreServicesNote').value = heroContent.preServicesNote || '';
-  document.getElementById('setBenefits').value = (heroContent.benefits||[]).join('\n');
+  document.getElementById('setServicesIntro').value = heroContent.servicesIntro || '';
+  document.getElementById('setIgLinkText').value = heroContent.igLinkText || '';
+  renderBenefitRows(getBenefitCards(heroContent));
   renderServiceSettings(); renderAddonSettings(); renderMethodSettings();
   renderAvailabilitySettings();
 }
