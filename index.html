@@ -1057,7 +1057,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-10-09-63 ・ 支援從官方LINE卡片直接打開指定項目：網址後面加 ?service=項目代碼（或卡片編號、項目名稱關鍵字），客戶打開後會自動選好那個項目並捲到預約表單。後台「服務方案管理」每個項目新增「複製LINE卡片連結」按鈕。這一版不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-10-09-64 ・ 修正手機從官方LINE卡片點進來沒有跳到指定項目：改成不用平滑捲動（手機常失效）、頁面載入完再確認一次位置、讀到項目資料就先選好（不用等雲端讀完），並跳出「已幫你選好：項目名稱」提示。這一版不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -1547,24 +1547,42 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-let serviceDeepLinkDone = false;
-function findServiceByDeepLink(key){
+let serviceDeepLinkEarlyDone = false, serviceDeepLinkLateDone = false;
+function findServiceByDeepLink(key, idOnly){
   key = String(key||'').trim();
   if(!key) return null;
   let svc = services.find(s=>s.id===key);
-  if(svc) return svc;
+  if(svc || idOnly) return svc || null;
   if(/^\d{1,2}$/.test(key)){ svc = services[Number(key)-1]; if(svc) return svc; }
   return services.find(s=>String(s.name||'').includes(key)) || null;
 }
-function applyServiceDeepLink(){
-  if(serviceDeepLinkDone || isAdmin) return;
+/* 手機（尤其是LINE內建瀏覽器）用平滑捲動常常捲不過去，而且頁面圖片載入完版面會再位移，
+   所以改成直接跳到預約表單，並在稍後確認一次位置，沒到就再跳一次 */
+function jumpToBookingFormNow(){
+  const el = document.getElementById('bookingAnchor');
+  if(!el) return;
+  el.scrollIntoView({behavior:'auto', block:'start'});
+  [500, 1500].forEach(ms=>setTimeout(()=>{
+    const top = el.getBoundingClientRect().top;
+    if(Math.abs(top) > 40) el.scrollIntoView({behavior:'auto', block:'start'});
+  }, ms));
+}
+function applyServiceDeepLink(phase){
+  if(isAdmin) return;
+  const isLate = (phase !== 'early');
+  if(isLate ? serviceDeepLinkLateDone : serviceDeepLinkEarlyDone) return;
+  if(isLate) serviceDeepLinkLateDone = true; else serviceDeepLinkEarlyDone = true;
   const params = new URLSearchParams(location.search);
   const key = params.get('service') || params.get('s');
-  if(!key){ serviceDeepLinkDone = true; return; }
-  serviceDeepLinkDone = true;
-  const svc = findServiceByDeepLink(key);
+  if(!key) return;
+  // 還沒讀到雲端最新設定時（early），只接受「項目代碼」完全相同的比對，避免本機舊資料選錯項目；
+  // 雲端設定讀完（late）才開放用編號或名稱關鍵字比對
+  const svc = findServiceByDeepLink(key, !isLate);
   if(!svc) return;
-  setTimeout(()=>selectServiceAndScroll(svc.id), 250);
+  const sel = document.getElementById('pf_service');
+  if(sel){ sel.value = svc.id; onServiceChange(); }
+  jumpToBookingFormNow();
+  toast('已幫你選好：' + String(svc.name||'').split('/')[0].trim());
 }
 /* 後台：複製某個服務項目專屬的LINE卡片連結 */
 function serviceDeepLinkUrl(id){
@@ -4357,6 +4375,7 @@ if(isAdmin){
 } else {
   resetPublicForm();
 }
+applyServiceDeepLink('early');
 pullRemoteSettings();
 </script>
 </body>
