@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>載入中…</title>
+<style>html,body{margin:0;height:100%;background:#F5EFE6;color:#7A3B52;font:18px/1.6 "Noto Sans TC",sans-serif;letter-spacing:2px}body{display:flex;align-items:center;justify-content:center}</style>
+</head>
+<body>載入中…
+<script>
+/* 路徑格式的LINE卡片連結：https://liff.line.me/…/s/項目代碼  會被LINE接成  https://vang5200-prog.github.io/s/項目代碼
+   這裡把它轉回網站首頁的 ?service=項目代碼，其他情況一律回首頁 */
+(function(){
+  var m = location.pathname.match(/\/s\/([^\/?#]+)/);
+  var q = new URLSearchParams(location.search);
+  if(m){ q.set('service', decodeURIComponent(m[1])); }
+  var qs = q.toString();
+  location.replace('/' + (qs ? '?' + qs : '') + location.hash);
+})();
+</script>
+</body>
+</html>
