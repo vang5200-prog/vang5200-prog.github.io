@@ -1093,7 +1093,7 @@ function getLinkParam(name){
 /* 版本標記：只是用來確認「現在瀏覽器載入的，到底是不是最新這一版檔案」，
    跟系統功能本身沒有關係。每次交付新檔案這行文字都會換，
    打開後台馬上就能在Console最上面看到，不用等操作到那個功能才知道版本對不對。 */
-console.log('%c[檔案版本] v2026-10-09-67 ・ 修正LINE卡片點進來沒帶到項目代碼：LINE會把網址參數包進 liff.state，現在也會讀這個寫法（以及 #service= 寫法）；檢查框新增顯示「實際打開的網址」。這一版不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
+console.log('%c[檔案版本] v2026-10-09-68 ・ 後台「複製LINE卡片連結」改為直接複製 LIFF 格式（liff.line.me/…/?service=項目代碼），貼到LINE卡片即可直接跳到該項目。這一版不用搭配新的Code.gs，單獨更新index.html即可生效', 'background:#D4AF37;color:#fff;font-size:13px;padding:4px 8px;border-radius:4px;');
 /* ============================================================
    儲存 Keys
 ============================================================ */
@@ -1584,7 +1584,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-09-67';
+const SITE_VERSION = 'v2026-10-09-68';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -1637,7 +1637,7 @@ function applyServiceDeepLink(){
 }
 /* 後台：複製某個服務項目專屬的LINE卡片連結 */
 function serviceDeepLinkUrl(id){
-  return location.origin + location.pathname + '?service=' + encodeURIComponent(id);
+  return 'https://liff.line.me/2011943452-nCJtas3G/?service=' + encodeURIComponent(id);
 }
 function copyServiceLink(id){
   const url = serviceDeepLinkUrl(id);
