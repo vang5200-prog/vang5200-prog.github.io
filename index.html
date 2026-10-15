@@ -13,6 +13,20 @@
 <meta http-equiv="Expires" content="0">
 <title>讀心分析</title>
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<!-- 分享給朋友時（LINE、Facebook、Messenger等）顯示的縮圖與文字。
+     沒有這幾行的話，各平台會自己亂抓圖，之前就抓到「加入主畫面」用的圖示。
+     縮圖檔案是 share-image.jpg（要跟 index.html 一起放在GitHub最外層）。 -->
+<meta name="description" content="笑笑｜一對一能量訊息解讀。點進來看看適合你的方案，線上預約。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="關係眼">
+<meta property="og:title" content="關係眼｜笑笑">
+<meta property="og:description" content="一對一能量訊息解讀，點進來看看適合你的方案，線上預約。">
+<meta property="og:url" content="https://vang5200-prog.github.io/">
+<meta property="og:image" content="https://vang5200-prog.github.io/share-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://vang5200-prog.github.io/share-image.jpg">
 <style>
 :root{
   --gold-1:#C6A85A; --gold-2:#E5C97A; --gold-3:#FFF1B0; --gold-border:#D4AF37;
@@ -698,6 +712,12 @@ function getLinkParam(name){
         <span class="link-text" id="igLinkBtnText">追蹤Instagram看更多影片 →</span>
       </span>
     </a>
+  </div>
+
+  <div class="box" id="friendBox" style="text-align:center; margin-top:22px;">
+    <div style="font-size:18px; font-weight:800; color:var(--brown); margin-bottom:6px;">🎁 介紹朋友，你有 95 折券</div>
+    <p style="margin:0 0 12px; font-size:16px; line-height:1.8; color:var(--soft-pink);">把這個頁面分享給朋友。朋友預約時填上你當介紹人，等他完成諮詢後，你就會收到一張「下次預約 95 折優惠券」。介紹越多朋友就能領越多張，沒有次數上限。</p>
+    <button class="btn" style="margin:0; width:100%;" onclick="shareToFriend()">分享給朋友</button>
   </div>
 
   <div id="bookingAnchor"></div>
@@ -1731,6 +1751,7 @@ function publicFieldsHTML(){
     <div class="field"><label>諮詢方式 <span class="req">*</span></label><select id="pf_method">${methodOptions}</select></div>
     <div class="field"><label id="pf_question_label">想諮詢的問題</label><textarea id="pf_question" placeholder="想和我討論什麼事情？請簡單告訴我目前的情況"></textarea></div>
     <div class="field"><label>其他備註</label><textarea id="pf_other" placeholder="有什麼想先讓我知道的嗎？"></textarea></div>
+    <div class="field"><label>介紹人（選填）</label><input id="pf_referrer" placeholder="朋友介紹的話，請填介紹人的 Email（或 LINE 暱稱）"><div style="font-size:13.5px; color:#999; margin-top:4px; line-height:1.6;">填寫後，你完成諮詢，介紹人就能獲得 95 折優惠券。填介紹人的 Email 最準確。</div></div>
   `;
 }
 function resetPublicForm(){
@@ -2529,7 +2550,8 @@ async function reviewBooking(){
     addonNames:sel.map(a=>a.name), price,
     method:document.getElementById('pf_method').value,
     question:document.getElementById('pf_question').value.trim(),
-    other:document.getElementById('pf_other').value.trim()
+    other:document.getElementById('pf_other').value.trim(),
+    referrer:(document.getElementById('pf_referrer')||{value:''}).value.trim()
   };
   showBookingReview(pendingBooking);
 }
@@ -2552,10 +2574,12 @@ function showBookingReview(b){
       <div><b>項目：</b>${esc(b.serviceName)}${b.addonNames.length?'＋'+b.addonNames.map(esc).join('、'):''}</div>
       <div><b>時間：</b>${esc(dtStr)}</div>
       <div><b>諮詢方式：</b>${esc(b.method)}</div>
-      ${b.price>0?`<div><b>費用：</b>NT$${Number(b.price).toLocaleString()}</div>`:''}
+      ${b.price>0?`<div id="reviewFeeLine"><b>費用：</b>NT$${Number(b.price).toLocaleString()}</div>`:''}
       ${b.question?`<div><b>想諮詢的問題：</b>${esc(b.question)}</div>`:''}
       ${b.other?`<div><b>其他備註：</b>${esc(b.other)}</div>`:''}
+      ${b.referrer?`<div><b>介紹人：</b>${esc(b.referrer)}</div>`:''}
     </div>
+    <div id="couponOfferBox"></div>
     ${policyText?`<p style="padding:0; color:var(--soft-pink); font-size:16px; margin-top:12px; line-height:1.8; white-space:pre-line;">${esc(policyText)}</p>`:''}
     <p style="padding:0; color:#999; font-size:16px; margin-top:8px;">請確認以上內容無誤。送出後將無法自行修改，如果之後想更改預約內容，請直接透過LINE聯繫我調整。</p>
     <div style="display:flex; gap:10px; margin-top:14px;">
@@ -2563,6 +2587,52 @@ function showBookingReview(b){
       <button class="btn" style="flex:1; margin:0;" onclick="confirmAndSubmit()">確認無誤，送出</button>
     </div>
   `;
+  offerCouponInReview(b);
+}
+/* 朋友推薦95折券：到「確認預約內容」這一步，用客戶填的Email去雲端查有沒有可用的券，
+   有的話詢問「這次要不要使用」，選了才打折；沒有券就什麼都不顯示。 */
+function couponDiscounted(price){ return Math.round(Number(price)*0.95); }
+function setCouponChoice(use){
+  if(!pendingBooking) return;
+  pendingBooking.useCoupon = !!use;
+  const fee = document.getElementById('reviewFeeLine');
+  const orig = Number(pendingBooking.price);
+  if(fee){
+    fee.innerHTML = use
+      ? `<b>費用：</b><span style="text-decoration:line-through; opacity:.6;">NT$${orig.toLocaleString()}</span> → <b style="color:var(--gold-text);">NT$${couponDiscounted(orig).toLocaleString()}</b>（95折）`
+      : `<b>費用：</b>NT$${orig.toLocaleString()}`;
+  }
+  const box = document.getElementById('couponOfferBox');
+  if(box && box.dataset.exp){
+    const fin = couponDiscounted(orig).toLocaleString();
+    box.innerHTML = use
+      ? `<div style="background:#FFF8E8; border:1.5px solid var(--gold-border); border-radius:12px; padding:12px 14px; margin-top:12px; font-size:16px; line-height:1.8; color:var(--soft-pink);">🎫 已套用 95 折優惠券，應付 <b>NT$${fin}</b>。<br><a href="javascript:void(0)" onclick="setCouponChoice(false)" style="color:var(--gold-text);">改成這次不使用</a></div>`
+      : `<div style="background:#FFF8E8; border:1.5px dashed var(--gold-border); border-radius:12px; padding:12px 14px; margin-top:12px; font-size:16px; line-height:1.8; color:var(--soft-pink);">🎫 這次先不使用優惠券（券會繼續保留到 ${esc(box.dataset.exp)}）。<br><a href="javascript:void(0)" onclick="setCouponChoice(true)" style="color:var(--gold-text);">改成使用</a></div>`;
+  }
+}
+async function offerCouponInReview(b){
+  if(!webhookUrl || !b.email || !(Number(b.price)>0)) return;
+  const svc = services.find(s=>s.id===b.serviceId);
+  if(svc && svc.isCharity) return;
+  try{
+    const sep = webhookUrl.includes('?') ? '&' : '?';
+    const res = await fetch(webhookUrl + sep + 'action=couponCheck&email=' + encodeURIComponent(b.email));
+    const data = await res.json();
+    if(!data || !data.hasCoupon) return;
+    if(pendingBooking !== b) return;
+    const box = document.getElementById('couponOfferBox');
+    if(!box) return;
+    const exp = String(data.expiresAt||'').replace(/-/g,'/');
+    box.dataset.exp = exp;
+    const fin = couponDiscounted(b.price).toLocaleString();
+    box.innerHTML = `<div style="background:#FFF8E8; border:1.5px solid var(--gold-border); border-radius:12px; padding:14px; margin-top:12px; text-align:center;">
+      <div style="font-size:17px; font-weight:800; color:var(--brown); margin-bottom:4px;">🎫 你有 ${Number(data.count)||1} 張 95 折優惠券</div>
+      <div style="font-size:15.5px; color:var(--soft-pink); line-height:1.7; margin-bottom:10px;">最近一張有效期限到 ${esc(exp)}，這次預約要使用嗎？（一次用一張，使用後應付 NT$${fin}）</div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-outline" style="flex:1; margin:0; font-size:16px;" onclick="setCouponChoice(false)">這次不用</button>
+        <button class="btn" style="flex:1; margin:0; font-size:16px;" onclick="setCouponChoice(true)">使用優惠券</button>
+      </div></div>`;
+  }catch(err){ console.warn('優惠券查詢失敗', err); }
 }
 function backToEditForm(){
   document.getElementById('bookingReviewBox').style.display='none';
@@ -2623,6 +2693,7 @@ async function confirmAndSubmit(confirmPlanChange, confirmSecondBooking){
   }
   // 如果後端判斷這是同一人（同Email）在同一個時段的重複送出，
   // 就不再當成一筆新預約，改用原本那筆的代碼顯示，避免出現兩筆一樣的預約
+  if(result && result.couponApplied && result.finalPrice != null){ rec.price = Number(result.finalPrice); }
   const isDuplicate = !!(result && result.duplicate);
   // 同一時段換了方案，後端已經直接套用最新選擇（原本沒加LINE，或是客戶剛剛已經確認要換）
   const isPlanChanged = !!(result && result.planChanged);
@@ -2815,6 +2886,7 @@ function renderList(){
       </div>
       ${r.question?`<div class="rec-note">諮詢問題：${esc(r.question)}</div>`:''}
       ${r.other?`<div class="rec-note">其他備註：${esc(r.other)}</div>`:''}
+      ${r.referrer?`<div class="rec-note">🤝 介紹人：${esc(r.referrer)}${r.status==='已完成'?'（已完成，95折券已處理）':'（標記完成後，系統會發 95 折券給介紹人）'}</div>`:''}
       <div class="rec-actions">
         ${r.status==='待確認'?`<button class="primary" onclick="quickStatus('${r.id}','已確認')">確認預約</button>`:''}
         ${r.status==='已確認'?`<button class="primary" onclick="quickStatus('${r.id}','已完成')">標記完成</button>`:''}
@@ -2863,10 +2935,14 @@ async function syncRecordsFromCloud(){
 async function updateStatusRemote(code, status){
   if(!webhookUrl || !code) return;
   try{
-    await fetch(webhookUrl, {
+    const res = await fetch(webhookUrl, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify({ type:'updateStatus', password: sessionStorage.getItem('rt_admin_pw')||'', code, status })
     });
+    const data = await res.json();
+    const c = data && data.coupon;
+    if(c && c.issued){ setTimeout(()=>toast(c.pushed ? '🎫 已發 95 折券給介紹人，並用 LINE 通知他' : '🎫 已發 95 折券給介紹人（他還沒加 LINE，請你另外告訴他）'), 2400); }
+    else if(c && c.reason==='unresolved'){ setTimeout(()=>toast('⚠️ 介紹人「'+(c.referrer||'')+'」對不到客戶，沒有自動發券，請手動處理'), 2400); }
   }catch(err){ console.warn('雲端狀態同步失敗', err); }
 }
 async function deleteRecordRemote(code){
@@ -3001,6 +3077,29 @@ async function rejectBookingFull(id){
     }
   }catch(err){ toast('婉拒失敗，請檢查網路連線'); }
 }
+/* ============================================================
+   分享給朋友（介紹朋友預約，朋友完成諮詢後，介紹人會收到95折優惠券）
+============================================================ */
+function friendShareUrl(){
+  let u = 'https://vang5200-prog.github.io/';
+  try{ const svc = getLinkParam('service'); if(svc) u += '?service=' + encodeURIComponent(svc); }catch(e){}
+  return u;
+}
+async function shareToFriend(){
+  const url = friendShareUrl();
+  const text = '推薦你這個，預約時填我當介紹人就可以囉 🌙';
+  try{
+    if(navigator.share){ await navigator.share({ title:'關係眼｜笑笑', text, url }); return; }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  const done = ()=>toast('連結已複製，貼給朋友就可以囉');
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(url); done(); return; }
+  }catch(e){}
+  const ta=document.createElement('textarea'); ta.value=url; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ toast(url); }
+  document.body.removeChild(ta);
+}
+
 function deleteRecord(id){
   const r=records.find(x=>x.id===id); if(!r)return;
   if(!confirm('確定要刪除這筆預約嗎？此動作無法復原。'))return;
@@ -4040,7 +4139,7 @@ function openForm(id=null){
   const statusOptions = STATUSES.map(s=>`<option value="${s}" ${rec.status===s?'selected':''}>${s}</option>`).join('');
   document.getElementById('adminFormFields').innerHTML = `
     <div class="field full"><label>客戶姓名 *</label><input id="af_name" value="${esc(rec.name||'')}"></div>
-    <div class="field"><label>Email</label><input id="af_email" value="${esc(rec.email||'')}"></div>
+    <div class="field"><label>Email</label><input id="af_email" value="${esc(rec.email||'')}">${id?'<div style="font-size:12.5px; color:#999; margin-top:4px;">客戶 Email 打錯的話，改這裡按儲存，會同步到雲端，之後就能重新寄出報告書。</div>':''}</div>
     <div class="field"><label>預約時間 *</label><input id="af_datetime" type="datetime-local" value="${rec.datetime||''}"></div>
     <div class="field"><label>服務項目</label><select id="af_service" onchange="afUpdatePrice()">${svcOptions}</select></div>
     <div class="field"><label>價格 (NT$)</label><input id="af_price" type="number" value="${rec.price??''}"></div>
@@ -4100,7 +4199,14 @@ function saveAdminForm(){
     question:document.getElementById('af_question').value.trim(),
     other:document.getElementById('af_other').value.trim(),
   };
-  if(editingId){ const r=records.find(x=>x.id===editingId); Object.assign(r,data); toast('已更新'); }
+  if(editingId){
+    if(data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)){ toast('Email 格式看起來不對，請再檢查一下'); return; }
+    const r=records.find(x=>x.id===editingId);
+    const nameChanged = r.name!==data.name, emailChanged = (r.email||'')!==(data.email||'');
+    Object.assign(r,data); toast('已更新');
+    // 姓名／Email 有改的話，同步改到雲端試算表（不然下次按「同步」會被舊資料蓋回去，也寄不了報告書）
+    if(r.code && (nameChanged||emailChanged)) syncNameEmailToCloud(r);
+  }
   else{
     // 手動在後台新增的預約（例如臨時、非線上預約的客戶）以前沒有「預約代碼」，
     // 之後想幫這位客戶「填寫報告書」時就會被擋下來（報告書一定要靠這組代碼，
@@ -4123,6 +4229,20 @@ function saveAdminForm(){
     syncManualBookingToCloud(newRec);
   }
   saveRecords(records); closeForm(); renderList(); renderDashboard();
+}
+async function syncNameEmailToCloud(rec){
+  if(!webhookUrl){ toast('⚠️ 尚未設定雲端網址，姓名／Email 只改在這台裝置上'); return; }
+  try{
+    const res = await fetch(webhookUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ type:'updateRecord', password: sessionStorage.getItem('rt_admin_pw')||'', code: rec.code, name: rec.name, email: rec.email||'' })
+    });
+    const data = await res.json();
+    if(data && data.ok){ toast('✅ 姓名／Email 已同步到雲端，現在可以重新寄送報告書了'); }
+    else if(data && data.error==='bad_email'){ toast('⚠️ Email 格式不正確，雲端沒有更新'); }
+    else if(data && data.error==='not_found'){ toast('⚠️ 雲端試算表找不到這筆預約，只改在這台裝置上'); }
+    else { toast('⚠️ 同步到雲端失敗，請稍後再試一次'); }
+  }catch(err){ toast('⚠️ 同步到雲端失敗（網路問題），請稍後再試一次'); }
 }
 async function syncManualBookingToCloud(rec){
   if(!webhookUrl){
