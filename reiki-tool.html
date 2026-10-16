@@ -808,7 +808,8 @@ function iching(){
   <select id="qQuestion"><option value="">請選擇</option></select>
  </div>
  <div class="field" id="qCustomField" style="display:none"><label>自訂問題內容</label>
-  <input id="qCustomText" type="text" placeholder="請輸入想問的問題">
+  <textarea id="qCustomText" rows="5" placeholder="請輸入想問的問題" style="width:100%;box-sizing:border-box;min-height:7.5em;max-height:60vh;resize:vertical;line-height:1.6;font-size:16px;overflow-y:auto"></textarea>
+  <div class="row" style="margin-top:6px"><button type="button" class="ghost" id="qCustomClear">✕ 清除，重新輸入</button></div>
  </div>
 </div>
 <div class="card" style="margin-bottom:14px">
@@ -857,6 +858,9 @@ function iching(){
  const qQuestionSel=document.getElementById('qQuestion');
  const qCustomField=document.getElementById('qCustomField');
  const qCustomInput=document.getElementById('qCustomText');
+ const growCustom=()=>{qCustomInput.style.height='auto';qCustomInput.style.height=Math.min(qCustomInput.scrollHeight+2,window.innerHeight*0.6)+'px'};
+ qCustomInput.addEventListener('input',growCustom);
+ document.getElementById('qCustomClear').onclick=()=>{qCustomInput.value='';growCustom();qCustomInput.focus()};
  qCategorySel.addEventListener('change',()=>{
    const cat=qCategorySel.value;
    qCustomInput.value='';
