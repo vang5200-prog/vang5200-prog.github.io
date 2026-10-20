@@ -2046,7 +2046,7 @@ function updateQuestionField(){
   }
   const labelEl = document.getElementById('pf_question_label');
   const inputEl = document.getElementById('pf_question');
-  if(labelEl) labelEl.textContent = qLabel;
+  if(labelEl) labelEl.textContent = qLabel + '（必填）';
   if(inputEl) inputEl.placeholder = qPlaceholder;
 }
 /* 七大脈輪的常見名稱（含慣用別名，同一組陣列內的別名都算同一個脈輪），用來檢查客戶在問題欄
@@ -2485,6 +2485,12 @@ async function reviewBooking(){
   if(!name || !email || !dateStr || !serviceId){ toast('請填寫姓名、Email、預約日期與預約項目'); return; }
   if(!selectedSlotHour){ toast('請選擇預約時段'); return; }
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast('請輸入正確的 Email 格式'); return; }
+  if(!document.getElementById('pf_question').value.trim()){
+    toast('請填寫想諮詢的問題，我才能提前了解你的狀況');
+    const qEl = document.getElementById('pf_question');
+    qEl.scrollIntoView({behavior:'smooth', block:'center'}); qEl.focus();
+    return;
+  }
   rememberPrefill(name, email);
   const svc = services.find(s=>s.id===serviceId);
   if(svc && svc.isCharity){
@@ -2899,6 +2905,8 @@ function renderList(){
           let html = `<button onclick="openReportForm('${r.id}')">${label}</button>`;
           if(rep) html += `<button onclick="openReportCard('${r.id}')">🪧 查看／發送</button>`;
           return html; })()}
+        ${r.status==='已確認'?`<button onclick="copyBookingSuccess('${r.id}')">📋 複製預約成功訊息</button>`:''}
+        ${(r.status==='已取消'||r.status==='臨時取消'||r.status==='無故爽約')?`<button onclick="copyRebook('${r.id}')">📋 複製重新預約訊息</button>`:''}
         <button onclick="openForm('${r.id}')">編輯</button>
         ${r.status!=='已取消'?`<button onclick="quickStatus('${r.id}','已取消')">取消</button>`:''}
         <button class="danger" onclick="deleteRecord('${r.id}')">刪除</button>
@@ -2940,6 +2948,7 @@ async function updateStatusRemote(code, status){
       body: JSON.stringify({ type:'updateStatus', password: sessionStorage.getItem('rt_admin_pw')||'', code, status })
     });
     const data = await res.json();
+    if(data && data.rebookPushed){ setTimeout(()=>toast('已用 LINE 通知客戶預約已取消，並附上重新預約連結'), 1200); }
     const c = data && data.coupon;
     if(c && c.issued){ setTimeout(()=>toast(c.pushed ? '🎫 已發 95 折券給介紹人，並用 LINE 通知他' : '🎫 已發 95 折券給介紹人（他還沒加 LINE，請你另外告訴他）'), 2400); }
     else if(c && c.reason==='unresolved'){ setTimeout(()=>toast('⚠️ 介紹人「'+(c.referrer||'')+'」對不到客戶，沒有自動發券，請手動處理'), 2400); }
@@ -4227,8 +4236,49 @@ function saveAdminForm(){
     // 所以這裡新增後會盡量把這筆資料也送一份到雲端，送不成功（例如還沒設定雲端網址、
     // 網路問題）會另外跳出提醒，讓妳知道這筆資料目前只在這台裝置上，之後同步時可能會不見。
     syncManualBookingToCloud(newRec);
+    // 手動幫客戶預約、狀態是「已確認」時，自動把「預約成功訊息」複製好，直接貼到客戶的 LINE 聊天室
+    if(newRec.status==='已確認'){ setTimeout(()=>copyTextToClipboard(buildBookingSuccessText(newRec), '已新增，並已複製預約成功訊息，貼給客戶就可以了'), 50); }
   }
   saveRecords(records); closeForm(); renderList(); renderDashboard();
+}
+/* ---- 複製給客戶的訊息（貼到LINE聊天室用） ---- */
+function copyTextToClipboard(text, okMsg){
+  const done = ()=>toast(okMsg || '已複製，可以直接貼給客戶');
+  const fallback = ()=>{
+    const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); done(); }catch(e){ prompt('請長按全選後複製：', text); }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(fallback);
+  } else fallback();
+}
+function buildBookingSuccessText(r){
+  const addons = (r.addonNames&&r.addonNames.length) ? '＋'+r.addonNames.join('、') : '';
+  const lines = [
+    `嗨${r.name||''}，你的預約已經確認囉 🌙`,
+    '',
+    `🕒 預約時間：${fmtDt(r.datetime)}`,
+    `💬 項目：${r.serviceName||''}${addons}`
+  ];
+  if(r.method) lines.push(`📞 諮詢方式：${r.method}`);
+  if(Number(r.price)>0) lines.push(`💰 費用：NT$${Number(r.price).toLocaleString()}`);
+  lines.push('', `🔑 預約代碼：${r.code||''}`,
+    '請把這組代碼直接回覆在這裡給我，系統才會在預約前一天和前 1 小時自動提醒你，諮詢後也會有後續的關心訊息 🙏');
+  return lines.join('\n');
+}
+function copyBookingSuccess(id){
+  const r=records.find(x=>x.id===id); if(!r) return;
+  copyTextToClipboard(buildBookingSuccessText(r), '已複製預約成功訊息，貼到客戶的 LINE 聊天室就可以了');
+}
+function buildRebookText(r){
+  const link = 'https://vang5200-prog.github.io/?prefill_name='+encodeURIComponent(r.name||'')+'&prefill_email='+encodeURIComponent(r.email||'');
+  return `嗨${r.name||''}，如果想重新預約，可以直接點下面連結，重新選項目跟時間就可以了：\n${link}\n\n有任何問題也可以直接回覆我，我看到訊息會盡快回覆你 🌙`;
+}
+function copyRebook(id){
+  const r=records.find(x=>x.id===id); if(!r) return;
+  copyTextToClipboard(buildRebookText(r), '已複製重新預約訊息，貼給客戶就可以了');
 }
 async function syncNameEmailToCloud(rec){
   if(!webhookUrl){ toast('⚠️ 尚未設定雲端網址，姓名／Email 只改在這台裝置上'); return; }
