@@ -2299,7 +2299,8 @@ function getCharityReservedWindowForDate(dateStr){
       const start = Number(s.charityFixedStart.slice(0,2))*60 + Number(s.charityFixedStart.slice(3,5));
       // 善的力量固定保留「開始時間起算 60 分鐘」（例如 15:00～16:00），不用項目名稱裡的分鐘數去算，
       // 再加上前後緩衝，所以 15:00、15:30、16:00 開始的預約都會顯示額滿（16:30 才開放）。
-      return { start: start-buf, end: start+CHARITY_RESERVE_MINUTES+buf };
+      // 結尾至少多算1分鐘：就算你把緩衝時間設成0，剛好在保留結束時間（例如16:00）開始的預約也要鎖住
+      return { start: start-buf, end: start+CHARITY_RESERVE_MINUTES+Math.max(buf,1) };
     }
   }
   return null;
