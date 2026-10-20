@@ -1749,7 +1749,7 @@ function publicFieldsHTML(){
       <div class="slot-hint" id="slotHint"></div>
     </div>
     <div class="field"><label>諮詢方式 <span class="req">*</span></label><select id="pf_method">${methodOptions}</select></div>
-    <div class="field"><label id="pf_question_label">想諮詢的問題</label><textarea id="pf_question" placeholder="想和我討論什麼事情？請簡單告訴我目前的情況"></textarea></div>
+    <div class="field"><label id="pf_question_label">想諮詢的問題</label><textarea id="pf_question" placeholder="請概述你的問題與目前的狀況"></textarea><div style="font-size:13.5px; color:#999; margin-top:4px; line-height:1.7;">先寫下來，我會在諮詢前先閱讀並感知，把寶貴的時間留在回答問題及互動上。見面當天就能直接回覆你答案，最後還會預留時間幫你做療癒。</div></div>
     <div class="field"><label>其他備註</label><textarea id="pf_other" placeholder="有什麼想先讓我知道的嗎？"></textarea></div>
     <div class="field"><label>介紹人（選填）</label><input id="pf_referrer" placeholder="朋友介紹的話，請填介紹人的 Email（或 LINE 暱稱）"><div style="font-size:13.5px; color:#999; margin-top:4px; line-height:1.6;">請填介紹人的 Email（填 Email 最準確），方便我向對方道謝。</div></div>
   `;
@@ -2029,7 +2029,7 @@ function updateTierField(){
 function updateQuestionField(){
   const svc = services.find(s=>s.id===document.getElementById('pf_service').value);
   let qLabel = '想諮詢的問題';
-  let qPlaceholder = '想和我討論什麼事情？請簡單告訴我目前的情況';
+  let qPlaceholder = '請概述你的問題與目前的狀況';
   if(svc){
     if(svc.questionLabel) qLabel = svc.questionLabel;
     if(svc.questionPlaceholder) qPlaceholder = svc.questionPlaceholder;
