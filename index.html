@@ -753,9 +753,9 @@ function getLinkParam(name){
   <div class="modal" style="max-width:420px; text-align:center;">
     <div style="font-size:38px; margin-bottom:4px;">⚠️</div>
     <h3 style="margin:0 0 10px; font-size:19px; color:var(--brown);">最後一步別忘記！</h3>
-    <p style="font-size:16.5px; line-height:1.8; color:var(--soft-pink); margin:0 0 14px;">預約還沒完成唷，一定要加官方LINE好友並傳送妳的預約代碼，這筆預約才會正式成立，我才會收到通知幫妳安排 🙏</p>
+    <p style="font-size:16.5px; line-height:1.8; color:var(--soft-pink); margin:0 0 14px;">預約還沒完成唷，一定要加官方LINE好友並傳送你的預約代碼，這筆預約才會正式成立，我才會收到通知幫你安排 🙏</p>
     <div style="background:#FFF8E8; border:1.5px dashed var(--gold-border); border-radius:12px; padding:12px; margin-bottom:16px;">
-      <div style="font-size:14.5px; color:var(--soft-pink); margin-bottom:4px;">妳的預約代碼</div>
+      <div style="font-size:14.5px; color:var(--soft-pink); margin-bottom:4px;">你的預約代碼</div>
       <div id="lineReminderCode" style="font-size:24px; font-weight:900; letter-spacing:3px; color:var(--gold-text);"></div>
       <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:7px 16px; font-size:15px;" onclick="copyBookingCode(document.getElementById('lineReminderCode').textContent)">📋 一鍵複製代碼</button>
     </div>
@@ -866,7 +866,7 @@ function getLinkParam(name){
 
         <div class="panel">
           <h3>⚠️ 預約注意事項（顯示在確認畫面）</h3>
-          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">客戶按「送出預約」後、看到的「請確認妳的預約內容」畫面上，會用粉色小字顯示這段文字，例如取消與爽約規範。</p>
+          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">客戶按「送出預約」後、看到的「請確認你的預約內容」畫面上，會用粉色小字顯示這段文字，例如取消與爽約規範。</p>
           <textarea id="setBookingPolicy" style="min-height:110px;"></textarea>
           <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveBookingPolicy()">儲存注意事項</button>
         </div>
@@ -886,10 +886,10 @@ function getLinkParam(name){
           <div class="field"><label>金色按鈕文字（主要行動呼籲）</label><input id="setHeroCta" placeholder="例如：想聽聽真正的答案"></div>
           <div class="field"><label>按鈕下方三個特色（每一行是一項）</label><textarea id="setHeroFeatures" style="min-height:70px;"></textarea></div>
           <div class="field"><label>按鈕下方的小提醒文字</label><input id="setHeroNotice" placeholder="例如：目前採預約制，近期可安排時段有限"></div>
-          <div class="field"><label>「妳可能正在經歷」區塊標題</label><input id="setPainPointsTitle" placeholder="例如：妳先把事情告訴我"></div>
+          <div class="field"><label>「你可能正在經歷」區塊標題</label><input id="setPainPointsTitle" placeholder="例如：你先把事情告訴我"></div>
           <div class="field"><label>該標題下方的說明文字（要換行按 Enter）</label><textarea id="setPainPointsNote" style="min-height:70px;"></textarea></div>
-          <div class="field"><label>「妳可能正在經歷」— 每一行是一項</label><textarea id="setPainPoints" style="min-height:80px;"></textarea></div>
-          <div class="field"><label>「我會幫妳直接看清」區塊標題</label><input id="setBenefitsTitle" placeholder="例如：我會幫妳直接看清"></div>
+          <div class="field"><label>「你可能正在經歷」— 每一行是一項</label><textarea id="setPainPoints" style="min-height:80px;"></textarea></div>
+          <div class="field"><label>「我會幫你直接看清」區塊標題</label><input id="setBenefitsTitle" placeholder="例如：我會幫你直接看清"></div>
           <div class="field"><label>這個區塊的內容 — 每一項是一張獨立的卡片（標題＋說明），可以新增、刪除、調整順序</label>
             <div id="setBenefitCards"></div>
             <button type="button" class="btn btn-outline" style="margin:6px 0 0; width:auto; padding:7px 14px; font-size:15px;" onclick="addBenefitRow()">＋ 新增一項</button>
@@ -903,7 +903,7 @@ function getLinkParam(name){
 
         <div class="panel">
           <h3>📸 Instagram 連結</h3>
-          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">填了之後，前台按鈕下方會多一個「追蹤我的 Instagram」的連結，方便舊客戶轉介紹時也能找到妳的IG。留空則不顯示。</p>
+          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">填了之後，前台按鈕下方會多一個「追蹤我的 Instagram」的連結，方便舊客戶轉介紹時也能找到你的IG。留空則不顯示。</p>
           <div class="field"><input id="setIGLink" placeholder="https://www.instagram.com/lovetalker_tw"></div>
           <button class="btn btn-outline" style="margin:12px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveIGLink()">儲存</button>
         </div>
@@ -966,7 +966,7 @@ function getLinkParam(name){
         <div class="panel">
           <h3>👋 加入好友歡迎詞</h3>
           <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">因為開啟了 Messaging API，LINE 原本內建的歡迎詞功能會失效，改由這裡設定的文字自動回覆給新加入的好友。</p>
-          <textarea id="setWelcomeMsg" style="min-height:90px;" placeholder="例如：謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說妳的狀況。"></textarea>
+          <textarea id="setWelcomeMsg" style="min-height:90px;" placeholder="例如：謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說你的狀況。"></textarea>
           <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveWelcomeMsg()">儲存歡迎詞</button>
         </div>
 
@@ -979,7 +979,7 @@ function getLinkParam(name){
 
         <div class="panel">
           <h3>🔔 新預約自動通知（Google試算表＋LINE）</h3>
-          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">貼上妳部署好的 Google Apps Script 網址，之後客戶每送出一筆預約，就會自動寫進試算表、並推播 LINE 通知給妳。設定教學請看聊天視窗裡的說明。</p>
+          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">貼上你部署好的 Google Apps Script 網址，之後客戶每送出一筆預約，就會自動寫進試算表、並推播 LINE 通知給你。設定教學請看聊天視窗裡的說明。</p>
           <div class="field"><input id="setWebhook" placeholder="https://script.google.com/macros/s/xxx/exec"></div>
           <div class="io-row" style="margin-top:12px;">
             <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveWebhook()">儲存</button>
@@ -1001,8 +1001,8 @@ function getLinkParam(name){
           <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">這幾項文字會顯示在每一張「諮詢報告卡片」的最下方，之後有需要調整都在這裡改，不用再麻煩我改程式碼。</p>
           <div class="field"><label>品牌／稱謂名稱</label><input id="setReportBrand" placeholder="例如：情感讀心師"></div>
           <div class="field"><label>Instagram 帳號（留空則不顯示）</label><input id="setReportIg" placeholder="例如：@lovetalker_tw"></div>
-          <div class="field"><label>結尾祝福語</label><textarea id="setReportClosing" style="min-height:70px;" placeholder="例如：願這份紀錄，陪妳慢慢梳理心的方向。"></textarea></div>
-          <div class="field"><label>脈輪位置圖片網址（選填）</label><input id="setReportChakraImg" placeholder="貼上圖片網址，例如上傳到GitHub後的圖片連結"><div style="font-size:13px; color:#999; margin-top:5px; line-height:1.6;">找到喜歡的七脈輪位置圖後，可以上傳到跟妳網站同一個GitHub專案（跟首頁大頭照photo.jpg放在一起的地方），再把圖片網址貼在這裡。留空的話，會先用系統內建的簡易示意圖代替。</div></div>
+          <div class="field"><label>結尾祝福語</label><textarea id="setReportClosing" style="min-height:70px;" placeholder="例如：願這份紀錄，陪你慢慢梳理心的方向。"></textarea></div>
+          <div class="field"><label>脈輪位置圖片網址（選填）</label><input id="setReportChakraImg" placeholder="貼上圖片網址，例如上傳到GitHub後的圖片連結"><div style="font-size:13px; color:#999; margin-top:5px; line-height:1.6;">找到喜歡的七脈輪位置圖後，可以上傳到跟你網站同一個GitHub專案（跟首頁大頭照photo.jpg放在一起的地方），再把圖片網址貼在這裡。留空的話，會先用系統內建的簡易示意圖代替。</div></div>
           <div class="field" style="margin-top:18px;">
             <label>各脈輪的介紹文字</label>
             <div style="font-size:13px; color:#999; margin-top:2px; margin-bottom:10px; line-height:1.6;">報告卡片「此次需要注意的脈輪」區塊裡，每個脈輪名稱後面那句說明（例如「頂輪｜靈性連結與信任。」的「靈性連結與信任」），可以自己改成想要的說法，不用再麻煩我改程式碼。</div>
@@ -1019,8 +1019,8 @@ function getLinkParam(name){
 
         <div class="panel">
           <h3>✨ AI 整理重點（對話逐字稿）</h3>
-          <p style="font-size:14.5px; color:#999; margin-bottom:8px; line-height:1.7;">填寫報告書時，把這次的對話紀錄貼到「對話逐字稿」欄位，按「AI 整理重點」就會自動幫妳整理出一版「諮詢重點與建議」跟「注意事項」草稿，記得確認內容後再儲存。</p>
-          <p style="font-size:14.5px; color:#999; line-height:1.7;">這個功能需要先設定好 AI 金鑰才能使用：打開 Apps Script 編輯器 → 左側「專案設定」→「指令碼屬性」→ 新增一筆屬性，名稱填 <b>ANTHROPIC_API_KEY</b>，值貼上妳的 Claude API 金鑰 → 儲存。金鑰只會存在 Apps Script 後台，不會出現在網站或GitHub上，比較安全。設定好之後不用重新部署，直接就能用。</p>
+          <p style="font-size:14.5px; color:#999; margin-bottom:8px; line-height:1.7;">填寫報告書時，把這次的對話紀錄貼到「對話逐字稿」欄位，按「AI 整理重點」就會自動幫你整理出一版「諮詢重點與建議」跟「注意事項」草稿，記得確認內容後再儲存。</p>
+          <p style="font-size:14.5px; color:#999; line-height:1.7;">這個功能需要先設定好 AI 金鑰才能使用：打開 Apps Script 編輯器 → 左側「專案設定」→「指令碼屬性」→ 新增一筆屬性，名稱填 <b>ANTHROPIC_API_KEY</b>，值貼上你的 Claude API 金鑰 → 儲存。金鑰只會存在 Apps Script 後台，不會出現在網站或GitHub上，比較安全。設定好之後不用重新部署，直接就能用。</p>
         </div>
       </div>
     </div>
@@ -1084,7 +1084,7 @@ function getLinkParam(name){
 
 <script>
 /* html2canvas 1.4.1 -- 直接內嵌在檔案裡，不再從外部 cdnjs 網站載入。
-   原因：之前用 <script src="https://cdnjs..."> 從外部載入，只要客戶或妳自己的瀏覽器/網路
+   原因：之前用 <script src="https://cdnjs..."> 從外部載入，只要客戶或你自己的瀏覽器/網路
    擋掉這個外部網址（例如某些手機瀏覽器的廣告攔截、隱私保護功能，或公司/學校網路的白名單限制），
    window.html2canvas 就會是undefined，整個「產生圖片」功能就完全無法動作，而且很難察覺原因，
    看起來就像「功能忽然壞掉」。改成直接把程式碼寫進這個檔案裡，就不會再依賴任何外部網站，
@@ -1171,8 +1171,8 @@ function servicePriceLabel(s){
 function defaultServices(){
   return [
     {id:uid(), name:'照片讀心 / 20分鐘', price:999, desc:'了解對方個性 → 所思所想'},
-    {id:uid(), name:'讀心解析 / 30分鐘', price:1299, desc:'找出妳最核心的問題，教妳如何解決'},
-    {id:uid(), name:'深度陪跑 / 1小時（4次／月）-須審核通過', price:9999, desc:'適合情感反覆卡關，帶著妳解決問題'}
+    {id:uid(), name:'讀心解析 / 30分鐘', price:1299, desc:'找出你最核心的問題，教你如何解決'},
+    {id:uid(), name:'深度陪跑 / 1小時（4次／月）-須審核通過', price:9999, desc:'適合情感反覆卡關，帶著你解決問題'}
   ];
 }
 function defaultAddons(){
@@ -1198,20 +1198,20 @@ function loadAvailability(){ const a=loadJSON(K_AVAIL,null); return a?{...defaul
 function saveAvailabilityLocal(a){ localStorage.setItem(K_AVAIL, JSON.stringify(a)); }
 function defaultHeroContent(){
   return {
-    title: '他不是沒看到\n只是現在還沒準備好回應妳',
-    subtitle: '很多訊號早就出現了，\n只是妳還沒有一個「確定的答案」。',
+    title: '他不是沒看到\n只是現在還沒準備好回應你',
+    subtitle: '很多訊號早就出現了，\n只是你還沒有一個「確定的答案」。',
     ctaText: '想聽聽真正的答案',
     features: ['一對一深入了解','依個人情況提供方向','可針對問題提問'],
     notice: '目前採預約制，近期可安排時段有限',
-    painPoints: ['他回覆變慢，妳開始焦慮','他忽冷忽熱，妳一直幫他找理由','妳很累，但卻停不下來'],
-    painPointsTitle: '妳先把事情告訴我',
-    painPointsNote: '有些事情，不只是聽妳怎麼說。\n我也會從事情的發展、妳和人的互動，以及妳當下呈現出的狀態，一起去看這件事。',
-    benefitsTitle: '我會幫妳直接看清',
-    benefits: ['他現在對妳的真實想法','為什麼會變成現在這樣','妳在他心中的真實位置'],
+    painPoints: ['他回覆變慢，你開始焦慮','他忽冷忽熱，你一直幫他找理由','你很累，但卻停不下來'],
+    painPointsTitle: '你先把事情告訴我',
+    painPointsNote: '有些事情，不只是聽你怎麼說。\n我也會從事情的發展、你和人的互動，以及你當下呈現出的狀態，一起去看這件事。',
+    benefitsTitle: '我會幫你直接看清',
+    benefits: ['他現在對你的真實想法','為什麼會變成現在這樣','你在他心中的真實位置'],
     igLinkText: '追蹤Instagram看更多影片 →',
     servicesIntro: '',
     hideAddons: true, // 前台是否先隱藏加購選項（預設隱藏，後台「開頭介紹文字」可取消勾選恢復）
-    preServicesNote: '我會先從妳說的內容、事情的發展和人與人之間的關係去理解。\n而有些時候，在這個過程裡，我也會接收到一些妳沒有直接告訴我的感受或畫面。\n這些資訊，會成為我理解整件事情的一部分。'
+    preServicesNote: '我會先從你說的內容、事情的發展和人與人之間的關係去理解。\n而有些時候，在這個過程裡，我也會接收到一些你沒有直接告訴我的感受或畫面。\n這些資訊，會成為我理解整件事情的一部分。'
   };
 }
 function loadJSON(key, fallback){ try{ const v=JSON.parse(localStorage.getItem(key)); return v??fallback; }catch(e){ return fallback; } }
@@ -1233,12 +1233,12 @@ const K_PAYMENT='rt_payment_info';
 function loadPaymentInfo(){ return localStorage.getItem(K_PAYMENT) || ''; }
 function savePaymentInfo(){ const v=document.getElementById('setPaymentInfo').value.trim(); localStorage.setItem(K_PAYMENT, v); paymentInfo=v; pushRemoteSettings(); toast('匯款資訊已儲存'); }
 const K_WELCOME='rt_welcome_msg';
-function defaultWelcomeMsg(){ return '謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說妳的狀況。'; }
+function defaultWelcomeMsg(){ return '謝謝加入好友🌙 如果想預約，可以到我的網站填寫預約表單；也可以直接在這裡跟我說說你的狀況。'; }
 function loadWelcomeMsg(){ return localStorage.getItem(K_WELCOME) || defaultWelcomeMsg(); }
 function saveWelcomeMsg(){ const v=document.getElementById('setWelcomeMsg').value.trim()||defaultWelcomeMsg(); localStorage.setItem(K_WELCOME, v); welcomeMsg=v; pushRemoteSettings(); toast('歡迎詞已儲存'); }
 const K_POLICY='rt_booking_policy';
 function defaultCharityNotice(){
-  return '這個名額，是保留給「真心想諮詢、但目前經濟上暫時無法負擔」的朋友，並不是每個人都適用的福利。如果妳目前有能力負擔，也想把機會留給更需要的人，歡迎選擇其他一般預約項目，這對我來說也是很大的支持 🙏\n\n選擇這個名額，需要請妳完成以下兩件事：\n1. 兩天內做一件善事（形式不拘，例如：到便利商店捐零錢、扶老人家過馬路都可以）\n2. 到我的 Instagram 留言分享這次諮詢的感受，作為我未來調整服務的參考\n\n每人使用過一次後，需間隔至少一年才能再次申請這個名額；若確定預約後又取消，一年內將無法再申請。也請把這個珍貴的名額，留給更需要的人。\n\n要繼續選擇這個名額嗎？';
+  return '這個名額，是保留給「真心想諮詢、但目前經濟上暫時無法負擔」的朋友，並不是每個人都適用的福利。如果你目前有能力負擔，也想把機會留給更需要的人，歡迎選擇其他一般預約項目，這對我來說也是很大的支持 🙏\n\n選擇這個名額，需要請你完成以下兩件事：\n1. 兩天內做一件善事（形式不拘，例如：到便利商店捐零錢、扶老人家過馬路都可以）\n2. 到我的 Instagram 留言分享這次諮詢的感受，作為我未來調整服務的參考\n\n每人使用過一次後，需間隔至少一年才能再次申請這個名額；若確定預約後又取消，一年內將無法再申請。也請把這個珍貴的名額，留給更需要的人。\n\n要繼續選擇這個名額嗎？';
 }
 function defaultBookingPolicy(){
   return '【取消與爽約規範】\n系統都會提前一天溫馨小提醒預約時間，如需改期請務必提前告知，若:\n・無故爽約（預約時間已到未出現）：累計若達3次，半年內將無法再預約。\n・預約時間前24小時告知取消：可協助改期。\n・預約時間24小時內告知取消：可協助改期，但視同無故爽約。';
@@ -1257,12 +1257,12 @@ const K_SERVICE_DISCLAIMER='rt_service_disclaimer';
 /* 服務頁面最下方、所有方案卡片之後固定顯示的小字聲明。用 || 保底預設值，就算欄位被清空
    也一定會顯示這段文字，不會整段消失不見。 */
 function defaultServiceDisclaimer(){
-  return '⚠️ 貼心提醒：\n本服務屬於能量平衡與靈性輔助範疇，旨在透過頻率共振促進整體的和諧與放鬆。靈氣服務不能取代正統的醫學診斷、心理諮商或醫療行為。若妳有任何生理或心理之疾病，請務必尋求專業合格醫師的協助。';
+  return '⚠️ 貼心提醒：\n本服務屬於能量平衡與靈性輔助範疇，旨在透過頻率共振促進整體的和諧與放鬆。靈氣服務不能取代正統的醫學診斷、心理諮商或醫療行為。若你有任何生理或心理之疾病，請務必尋求專業合格醫師的協助。';
 }
 function loadServiceDisclaimer(){ return localStorage.getItem(K_SERVICE_DISCLAIMER) || defaultServiceDisclaimer(); }
 function saveServiceDisclaimer(){ const v=document.getElementById('setServiceDisclaimer').value.trim()||defaultServiceDisclaimer(); localStorage.setItem(K_SERVICE_DISCLAIMER, v); serviceDisclaimer=v; pushRemoteSettings(); renderServiceCards(); toast('免責聲明已儲存'); }
 
-/* 諮詢報告卡片設定：卡片最下方顯示的品牌名稱／IG帳號／祝福語，妳可以自己調整措辭 */
+/* 諮詢報告卡片設定：卡片最下方顯示的品牌名稱／IG帳號／祝福語，你可以自己調整措辭 */
 const K_REPORT_BRAND='rt_report_brand';
 function defaultReportBrandName(){ return '情感讀心師'; }
 function loadReportBrandName(){ return localStorage.getItem(K_REPORT_BRAND) || defaultReportBrandName(); }
@@ -1270,7 +1270,7 @@ const K_REPORT_IG='rt_report_ig';
 function defaultReportIgHandle(){ return '@lovetalker_tw'; }
 function loadReportIgHandle(){ return localStorage.getItem(K_REPORT_IG) || defaultReportIgHandle(); }
 const K_REPORT_CLOSING='rt_report_closing';
-function defaultReportClosing(){ return '願這份紀錄，陪妳慢慢梳理心的方向。'; }
+function defaultReportClosing(){ return '願這份紀錄，陪你慢慢梳理心的方向。'; }
 function loadReportClosing(){ return localStorage.getItem(K_REPORT_CLOSING) || defaultReportClosing(); }
 const K_REPORT_CHAKRA_IMG='rt_report_chakra_img';
 function loadReportChakraImageUrl(){ return localStorage.getItem(K_REPORT_CHAKRA_IMG) || ''; }
@@ -1278,7 +1278,7 @@ function loadReportChakraImageUrl(){ return localStorage.getItem(K_REPORT_CHAKRA
    這裡的預設值特意直接寫死一份（跟後面 REPORT_CHAKRA_META 裡的文字保持一致），不去讀取 CHAKRA_DIAGRAM_ORDER
    這類要等整份程式碼都載入完才會有值的常數，因為這個函式在網站一打開、程式碼「由上往下」執行到這裡時
    就會立刻被呼叫一次，這時候寫在檔案更後面的常數都還沒宣告好，硬要讀會直接跳錯導致整個網站打不開。
-   妳在後台改過的話，才會用改過的版本蓋掉這裡的預設值。 */
+   你在後台改過的話，才會用改過的版本蓋掉這裡的預設值。 */
 const K_REPORT_CHAKRA_MEANINGS='rt_report_chakra_meanings';
 function defaultReportChakraMeanings(){
   return {
@@ -1315,11 +1315,11 @@ function saveReportCardSettings(){
   toast('報告卡片設定已儲存');
 }
 
-/* Google的雲端網址偶爾會出現「明明密碼/網路都沒問題，卻連線失敗」的狀況——這不是妳的網路差，
+/* Google的雲端網址偶爾會出現「明明密碼/網路都沒問題，卻連線失敗」的狀況——這不是你的網路差，
    而是Google伺服器那邊短暫的小狀況（例如瀏覽器同時登入好幾個Google帳號時，Google有時候會
    導到錯的網址導致收到404），這種情況通常「等一下、重試一次」就會自己通了。
    這裡加上自動重試：呼叫雲端網址失敗（或收到的不是正常JSON資料）時，不會馬上顯示失敗，
-   而是先稍等一下自動重試最多2次，這樣遇到這種暫時性小狀況時，妳不用自己手動再按一次就能過。 */
+   而是先稍等一下自動重試最多2次，這樣遇到這種暫時性小狀況時，你不用自己手動再按一次就能過。 */
 async function fetchWebhookJson(url, options, retries){
   retries = (typeof retries === 'number') ? retries : 2;
   let lastErr;
@@ -1567,10 +1567,10 @@ function renderHeroContent(){
   document.getElementById('heroNotice').textContent = heroContent.notice || '';
   // 每一項獨立成一行，手機上才不會被硬擠成一行後又亂折成兩行
   document.getElementById('heroFeatures').innerHTML = (heroContent.features||[]).map(t=>`<div class="feature-item"><span class="check-icon">✓</span>${esc(t)}</div>`).join('');
-  document.getElementById('painPointsTitle').textContent = heroContent.painPointsTitle || '妳可能正在經歷';
+  document.getElementById('painPointsTitle').textContent = heroContent.painPointsTitle || '你可能正在經歷';
   document.getElementById('painPointsNote').innerHTML = esc(heroContent.painPointsNote||'').replace(/\n/g,'<br>');
   document.getElementById('painPointsWrap').innerHTML = (heroContent.painPoints||[]).map(t=>`<p>${esc(t)}</p>`).join('');
-  document.getElementById('benefitsTitle').textContent = heroContent.benefitsTitle || '我會幫妳直接看清';
+  document.getElementById('benefitsTitle').textContent = heroContent.benefitsTitle || '我會幫你直接看清';
   renderBenefitCards();
   document.getElementById('preServicesNote').innerHTML = esc(heroContent.preServicesNote||'').replace(/\n/g,'<br>');
   const svcIntro = document.getElementById('servicesIntro');
@@ -1706,14 +1706,14 @@ function publicFieldsHTML(){
     <label class="addon-item"><input type="checkbox" class="pf-addon" value="${a.id}" onchange="updatePricePreview(); if(document.getElementById('pf_date').value) loadSlotsForDate();"> ${esc(a.name)}｜${a.isFree?'免費':'NT$'+Number(a.price).toLocaleString()}</label>
   `).join('');
   return `
-    <div class="field"><label>客戶姓名 <span class="req">*</span></label><input id="pf_name" placeholder="怎麼稱呼妳？"></div>
+    <div class="field"><label>客戶姓名 <span class="req">*</span></label><input id="pf_name" placeholder="怎麼稱呼你？"></div>
     <div class="field"><label>Email <span class="req">*</span></label><input id="pf_email" type="email" placeholder="收到通知用"></div>
     <div class="field"><label>預約項目 <span class="req">*</span></label>
       <select id="pf_service" onchange="onServiceChange()">${svcOptions}</select>
     </div>
     <div class="field" id="tierFieldWrap" style="display:none;"><label>請選擇方案 <span class="req">*</span></label><select id="pf_tier" onchange="updatePricePreview(); updateQuestionField(); checkChakraTierNotice(); checkMultiSessionTierNotice(); if(document.getElementById('pf_date').value) loadSlotsForDate();"></select></div>
     <div class="field full" id="chakraCheckWrap" style="display:none;">
-      <label id="chakraCheckLabel">請勾選妳想療癒的脈輪 <span class="req">*</span></label>
+      <label id="chakraCheckLabel">請勾選你想療癒的脈輪 <span class="req">*</span></label>
       <div id="chakraCheckList" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px;"></div>
       <p class="sub" id="chakraCheckHint" style="margin:6px 0 0; padding:0; text-align:left; opacity:1;"></p>
     </div>
@@ -1768,7 +1768,7 @@ function applyPrefillFromUrl(){
   const email = params.get('prefill_email');
   if(name) document.getElementById('pf_name').value = name;
   if(email) document.getElementById('pf_email').value = email;
-  if(name || email){ toast('已幫妳帶入上次填寫的姓名與Email，只需要重新選項目跟時間'); return; }
+  if(name || email){ toast('已幫你帶入上次填寫的姓名與Email，只需要重新選項目跟時間'); return; }
   // 沒有網址帶入的話，用這支手機/瀏覽器上次預約時記住的姓名與Email（只存在客人自己的裝置，不會上傳）
   try{
     const saved = JSON.parse(localStorage.getItem(K_PREFILL) || 'null');
@@ -2126,13 +2126,13 @@ function checkChakraTierNotice(){
   const t = tiers[Number(tierEl.value)];
   if(!t){ hideChakraCheckWrap(); return; }
   if(t.label.includes('單一') && t.label.includes('脈輪')){
-    alert('提醒妳：選擇這個方案時，請在下方勾選妳想療癒的是「哪一個脈輪」。\n\n如果還不確定想療癒哪一個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
-    renderChakraCheckboxes(1, '請勾選妳想療癒的脈輪');
+    alert('提醒你：選擇這個方案時，請在下方勾選你想療癒的是「哪一個脈輪」。\n\n如果還不確定想療癒哪一個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合你唷 🙏');
+    renderChakraCheckboxes(1, '請勾選你想療癒的脈輪');
     const wrap = document.getElementById('chakraCheckWrap');
     if(wrap) setTimeout(()=>wrap.scrollIntoView({behavior:'smooth', block:'center'}), 300);
   } else if(t.label.includes('三') && t.label.includes('脈輪')){
-    alert('提醒妳：選擇這個方案時，請在下方勾選妳想療癒的「三個脈輪」（需勾選3個）。\n\n如果還不確定想療癒哪三個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
-    renderChakraCheckboxes(3, '請勾選妳想療癒的三個脈輪');
+    alert('提醒你：選擇這個方案時，請在下方勾選你想療癒的「三個脈輪」（需勾選3個）。\n\n如果還不確定想療癒哪三個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合你唷 🙏');
+    renderChakraCheckboxes(3, '請勾選你想療癒的三個脈輪');
     const wrap = document.getElementById('chakraCheckWrap');
     if(wrap) setTimeout(()=>wrap.scrollIntoView({behavior:'smooth', block:'center'}), 300);
   } else {
@@ -2155,7 +2155,7 @@ async function checkMultiSessionTierNotice(){
   if(!m || Number(m[1]) < 2) return;
   const proceed = await showStyledConfirm(
     '預約說明',
-    '本次預約時間為「第一次」時段，下一次預約時間於療癒後，另外跟妳約定',
+    '本次預約時間為「第一次」時段，下一次預約時間於療癒後，另外跟你約定',
     '同意，繼續預約',
     '取消'
   );
@@ -2291,13 +2291,15 @@ function isCharityDayForService(svc, dateStr){
 /* 善的力量若設定了「固定預約時段」，這段時間在它這一週實際開放的那一天，要整段保留給善的力量，
    不管當天實際上有沒有人真的預約善的力量，其他方案一律不能預約這段時間（顯示額滿）。
    回傳含緩衝時間的保留區間 [start,end]（分鐘），沒有保留時段就回傳 null。 */
+const CHARITY_RESERVE_MINUTES = 60;
 function getCharityReservedWindowForDate(dateStr){
   const buf = availability.bufferMinutes ?? 15;
   for(const s of services){
     if(s.isCharity && s.charityFixedStart && isCharityDayForService(s, dateStr)){
       const start = Number(s.charityFixedStart.slice(0,2))*60 + Number(s.charityFixedStart.slice(3,5));
-      const dur = getDurationMinutes(s.name);
-      return { start: start-buf, end: start+dur+buf };
+      // 善的力量固定保留「開始時間起算 60 分鐘」（例如 15:00～16:00），不用項目名稱裡的分鐘數去算，
+      // 再加上前後緩衝，所以 15:00、15:30、16:00 開始的預約都會顯示額滿（16:30 才開放）。
+      return { start: start-buf, end: start+CHARITY_RESERVE_MINUTES+buf };
     }
   }
   return null;
@@ -2462,7 +2464,7 @@ async function loadSlotsForDate(){
 }
 function selectSlot(hh, isPendingSlot){
   if(isPendingSlot){
-    const proceed = confirm('這個時段已經有其他客戶搶先登記，但對方尚未完成匯款確認。\n\n妳可以選擇「候補」這個時段——如果對方最後沒有完成付款，這個時段就會優先保留給妳；如果不想候補，可以改選其他時段。\n\n要候補這個時段嗎？');
+    const proceed = confirm('這個時段已經有其他客戶搶先登記，但對方尚未完成匯款確認。\n\n你可以選擇「候補」這個時段——如果對方最後沒有完成付款，這個時段就會優先保留給你；如果不想候補，可以改選其他時段。\n\n要候補這個時段嗎？');
     if(!proceed) return;
   }
   selectedSlotHour = hh;
@@ -2505,11 +2507,11 @@ async function reviewBooking(){
       const res = await fetch(webhookUrl + sep + 'action=charityCheck&email=' + encodeURIComponent(email) + '&service=' + encodeURIComponent(svc.name));
       const data = await res.json();
       if(data && data.lastUsed){
-        alert(`很抱歉，妳已經在 ${data.lastUsed} 使用過這個名額，每一年僅限使用一次，需要再等待一段時間才能再次預約。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
+        alert(`很抱歉，你已經在 ${data.lastUsed} 使用過這個名額，每一年僅限使用一次，需要再等待一段時間才能再次預約。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
         return;
       }
       if(data && data.lastCancelled){
-        alert(`很抱歉，妳在 ${data.lastCancelled} 曾經預約這個名額後取消，取消後一年內無法再申請。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
+        alert(`很抱歉，你在 ${data.lastCancelled} 曾經預約這個名額後取消，取消後一年內無法再申請。\n\n如果目前有諮詢需求，歡迎選擇其他一般預約項目喔！`);
         return;
       }
     }catch(err){ console.warn('資格檢查失敗', err); }
@@ -2527,7 +2529,7 @@ async function reviewBooking(){
     if(tierObj && tierObj.label.includes('單一') && tierObj.label.includes('脈輪')){
       const picked = getCheckedChakras();
       if(picked.length < 1){
-        alert('請在上方勾選妳想療癒的「脈輪」，才能繼續送出。\n\n如果還不確定想療癒哪一個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
+        alert('請在上方勾選你想療癒的「脈輪」，才能繼續送出。\n\n如果還不確定想療癒哪一個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合你唷 🙏');
         const wrap = document.getElementById('chakraCheckWrap');
         if(wrap) wrap.scrollIntoView({behavior:'smooth', block:'center'});
         return;
@@ -2538,7 +2540,7 @@ async function reviewBooking(){
     if(tierObj && tierObj.label.includes('三') && tierObj.label.includes('脈輪')){
       const picked = getCheckedChakras();
       if(picked.length !== 3){
-        alert('請在上方勾選妳想療癒的「三個脈輪」（需勾選3個），才能繼續送出。\n\n如果還不確定想療癒哪三個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合妳唷 🙏');
+        alert('請在上方勾選你想療癒的「三個脈輪」（需勾選3個），才能繼續送出。\n\n如果還不確定想療癒哪三個脈輪，建議改選「一對一深度諮詢」或「一對一靈氣療癒」的七大脈輪完整療癒方案會更適合你唷 🙏');
         const wrap = document.getElementById('chakraCheckWrap');
         if(wrap) wrap.scrollIntoView({behavior:'smooth', block:'center'});
         return;
@@ -2573,7 +2575,7 @@ function showBookingReview(b){
     ? (svcForPolicy.charityBookingPolicy || defaultCharityBookingPolicy())
     : bookingPolicy;
   box.innerHTML = `
-    <h2 style="padding:0; margin-bottom:10px;">請確認妳的預約內容</h2>
+    <h2 style="padding:0; margin-bottom:10px;">請確認你的預約內容</h2>
     <div class="confirm-summary">
       <div><b>姓名：</b>${esc(b.name)}</div>
       <div><b>Email：</b>${esc(b.email)}</div>
@@ -2654,9 +2656,9 @@ async function confirmAndSubmit(confirmPlanChange, confirmSecondBooking){
   if(result && result.ok===false){
     if(btn){ btn.disabled=false; btn.textContent='確認無誤，送出'; }
     if(result.error==='charity_weekday_invalid'){
-      alert('很抱歉，這個名額只能在指定的星期預約，妳選的日期不符合，請回上一步重新選擇日期。');
+      alert('很抱歉，這個名額只能在指定的星期預約，你選的日期不符合，請回上一步重新選擇日期。');
     } else if(result.error==='charity_day_taken'){
-      alert('很抱歉，妳選的這一天剛好被別人搶先一步登記了（同一天只服務一位），請回上一步重新選擇日期。');
+      alert('很抱歉，你選的這一天剛好被別人搶先一步登記了（同一天只服務一位），請回上一步重新選擇日期。');
     } else if(result.error==='charity_month_full'){
       alert('很抱歉，這個月的善的力量名額已經額滿，請回上一步選擇其他月份，或選擇其他一般預約項目。');
     } else if(result.error==='charity_time_invalid'){
@@ -2664,7 +2666,7 @@ async function confirmAndSubmit(confirmPlanChange, confirmSecondBooking){
     } else if(result.error==='charity_reserved_slot'){
       alert('很抱歉，這個時段已保留給善的力量名額，無法預約，請回上一步重新選擇時段。');
     } else if(result.error==='has_unpaid_pending_booking'){
-      alert(`妳還有一場 ${result.existingDatetimeText} 的預約尚未完成付款確認，請先完成預約確認唷`);
+      alert(`你還有一場 ${result.existingDatetimeText} 的預約尚未完成付款確認，請先完成預約確認唷`);
     } else {
       alert('很抱歉，送出時發生問題，請稍後再試一次，或直接透過LINE聯繫我。');
     }
@@ -2672,10 +2674,10 @@ async function confirmAndSubmit(confirmPlanChange, confirmSecondBooking){
   }
   // 同一人、同一個時段，但這次選的方案跟原本那筆不一樣，而且原本那筆客戶已經加LINE、核對過代碼了：
   // 先跳出視窗問過客戶要不要真的換，答應了才真正送出（帶上confirmPlanChange再送一次），
-  // 這樣才不會客戶還在猶豫、前台一直重送，就一直通知到妳
+  // 這樣才不會客戶還在猶豫、前台一直重送，就一直通知到你
   if(result && result.requireConfirm){
     if(btn){ btn.disabled=false; btn.textContent='確認無誤，送出'; }
-    const proceed = confirm(`妳先前已經預約過這個時段了（原方案：${result.oldServiceName}）。\n\n這次選的是「${result.newServiceName}」，要把這個時段改成這次的方案嗎？原本的方案將會被取消。`);
+    const proceed = confirm(`你先前已經預約過這個時段了（原方案：${result.oldServiceName}）。\n\n這次選的是「${result.newServiceName}」，要把這個時段改成這次的方案嗎？原本的方案將會被取消。`);
     if(proceed){
       await confirmAndSubmit(true);
     } else {
@@ -2691,7 +2693,7 @@ async function confirmAndSubmit(confirmPlanChange, confirmSecondBooking){
   // 先問客戶是否仍要繼續預約第二場，答應了才真正送出（帶上confirmSecondBooking再送一次）
   if(result && result.requireSecondBookingConfirm){
     if(btn){ btn.disabled=false; btn.textContent='確認無誤，送出'; }
-    const proceed = confirm(`妳還有一場 ${result.existingDatetimeText} 的預約尚未開始，是否繼續預約第二場?`);
+    const proceed = confirm(`你還有一場 ${result.existingDatetimeText} 的預約尚未開始，是否繼續預約第二場?`);
     if(proceed){
       await confirmAndSubmit(false, true);
     }
@@ -2739,14 +2741,14 @@ function showConfirm(rec, isDuplicate, isPlanChanged, alreadyLinked){
   const dtStr = isNaN(dt) ? rec.datetime : dt.toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
   let titleText, introText;
   if(isPlanChanged){
-    titleText = '✓ 已經幫妳更新這個時段的預約方案';
-    introText = '原本這個時段的方案已經取消，改成這次選的方案，預約代碼不變。如果還沒加官方LINE好友，請加好友後傳送下方代碼；如果已經加過好友，我會直接在後台為妳確認，不需要再重新傳送代碼 🌙';
+    titleText = '✓ 已經幫你更新這個時段的預約方案';
+    introText = '原本這個時段的方案已經取消，改成這次選的方案，預約代碼不變。如果還沒加官方LINE好友，請加好友後傳送下方代碼；如果已經加過好友，我會直接在後台為你確認，不需要再重新傳送代碼 🌙';
   } else if(isDuplicate){
-    titleText = '✓ 這個時段妳先前已經預約過了';
-    introText = '系統偵測到妳先前已經用同一個Email送出過這個時段的預約，所以這裡顯示的是妳原本那筆的預約代碼，不會重複建立唷。請直接加官方LINE好友並傳送下方代碼即可，不需要再重新預約一次 🌙';
+    titleText = '✓ 這個時段你先前已經預約過了';
+    introText = '系統偵測到你先前已經用同一個Email送出過這個時段的預約，所以這裡顯示的是你原本那筆的預約代碼，不會重複建立唷。請直接加官方LINE好友並傳送下方代碼即可，不需要再重新預約一次 🌙';
   } else {
     titleText = '✓ 已收到預約申請';
-    introText = '請先加官方LINE好友並傳送下方預約代碼，我會回覆匯款資訊；完成匯款後，這個時段才會正式保留給妳。<br>若同一時段有多人登記，將以完成匯款的先後順序為準 🌙<br>【註:❤️善的力量則不需匯款，請加官方LINE好友並傳送下方預約代碼。】';
+    introText = '請先加官方LINE好友並傳送下方預約代碼，我會回覆匯款資訊；完成匯款後，這個時段才會正式保留給你。<br>若同一時段有多人登記，將以完成匯款的先後順序為準 🌙<br>【註:❤️善的力量則不需匯款，請加官方LINE好友並傳送下方預約代碼。】';
   }
   box.innerHTML = `
     <h2 style="padding:0; margin-bottom:6px;">${titleText}</h2>
@@ -2758,9 +2760,9 @@ function showConfirm(rec, isDuplicate, isPlanChanged, alreadyLinked){
       <div><b>費用：</b>NT$${Number(rec.price).toLocaleString()}</div>
     </div>
     <div style="background:#FFF8E8; border:1.5px dashed var(--gold-border); border-radius:12px; padding:16px; margin:16px 0; text-align:center;">
-      <div style="font-size:16px; color:var(--soft-pink); margin-bottom:6px;">妳的預約代碼</div>
+      <div style="font-size:16px; color:var(--soft-pink); margin-bottom:6px;">你的預約代碼</div>
       <div style="font-size:28px; font-weight:900; letter-spacing:4px; color:var(--gold-text);">${esc(rec.code)}</div>
-      <div style="font-size:16px; color:#A67C2E; margin-top:8px; line-height:1.7;">加官方LINE好友後，請把這組代碼傳過去，我會立刻協助妳完成預約！</div>
+      <div style="font-size:16px; color:#A67C2E; margin-top:8px; line-height:1.7;">加官方LINE好友後，請把這組代碼傳過去，我會立刻協助你完成預約！</div>
       <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:8px 18px; font-size:16.5px;" onclick="copyBookingCode('${esc(rec.code)}')">📋 複製代碼</button>
     </div>
     <a class="btn" href="${esc(lineLink)}" target="_blank" rel="noopener" style="margin:0; width:100%;">💬 加入官方 LINE，完成付款與預約 →</a>
@@ -2858,11 +2860,14 @@ function renderDashboard(){
 function renderFilterOptions(){
   document.getElementById('filterService').innerHTML = '<option value="">全部項目</option>' + services.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
 }
+/* 預約清單排序：①待確認 → ②已確認 → ③其他（已完成、已取消…）放最下面。
+   待確認、已確認：時間近的在前面；已完成等：最近完成的在前面。 */
 function sortPendingFirst(a,b){
-  const ap = a.status==='待確認' ? 0 : 1;
-  const bp = b.status==='待確認' ? 0 : 1;
-  if(ap!==bp) return ap-bp;
-  return new Date(a.datetime)-new Date(b.datetime);
+  const rank = r => r.status==='待確認' ? 0 : (r.status==='已確認' ? 1 : 2);
+  const ra = rank(a), rb = rank(b);
+  if(ra!==rb) return ra-rb;
+  const diff = new Date(a.datetime)-new Date(b.datetime);
+  return ra===2 ? -diff : diff;
 }
 function renderList(){
   renderFilterOptions();
@@ -3000,8 +3005,8 @@ function quickStatus(id,status){
       } else if(res.error==='not_found'){
         // 雲端試算表裡沒有這筆代碼對應的資料——最常見的原因是這筆是後台手動新增、
         // 但當初同步到雲端失敗（或還沒設定雲端網址）的預約，本來就不存在雲端試算表裡。
-        // 這種情況不用當成錯誤擋住妳，直接在本機把狀態改成「已確認」即可（客戶本來就是
-        // 妳自己確認過才手動新增的，不需要再透過LINE通知一次）。
+        // 這種情況不用當成錯誤擋住你，直接在本機把狀態改成「已確認」即可（客戶本來就是
+        // 你自己確認過才手動新增的，不需要再透過LINE通知一次）。
         r.status='已確認'; saveRecords(records); renderList(); renderDashboard();
         toast('已確認（這筆資料不在雲端試算表裡，只更新本機狀態，不會發送LINE通知）');
       } else {
@@ -3014,8 +3019,8 @@ function quickStatus(id,status){
   updateStatusRemote(r.code, status);
   toast('狀態已更新為「'+status+'」');
   // 標記完成後，如果這筆是「3次／6次」這種要分好幾次才能做完的包套方案，自動用LINE發一則訊息
-  // 給客戶，讓她知道這是第幾次、該安排下一次了——不用妳在諮詢結束當下馬上跟客戶討論時間、
-  // 耽誤到下一位客戶，之後妳有空再透過LINE或後台「＋新增」實際安排下一次的時間就好。
+  // 給客戶，讓她知道這是第幾次、該安排下一次了——不用你在諮詢結束當下馬上跟客戶討論時間、
+  // 耽誤到下一位客戶，之後你有空再透過LINE或後台「＋新增」實際安排下一次的時間就好。
   if(status==='已完成') notifyPackageProgress(r);
 }
 /* 判斷這筆「已完成」的預約是不是「3次／6次」這種包套方案裡的一次，是的話算出這是第幾次、
@@ -3025,7 +3030,7 @@ function quickStatus(id,status){
    依時間排序找出這筆排第幾個，用「排到第幾個」除以「總共N次」取餘數的方式回推這是「這一輪」
    的第幾次——這樣同一個客戶之後如果又重新買一輪同樣的包套方案，次數也會從1重新算，不會
    一直往上累加。不需要另外在資料裡存「第幾次」這種欄位，用現有的預約紀錄就能算出來。
-   沒有LINE身份（lineUserId）的客戶沒辦法自動發送，會另外用toast提醒妳要自己聯絡。 */
+   沒有LINE身份（lineUserId）的客戶沒辦法自動發送，會另外用toast提醒你要自己聯絡。 */
 async function notifyPackageProgress(rec){
   const fullLabel = rec.serviceName || '';
   const m = fullLabel.match(/(\d+)\s*次/);
@@ -3052,8 +3057,8 @@ async function notifyPackageProgress(rec){
   // 接下來就是原本一模一樣的預約流程（送出代碼、核對身份、確認等），不需要另外特別處理
   const bookingLink = `https://vang5200-prog.github.io/?prefill_name=${encodeURIComponent(rec.name||'')}&prefill_email=${encodeURIComponent(rec.email||'')}`;
   const text = index < total
-    ? `💛 妳的第${index}次「${displayName}」已經完成囉！準備安排第${index+1}次的預約時間，請點下方連結，幫自己選一個方便的時段哦 🙏\n${bookingLink}`
-    : `🎉 恭喜完成全部${total}次的「${displayName}」療程！這段時間辛苦妳了，有任何想跟我分享的感受，都歡迎在這裡告訴我 💛`;
+    ? `💛 你的第${index}次「${displayName}」已經完成囉！準備安排第${index+1}次的預約時間，請點下方連結，幫自己選一個方便的時段哦 🙏\n${bookingLink}`
+    : `🎉 恭喜完成全部${total}次的「${displayName}」療程！這段時間辛苦你了，有任何想跟我分享的感受，都歡迎在這裡告訴我 💛`;
 
   try{
     const res = await fetch(webhookUrl, {
@@ -3161,7 +3166,7 @@ function openReportForm(id){
         </div>
       </div>
       <textarea id="rf_transcript" rows="3" placeholder="把這次諮詢的對話紀錄貼在這裡…">${esc(rep.transcript||'')}</textarea>
-      <div style="font-size:12.5px; color:#999; margin-top:5px;">貼上對話紀錄後選好篇幅、按右上角按鈕，AI會幫妳把下面「諮詢重點與建議」「注意事項」寫好草稿，記得確認後再儲存。如果這裡有填內容，最後也會附在給客戶看的報告書最下方。</div>
+      <div style="font-size:12.5px; color:#999; margin-top:5px;">貼上對話紀錄後選好篇幅、按右上角按鈕，AI會幫你把下面「諮詢重點與建議」「注意事項」寫好草稿，記得確認後再儲存。如果這裡有填內容，最後也會附在給客戶看的報告書最下方。</div>
     </div>
 
     <div class="field">
@@ -3336,8 +3341,8 @@ function rptEyebrowHtml(note){
     ${note?`<div class="rpt-eyebrow-note">${esc(note)}</div>`:''}
   </div>`;
 }
-/* 七大脈輪示意圖：優先使用妳自己在「報告書設定」貼的圖片網址；
-   如果還沒設定圖片，就用妳提供的「三脈七輪位置圖」當底圖，並在對應的脈輪位置疊上會發光的色點，
+/* 七大脈輪示意圖：優先使用你自己在「報告書設定」貼的圖片網址；
+   如果還沒設定圖片，就用你提供的「三脈七輪位置圖」當底圖，並在對應的脈輪位置疊上會發光的色點，
    勾選哪個脈輪，那個位置就會亮起來（用該脈輪的代表色） */
 const RPT_CHAKRA_BODY_IMG = "data:image/jpeg;base64,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Q+sQ3brH9nlux/BQXm9DitOygkgcuAX96pK9aoMmWzMkw4z0tjw0+4ylS2/9FRGx+6szVR+1fIUpSuiClKUClKUClKUClKUClKUClKUCq8yGzPtZKZSYZ7Et3mZkdqQt1opaSjiQytKtKCfUnj7o8b0asOojNusjHL7cXXLTdrlFmpacbchMh5KFJSUqQU7BHoD8jv8ACuXJJdbduLK426+SJx1W15xbNrRd40mY37XLUpE11SiFqYVybQ+FIO2vvFRO/wBE0yQmNAsDBYiRJaoYQ4y02EFtlC0lCQ2pXNCVDkPUkHQ8+azI01ePvuzcbsF2bE9RfksS7atxbh2SU91KipvRKyAsKG1HjrdfMikxb9cI85FlyJmUyypk8ba4kuhX2EqJ8cASSfIPp59azZYT0We7bhnrklvhD13mUoLfcualvRxxVzdQ6lQQd8Vc16AO+Pn03urnxlIbs8ZoupkOtstJekNnaH19pBK0H7yTseapi12CXDXcF3ay3nsvyC60I0FS18eSPcPn0KUkb9RurmxkEWtBTb3bYzsJYjvfxiW0pShPIbOjpPpv01vzunT7l7xbrcsLJMa3NKUrc8opSlAoRulKizYjCunGHKU4tWJ2EqcXzWo2tnalb3yJ4+Tvzut9BgRbZEZh22MzDiMJCGWGGw2htI+CUjwB+ArJpVZhInZSlKugpSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlB/9k=";
 const CHAKRA_DIAGRAM_ORDER = ['頂輪','眉心輪','喉輪','心輪','太陽神經叢輪','臍輪','海底輪'];
@@ -3393,11 +3398,11 @@ function chakraDiagramSvg(selectedList){
     ${dots}
   </div>`;
 }
-/* 圖片優先，沒有設定圖片網址時才用妳提供的三脈七輪位置圖當底圖（放在文字介紹右側，
+/* 圖片優先，沒有設定圖片網址時才用你提供的三脈七輪位置圖當底圖（放在文字介紹右側，
    勾選哪個脈輪，那個位置就會用該脈輪的代表色亮起來） */
 function chakraDiagramMarkup(selectedList){
   if(reportChakraImageUrl){
-    // crossorigin="anonymous"：這張圖是妳自己貼網址上傳的外部圖片，如果那個網站沒有正確回應
+    // crossorigin="anonymous"：這張圖是你自己貼網址上傳的外部圖片，如果那個網站沒有正確回應
     // 跨網域授權（大部分免費圖床、雲端硬碟連結都沒有），少了這個屬性的話，html2canvas「產生圖片」
     // 會整頁失敗（不是這張圖不見而已，是連同其他文字內容一起完全產生不出來）。
     // 加上這個屬性後，最壞情況只是這張圖沒顯示，其他內容還是能正常產生圖片，不會整頁掛掉。
@@ -3791,7 +3796,7 @@ function reportCardEmailHtml(rec, rep){
       ${rep.chakraIssue ? `<div style="border-left:3px solid ${goldBorder}; background:${boxBg}; border-radius:0 8px 8px 0; padding:12px 14px; margin-top:8px; font-size:14.5px; line-height:1.9; color:${ink};">${nl2br(rep.chakraIssue)}</div>` : ''}
     </td></tr>` : '';
   // 手機版Gmail App有個「深色模式」，遇到它覺得「安全」可以反轉的顏色（尤其接近純白的底色、
-  // 接近純黑的文字）會自動幫你整封信換成深色底、淺色字，這是Gmail自己做的、不是妳的信有問題，
+  // 接近純黑的文字）會自動幫你整封信換成深色底、淺色字，這是Gmail自己做的、不是你的信有問題，
   // 但換完之後看起來就會跟電腦版完全不同、而且金色文字在深色底上位置對不齊、質感跑掉。
   // 解法：1) 在信件最前面加上 color-scheme / supported-color-schemes 這兩個Email專用的宣告，
   // 明確告訴Gmail「這封信只設計給亮色模式看，不要自動反轉」（新版Gmail App有支援這個宣告）；
@@ -3885,7 +3890,7 @@ function fallbackCopyText(text, done){
    這樣就不會再讓整頁因為這個小地方而整份失敗。 */
 /* 就算把漸層色改成寫死的顏色（不是用var()變數），這套抓圖工具還是會在少數環境下對
    「漸層背景」處理失敗（量到尺寸是0，導致整頁產生失敗）。既然這個複製品本來就只是拍完照
-   就丟掉、不會被妳或客戶看到，乾脆讓拍照用的這份複製品「乾脆不要有任何漸層背景」——
+   就丟掉、不會被你或客戶看到，乾脆讓拍照用的這份複製品「乾脆不要有任何漸層背景」——
    全部換成一個代表色的實心色塊，這樣就徹底不會再遇到這一整類的問題。
    畫面上正式顯示、客戶看到的報告書完全不受影響，因為改的只是這個拍照專用、拍完即丟的複製品。 */
 /* 這套抓圖工具（html2canvas）對CSS的「flex自動撐滿」支援不好，之前文字框（.rpt-callout）
@@ -3983,7 +3988,7 @@ async function canvasToBlobRobust(canvas, label){
 }
 /* 找到真正原因了：報告書卡片預覽視窗用的是「position:fixed」（固定貼在畫面正中央）這種版面方式，
    html2canvas這套抓圖工具在處理這種「固定定位」的視窗時，量出來的尺寸常常會直接變成0x0
-   （這是這套工具本身已知的限制，不是妳的畫面或設定有問題）。
+   （這是這套工具本身已知的限制，不是你的畫面或設定有問題）。
    解法：拍照前，先把這張卡片複製一份，貼到畫面外一個「一般版面（不是固定定位）」的暫時容器裡，
    對著這個複製品拍照，拍完立刻刪掉這個複製品——畫面上完全看不出任何變化，
    但因為複製品不是固定定位的視窗，html2canvas就能正常量出正確的尺寸。 */
@@ -4006,14 +4011,14 @@ async function captureReportCardPageBlobs(){
   // 不一樣，真正原因在這裡：reportCardHtml()產生的HTML裡面固定包了一個id="rptCardInner"的容器，
   // 而「填寫報告書」畫面下方的即時預覽（rfLivePreview）跟「報告卡片」正式彈窗（reportCardEl）
   // 兩邊都各自呼叫過這個函式，所以整個網頁裡同時存在兩個一模一樣id="rptCardInner"的元素
-  // （id理論上應該是唯一的，但瀏覽器不會阻止妳寫出重複的id，只是行為會變得不可預期）。
+  // （id理論上應該是唯一的，但瀏覽器不會阻止你寫出重複的id，只是行為會變得不可預期）。
   // document.getElementById('rptCardInner')在有重複id時，只會抓「網頁原始碼裡最先出現的那一個」，
-  // 而「填寫報告書」的彈窗在網頁原始碼裡剛好排在「報告卡片」彈窗的前面，所以只要妳曾經打開過
+  // 而「填寫報告書」的彈窗在網頁原始碼裡剛好排在「報告卡片」彈窗的前面，所以只要你曾經打開過
   // 「編輯報告書」畫面（幾乎每次都會），這裡抓到的永遠是編輯畫面裡那份「舊的、可能是拍照當下
-  // 已經看不到」的預覽內容，而不是妳實際打開、正在看的正式報告卡片——這才是手機上「編輯、成品」
+  // 已經看不到」的預覽內容，而不是你實際打開、正在看的正式報告卡片——這才是手機上「編輯、成品」
   // 看起來一種樣子，但「產生圖片、寄出的EMAIL」卻是另一種樣子（甚至頁數都不一樣）的真正原因。
   // 修法：不要再用網頁全域的id去找，改成明確指定只在「報告卡片」正式彈窗（#reportCardEl）裡面找，
-  // 這樣不管妳有沒有開過編輯畫面、開過幾次，抓到的永遠保證是妳眼前這張正式報告卡片本身。
+  // 這樣不管你有沒有開過編輯畫面、開過幾次，抓到的永遠保證是你眼前這張正式報告卡片本身。
   const cardHost = document.getElementById('reportCardEl');
   const container = cardHost ? cardHost.querySelector('#rptCardInner') : null;
   const pages = container ? Array.from(container.querySelectorAll('.rpt-page-card')) : [];
@@ -4022,7 +4027,7 @@ async function captureReportCardPageBlobs(){
   for(let i=0;i<pages.length;i++){
     let blob = null;
     await withOffscreenClone(pages[i], async (pageClone)=>{
-      // 這份複製品拍完就丟掉，畫面上妳跟客戶看到的完全不受影響——直接把所有漸層背景都換成實心色，
+      // 這份複製品拍完就丟掉，畫面上你跟客戶看到的完全不受影響——直接把所有漸層背景都換成實心色，
       // 徹底避開這套抓圖工具處理漸層時的問題（試過「備用畫法」，結果拍出來的圖是空白的，
       // 比原本的失敗更糟，所以拿掉了，改用這個更根本的方式解決）。
       stripAllGradientsForCapture(pageClone);
@@ -4095,7 +4100,7 @@ async function sendReportCardEmail(){
   const draftNote = rep.isDraft ? '\n\n⚠️ 這份報告書目前還是「草稿」狀態，內容可能還沒填完整。' : '';
   if(!confirm(`確定要把上面這份報告書直接寄給「${rec.name}」（${email}）嗎？\n送出後會立刻寄出，請先確認卡片內容都正確無誤。${draftNote}`)) return;
   if(!webhookUrl){ toast('尚未設定雲端網址，無法寄送'); return; }
-  const subject = '妳的諮詢報告書｜' + (rec.name||'');
+  const subject = '你的諮詢報告書｜' + (rec.name||'');
   // 這裡故意「不」把完整報告書內容（諮詢重點、注意事項…）放進純文字備用內容裡：
   // Email本來就會同時夾帶一份「純文字版」給收不到圖片/HTML的信箱當備用，如果這份純文字版
   // 放的是完整報告內容，就等於報告書內容還是有一份「文字、可以被複製/竄改」的版本躺在信件裡，
@@ -4105,12 +4110,12 @@ async function sendReportCardEmail(){
   const originalHtml = btn.innerHTML;
   btn.disabled = true; btn.innerHTML = '寄送中...';
   try{
-    // 把畫面上這份卡片直接「拍」成圖片寄出去——這樣客戶收到的信，畫面一定跟妳現在看到的
+    // 把畫面上這份卡片直接「拍」成圖片寄出去——這樣客戶收到的信，畫面一定跟你現在看到的
     // 一模一樣（浮水印、力量符號邊框、脈輪圖都在），而且圖片沒辦法像文字一樣被複製、修改內容，
-    // 報告書才不會有被竄改後冒充是妳寄出的風險。
+    // 報告書才不會有被竄改後冒充是你寄出的風險。
     // 如果拍照失敗，不會退回「文字排版版本」寄送——因為那個版本的文字是可以被選取、複製、
     // 修改的，等於報告書內容外流成可竄改的文字，跟「所有內文都不得被修改」這個原則矛盾。
-    // 所以拍照失敗時直接不寄，請妳重新整理頁面、確認「產生圖片」功能正常後再試一次。
+    // 所以拍照失敗時直接不寄，請你重新整理頁面、確認「產生圖片」功能正常後再試一次。
     const blobs = await captureReportCardPageBlobs();
     const allOk = blobs.length>0 && blobs.every(b=>!!b);
     if(!allOk){
@@ -4162,12 +4167,12 @@ function openForm(id=null){
 }
 /* 在已完成的預約列表按「📅 安排下一次」時，直接幫她開一筆「新增預約」，預先帶入同一位客戶的
    姓名、Email、服務項目、諮詢方式，只需要挑新的日期時間就好，就像醫生幫病人掛下一次回診一樣。
-   這個按鈕不會自動彈出，是妳自己看時機（例如客戶已經回覆方便的時間）再手動點的。
+   這個按鈕不會自動彈出，是你自己看時機（例如客戶已經回覆方便的時間）再手動點的。
    跟一般「＋新增」不同的地方：
    1) 價格預設是0，不是原價——因為3次/6次這種包套方案，客戶在第一次就已經付過整包的錢了，
       後面幾次不用再收費一次；如果這次其實需要另外收費（例如是全新的一筆預約），價格欄位
       本來就可以直接手動改。
-   2) 備註欄自動帶入「接續上一次」的說明和上一次的預約代碼，方便妳自己核對。
+   2) 備註欄自動帶入「接續上一次」的說明和上一次的預約代碼，方便你自己核對。
    這筆最後一樣是透過 saveAdminForm() 存成一筆全新的預約（editingId 保持 null），會自動產生
    新代碼、同步到雲端試算表，跟後台原本「＋新增」的邏輯完全一樣。 */
 function openFollowupForm(sourceId){
@@ -4234,7 +4239,7 @@ function saveAdminForm(){
     //    裡的紀錄去判斷的，只存在本機的話，之後這位客戶自己上網重新預約義診名額，系統會
     //    完全看不到這次手動新增的紀錄，等於一年限制形同虛設。
     // 所以這裡新增後會盡量把這筆資料也送一份到雲端，送不成功（例如還沒設定雲端網址、
-    // 網路問題）會另外跳出提醒，讓妳知道這筆資料目前只在這台裝置上，之後同步時可能會不見。
+    // 網路問題）會另外跳出提醒，讓你知道這筆資料目前只在這台裝置上，之後同步時可能會不見。
     syncManualBookingToCloud(newRec);
     // 手動幫客戶預約、狀態是「已確認」時，自動把「預約成功訊息」複製好，直接貼到客戶的 LINE 聊天室
     if(newRec.status==='已確認'){ setTimeout(()=>copyTextToClipboard(buildBookingSuccessText(newRec), '已新增，並已複製預約成功訊息，貼給客戶就可以了'), 50); }
