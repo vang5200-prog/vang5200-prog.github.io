@@ -1605,7 +1605,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-09-72';
+const SITE_VERSION = 'v2026-10-20-74';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -2327,6 +2327,42 @@ function getTotalDurationMinutes(){
   return base + addonMinutes;
 }
 let slotRequestSeq = 0;
+/* ---- 預約時段加速：先預載、再快取 ----
+   以前每選一次日期（或換一次服務項目）都要等一次雲端查詢，所以「讀取空位中」會等很久。
+   現在打開網頁就先在背景一次抓好接下來 60 天的忙碌資料存起來，客戶選日期時直接顯示；
+   超過 15 秒的資料會在背景重新確認，有變動才更新畫面，所以不會用到太舊的資料。 */
+const availCache = {};
+function availKey(d){ return toLocalDateStr(d); }
+async function prefetchAvailability(){
+  if(!webhookUrl) return;
+  try{
+    const sep = webhookUrl.includes('?') ? '&' : '?';
+    const from = new Date(); const fromKey = availKey(from);
+    const res = await fetch(webhookUrl + sep + 'action=availabilityRange&from=' + fromKey + '&days=60');
+    const data = await res.json();
+    if(!data || !data.ok || !data.days) return;
+    const t = Date.now();
+    for(let i=0;i<=60;i++){
+      const d = new Date(from.getTime() + i*86400000);
+      const k = availKey(d);
+      if(availCache[k] && availCache[k].t > t - 1000) continue;
+      availCache[k] = { t, data: data.days[k] || { busy:[], pending:[], pendingCharity:[], total:0 } };
+    }
+  }catch(err){ console.warn('預載空位失敗', err); }
+}
+async function refreshAvailabilityInBackground(dateStr, seq){
+  try{
+    const sep = webhookUrl.includes('?') ? '&' : '?';
+    const res = await fetch(webhookUrl + sep + 'action=availability&date=' + dateStr);
+    const data = await res.json();
+    const before = JSON.stringify(availCache[dateStr] && availCache[dateStr].data);
+    availCache[dateStr] = { t: Date.now(), data };
+    const changed = before !== JSON.stringify(data);
+    if(changed && seq === slotRequestSeq && !selectedSlotHour && document.getElementById('pf_date').value === dateStr){
+      loadSlotsForDate();
+    }
+  }catch(err){}
+}
 async function loadSlotsForDate(){
   selectedSlotHour = null;
   const dateStr = document.getElementById('pf_date').value;
@@ -2362,8 +2398,7 @@ async function loadSlotsForDate(){
     return;
   }
 
-  hint.textContent = '讀取空位中…';
-  grid.innerHTML = '';
+  if(!availCache[dateStr]){ hint.textContent = '讀取空位中…'; grid.innerHTML = ''; }
 
   let busy = []; // [[startMin,endMin], ...] 已確認，真正鎖住（任何項目都算）
   let pending = []; // [[startMin,endMin], ...] 待確認、非善的力量 → 顯示「可候補」
@@ -2371,12 +2406,21 @@ async function loadSlotsForDate(){
   let dailyTotal = 0;
   if(webhookUrl){
     try{
-      const sep = webhookUrl.includes('?') ? '&' : '?';
-      const res = await fetch(webhookUrl + sep + 'action=availability&date=' + dateStr);
-      const data = await res.json();
-      busy = data.busy || [];
-      pending = data.pending || [];
-      pendingCharity = data.pendingCharity || [];
+      let data;
+      const cached = availCache[dateStr];
+      if(cached){
+        // 已經預先抓好的資料：直接用，時段立刻出現；資料超過15秒就在背景重新確認一次，有變動再更新畫面
+        data = cached.data;
+        if(Date.now() - cached.t > 15000) refreshAvailabilityInBackground(dateStr, mySeq);
+      } else {
+        const sep = webhookUrl.includes('?') ? '&' : '?';
+        const res = await fetch(webhookUrl + sep + 'action=availability&date=' + dateStr);
+        data = await res.json();
+        availCache[dateStr] = { t: Date.now(), data };
+      }
+      busy = (data.busy || []).map(x=>x.slice());
+      pending = (data.pending || []).map(x=>x.slice());
+      pendingCharity = (data.pendingCharity || []).map(x=>x.slice());
       dailyTotal = data.total || 0;
     }catch(err){
       records.forEach(r=>{
@@ -2703,6 +2747,7 @@ async function confirmAndSubmit(confirmPlanChange, confirmSecondBooking){
   // 如果後端判斷這是同一人（同Email）在同一個時段的重複送出，
   // 就不再當成一筆新預約，改用原本那筆的代碼顯示，避免出現兩筆一樣的預約
   if(result && result.couponApplied && result.finalPrice != null){ rec.price = Number(result.finalPrice); }
+  try{ delete availCache[String(rec.datetime||'').slice(0,10)]; }catch(e){}
   const isDuplicate = !!(result && result.duplicate);
   // 同一時段換了方案，後端已經直接套用最新選擇（原本沒加LINE，或是客戶剛剛已經確認要換）
   const isPlanChanged = !!(result && result.planChanged);
@@ -3095,6 +3140,11 @@ async function rejectBookingFull(id){
 /* ============================================================
    分享給朋友（介紹朋友預約，朋友完成諮詢後，介紹人會收到95折優惠券）
 ============================================================ */
+(function(){
+  try{
+    if(getLinkParam('admin')!=='1'){ window.addEventListener('load', function(){ setTimeout(prefetchAvailability, 300); }); }
+  }catch(e){}
+})();
 function friendShareUrl(){
   let u = 'https://vang5200-prog.github.io/';
   try{ const svc = getLinkParam('service'); if(svc) u += '?service=' + encodeURIComponent(svc); }catch(e){}
