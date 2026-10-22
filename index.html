@@ -364,6 +364,7 @@ p {
   background:#FBF7EF; font-size:17px; color:var(--ink); box-sizing:border-box; font-family:inherit;
 }
 .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--gold-border); background:#fff;}
+.ref-email::placeholder{ color:var(--soft-pink); opacity:1; }
 .field textarea{resize:vertical; min-height:64px;}
 .price-preview{font-size:16.5px; color:var(--gold-text); font-weight:700; margin-top:6px;}
 .conflict-warning{background:#FBEDE9; color:var(--soft-pink); border-radius:10px; padding:10px 12px; font-size:16.5px; margin-top:6px; display:none;}
@@ -738,11 +739,11 @@ function getLinkParam(name){
     <p style="margin:0 0 12px; font-size:16px; line-height:1.8; color:var(--soft-pink);">分享給身邊需要的朋友，越多朋友完成預約，就能領越多張，沒有次數上限唷。</p>
     <div id="refGetBox" style="display:none; margin-bottom:12px; text-align:left;">
       <div style="font-size:14.5px; color:#999; line-height:1.7; margin-bottom:6px;">輸入你的 Email，立即產生專屬於你的優惠代碼連結。朋友預約成功後，優惠券會寄給你。</div>
-      <input id="refGetEmail" type="email" placeholder="你的 Email" style="width:100%; box-sizing:border-box; margin-bottom:8px;">
+      <input id="refGetEmail" class="ref-email" type="email" placeholder="請輸入你的EMAIL" style="width:100%; box-sizing:border-box; margin-bottom:8px; padding:13px 14px; font-size:17px; border:1.5px solid var(--gold-border); border-radius:12px; background:#fff; color:var(--brown);">
       <button class="btn" style="margin:0; width:100%;" onclick="getMyRefLink()">取得我的專屬分享連結</button>
     </div>
     <button class="btn" id="shareBtn" style="margin:0; width:100%;" onclick="shareToFriend()">分享給朋友</button>
-    <div id="refLineNote" style="margin-top:12px; font-size:14.5px; line-height:1.7; color:#999;">覺得太麻煩會忘記？<a href="#" id="refLineLink" target="_blank" rel="noopener" style="color:var(--brown); font-weight:700;">加官方 LINE</a>，優惠券自動派送，絕對不會忘記領取。</div>
+    <div id="refLineNote" style="margin-top:12px; font-size:15px; line-height:1.8; color:var(--soft-pink);">覺得太麻煩會忘記？<a href="#" id="refLineLink" target="_blank" rel="noopener" style="color:var(--brown); font-weight:700; text-decoration:none; white-space:nowrap;"><svg viewBox="0 0 24 24" width="20" height="20" style="vertical-align:-4px; margin-right:3px;"><rect x="1" y="1" width="22" height="22" rx="6" fill="#06C755"/><path fill="#fff" d="M12 5.2c-3.9 0-7 2.5-7 5.6 0 2.8 2.5 5.1 5.9 5.5.2 0 .5.2.5.4l-.1.8c0 .2-.2.8.7.4.9-.4 4.8-2.8 6.5-4.8 1.2-1.3 1.7-2.6 1.7-3.9 0-3.1-3.2-5.6-7.2-5.6z"/></svg>加官方 LINE</a>，優惠券自動派送，絕對不會忘記領取。</div>
   </div>
 
   <div id="bookingAnchor"></div>
@@ -1630,7 +1631,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-22-80';
+const SITE_VERSION = 'v2026-10-22-81';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
