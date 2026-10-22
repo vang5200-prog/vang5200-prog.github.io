@@ -736,7 +736,12 @@ function getLinkParam(name){
   <div class="box" id="friendBox" style="text-align:center; margin-top:22px;">
     <div style="font-size:18px; font-weight:800; color:var(--brown); margin-bottom:6px;">🎁 感謝分享優惠券</div>
     <p style="margin:0 0 12px; font-size:16px; line-height:1.8; color:var(--soft-pink);">分享給身邊需要的朋友，越多朋友完成預約，就能領越多張，沒有次數上限唷。</p>
-    <button class="btn" style="margin:0; width:100%;" onclick="shareToFriend()">分享給朋友</button>
+    <div id="refGetBox" style="display:none; margin-bottom:12px; text-align:left;">
+      <div style="font-size:14.5px; color:#999; line-height:1.7; margin-bottom:6px;">還沒預約過也可以分享：輸入你的 Email，就會得到專屬分享連結，朋友完成預約後，優惠券會發給你。</div>
+      <input id="refGetEmail" type="email" placeholder="你的 Email" style="width:100%; box-sizing:border-box; margin-bottom:8px;">
+      <button class="btn" style="margin:0; width:100%;" onclick="getMyRefLink()">取得我的專屬分享連結</button>
+    </div>
+    <button class="btn" id="shareBtn" style="margin:0; width:100%;" onclick="shareToFriend()">分享給朋友</button>
   </div>
 
   <div id="bookingAnchor"></div>
@@ -1624,7 +1629,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-22-77';
+const SITE_VERSION = 'v2026-10-22-79';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -1836,6 +1841,7 @@ function loadLineProfileName(){
         }
         if(!ok) return;
         const prof = await liff.getProfile();
+        try{ window.__lineUid = (prof && prof.userId) || ''; }catch(e){}
         // 用LINE身分找回這位客戶的專屬介紹碼（換手機也找得到，因為綁的是LINE帳號），存起來給「分享給朋友」用
         try{
           if(prof && prof.userId && webhookUrl){
@@ -2776,6 +2782,7 @@ async function confirmAndSubmit(confirmPlanChange, confirmSecondBooking){
   // 就不再當成一筆新預約，改用原本那筆的代碼顯示，避免出現兩筆一樣的預約
   if(result && result.couponApplied && result.finalPrice != null){ rec.price = Number(result.finalPrice); }
   try{ const rc = (result && result.refCode) || refCodeForEmail(rec.email); if(rc) localStorage.setItem('rt_my_ref', rc); }catch(e){}
+  try{ refreshShareBox(); }catch(e){}
   try{ delete availCache[String(rec.datetime||'').slice(0,10)]; }catch(e){}
   const isDuplicate = !!(result && result.duplicate);
   // 同一時段換了方案，後端已經直接套用最新選擇（原本沒加LINE，或是客戶剛剛已經確認要換）
@@ -3186,6 +3193,31 @@ function applyRefFromLink(){
   }catch(e){}
 }
 window.addEventListener('load', function(){ setTimeout(applyRefFromLink, 400); setTimeout(applyRefFromLink, 1500); });
+/* 還沒有介紹碼的人（沒預約過、或換了裝置又不是從LINE進來）：輸入Email就算出專屬介紹碼，並登記到雲端 */
+function refreshShareBox(){
+  try{
+    const has = !!myRefCode();
+    const box = document.getElementById('refGetBox');
+    if(box) box.style.display = (has || isAdmin) ? 'none' : 'block';
+    const btn = document.getElementById('shareBtn');
+    if(btn) btn.style.display = has ? '' : 'none';
+  }catch(e){}
+}
+async function getMyRefLink(){
+  const el = document.getElementById('refGetEmail');
+  const email = (el&&el.value||'').trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast('Email 格式看起來不對，請再檢查一下'); return; }
+  const code = refCodeForEmail(email);
+  try{ localStorage.setItem('rt_my_ref', code); }catch(e){}
+  if(webhookUrl){
+    try{
+      await fetch(webhookUrl, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ type:'registerReferrer', email, lineUserId: window.__lineUid || '' }) });
+    }catch(e){}
+  }
+  refreshShareBox();
+  toast('已取得！現在可以按「分享給朋友」了');
+}
+window.addEventListener('load', function(){ setTimeout(refreshShareBox, 600); setTimeout(refreshShareBox, 2500); });
 function friendShareUrl(){
   let u = 'https://vang5200-prog.github.io/';
   const q = [];
