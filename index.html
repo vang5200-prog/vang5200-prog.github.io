@@ -737,11 +737,12 @@ function getLinkParam(name){
     <div style="font-size:18px; font-weight:800; color:var(--brown); margin-bottom:6px;">🎁 感謝分享優惠券</div>
     <p style="margin:0 0 12px; font-size:16px; line-height:1.8; color:var(--soft-pink);">分享給身邊需要的朋友，越多朋友完成預約，就能領越多張，沒有次數上限唷。</p>
     <div id="refGetBox" style="display:none; margin-bottom:12px; text-align:left;">
-      <div style="font-size:14.5px; color:#999; line-height:1.7; margin-bottom:6px;">還沒預約過也可以分享：輸入你的 Email，就會得到專屬分享連結，朋友完成預約後，優惠券會發給你。</div>
+      <div style="font-size:14.5px; color:#999; line-height:1.7; margin-bottom:6px;">輸入你的 Email，立即產生專屬於你的優惠代碼連結。朋友預約成功後，優惠券會寄給你。</div>
       <input id="refGetEmail" type="email" placeholder="你的 Email" style="width:100%; box-sizing:border-box; margin-bottom:8px;">
       <button class="btn" style="margin:0; width:100%;" onclick="getMyRefLink()">取得我的專屬分享連結</button>
     </div>
     <button class="btn" id="shareBtn" style="margin:0; width:100%;" onclick="shareToFriend()">分享給朋友</button>
+    <div id="refLineNote" style="margin-top:12px; font-size:14.5px; line-height:1.7; color:#999;">覺得太麻煩會忘記？<a href="#" id="refLineLink" target="_blank" rel="noopener" style="color:var(--brown); font-weight:700;">加官方 LINE</a>，優惠券自動派送，絕對不會忘記領取。</div>
   </div>
 
   <div id="bookingAnchor"></div>
@@ -1629,7 +1630,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-22-79';
+const SITE_VERSION = 'v2026-10-22-80';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -3196,6 +3197,7 @@ window.addEventListener('load', function(){ setTimeout(applyRefFromLink, 400); s
 /* 還沒有介紹碼的人（沒預約過、或換了裝置又不是從LINE進來）：輸入Email就算出專屬介紹碼，並登記到雲端 */
 function refreshShareBox(){
   try{
+    const ll = document.getElementById('refLineLink'); if(ll) ll.href = lineLink;
     const has = !!myRefCode();
     const box = document.getElementById('refGetBox');
     if(box) box.style.display = (has || isAdmin) ? 'none' : 'block';
