@@ -1631,7 +1631,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-22-81';
+const SITE_VERSION = 'v2026-10-22-82';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -3230,7 +3230,7 @@ function friendShareUrl(){
 }
 async function shareToFriend(){
   const url = friendShareUrl();
-  const text = '推薦你這個，預約時填我當介紹人就可以囉 🌙';
+  const text = '跟你推薦一位厲害的身心靈療癒者 🌙';
   try{
     if(navigator.share){ await navigator.share({ title:'關係眼｜笑笑', text, url }); return; }
   }catch(e){ if(e && e.name==='AbortError') return; }
