@@ -630,6 +630,25 @@ html.dl-loading::before{ content:'載入中…'; visibility:visible; position:fi
 <script>
 /* 讀取網址參數：除了一般的 ?service=XXX 之外，也支援 LINE 的 LIFF 連結帶進來的寫法
    （LINE 會把原本的參數包進 liff.state，例如 ?liff.state=%3Fservice%3DXXX），還有 #service=XXX 的寫法 */
+/* 專屬介紹碼：由 Email 算出來（跟 Code.gs 的 refCodeForEmail_ 同一套算法，兩邊一定一樣） */
+function refCodeForEmail(email){
+  const str = String(email||'').trim().toLowerCase();
+  if(!str) return '';
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for(let i=0;i<str.length;i++){
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  let n = 4294967296 * (2097151 & h2) + (h1 >>> 0);
+  const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for(let k=0;k<6;k++){ out += A.charAt(n % A.length); n = Math.floor(n / A.length); }
+  return 'R' + out;
+}
+function myRefCode(){ try{ return localStorage.getItem('rt_my_ref')||''; }catch(e){ return ''; } }
 function getLinkParam(name){
   try{
     var p = new URLSearchParams(location.search);
@@ -1605,7 +1624,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-20-74';
+const SITE_VERSION = 'v2026-10-22-77';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -1788,7 +1807,7 @@ function loadLineProfileName(){
   try{
     if(isAdmin || !/Line\//i.test(navigator.userAgent)) return;
     const nameEl = document.getElementById('pf_name');
-    if(!nameEl || nameEl.value.trim()) return;
+    if(!nameEl) return;
     const ids = [];
     const lid = getLinkParam('lid'); if(lid) ids.push(lid);
     // 每個項目各自的LIFF：依「這次點進來的項目名稱」挑對應的LIFF ID（項目名稱改了的話，網址補 &lid=LIFF的ID 即可）
@@ -1817,6 +1836,15 @@ function loadLineProfileName(){
         }
         if(!ok) return;
         const prof = await liff.getProfile();
+        // 用LINE身分找回這位客戶的專屬介紹碼（換手機也找得到，因為綁的是LINE帳號），存起來給「分享給朋友」用
+        try{
+          if(prof && prof.userId && webhookUrl){
+            const sep = webhookUrl.includes('?') ? '&' : '?';
+            const rr = await fetch(webhookUrl + sep + 'action=myRefCode&uid=' + encodeURIComponent(prof.userId));
+            const rd = await rr.json();
+            if(rd && rd.refCode) localStorage.setItem('rt_my_ref', rd.refCode);
+          }
+        }catch(e){}
         const el = document.getElementById('pf_name');
         if(prof && prof.displayName && el && !el.value.trim()){
           el.value = prof.displayName;
@@ -2747,6 +2775,7 @@ async function confirmAndSubmit(confirmPlanChange, confirmSecondBooking){
   // 如果後端判斷這是同一人（同Email）在同一個時段的重複送出，
   // 就不再當成一筆新預約，改用原本那筆的代碼顯示，避免出現兩筆一樣的預約
   if(result && result.couponApplied && result.finalPrice != null){ rec.price = Number(result.finalPrice); }
+  try{ const rc = (result && result.refCode) || refCodeForEmail(rec.email); if(rc) localStorage.setItem('rt_my_ref', rc); }catch(e){}
   try{ delete availCache[String(rec.datetime||'').slice(0,10)]; }catch(e){}
   const isDuplicate = !!(result && result.duplicate);
   // 同一時段換了方案，後端已經直接套用最新選擇（原本沒加LINE，或是客戶剛剛已經確認要換）
@@ -3145,10 +3174,24 @@ async function rejectBookingFull(id){
     if(getLinkParam('admin')!=='1'){ window.addEventListener('load', function(){ setTimeout(prefetchAvailability, 300); }); }
   }catch(e){}
 })();
+/* 朋友點分享連結（網址帶 ?ref=介紹碼）進來：自動把介紹碼填進「介紹人」欄位，不用再問對方Email */
+function applyRefFromLink(){
+  try{
+    const ref = (getLinkParam('ref')||'').trim();
+    const el = document.getElementById('pf_referrer');
+    if(!ref || !el) return;
+    el.value = ref.toUpperCase();
+    const note = el.parentNode.querySelector('div');
+    if(note) note.textContent = '已自動帶入朋友的介紹碼，不用修改，直接預約就可以了。';
+  }catch(e){}
+}
+window.addEventListener('load', function(){ setTimeout(applyRefFromLink, 400); setTimeout(applyRefFromLink, 1500); });
 function friendShareUrl(){
   let u = 'https://vang5200-prog.github.io/';
-  try{ const svc = getLinkParam('service'); if(svc) u += '?service=' + encodeURIComponent(svc); }catch(e){}
-  return u;
+  const q = [];
+  try{ const svc = getLinkParam('service'); if(svc) q.push('service=' + encodeURIComponent(svc)); }catch(e){}
+  const mine = myRefCode(); if(mine) q.push('ref=' + mine);
+  return q.length ? u + '?' + q.join('&') : u;
 }
 async function shareToFriend(){
   const url = friendShareUrl();
@@ -4211,6 +4254,7 @@ function openForm(id=null){
     <div class="field"><label>諮詢方式</label><select id="af_method">${methodOptions}</select></div>
     <div class="field"><label>狀態</label><select id="af_status">${statusOptions}</select></div>
     <div class="field full"><label>諮詢問題</label><textarea id="af_question">${esc(rec.question||'')}</textarea></div>
+    <div class="field full"><label>介紹人（選填）</label><input id="af_referrer" value="${esc(rec.referrer||'')}" placeholder="填介紹人的 Email、介紹碼或姓名都可以"><div style="font-size:12.5px; color:#999; margin-top:4px;">這位客戶標記「已完成」後，系統會自動發 95 折券給介紹人。</div>${(id&&rec.email)?`<div style="font-size:12.5px; margin-top:6px;">這位客戶自己的介紹碼：<b>${refCodeForEmail(rec.email)}</b> <a href="#" onclick="copyTextToClipboard('https://vang5200-prog.github.io/?ref=${refCodeForEmail(rec.email)}','已複製這位客戶的專屬分享連結');return false;">複製分享連結</a></div>`:''}</div>
     <div class="field full"><label>其他備註</label><textarea id="af_other">${esc(rec.other||'')}</textarea></div>
   `;
   if(!id) afUpdatePrice();
@@ -4263,14 +4307,15 @@ function saveAdminForm(){
     status:document.getElementById('af_status').value,
     question:document.getElementById('af_question').value.trim(),
     other:document.getElementById('af_other').value.trim(),
+    referrer:(document.getElementById('af_referrer')||{value:''}).value.trim(),
   };
   if(editingId){
     if(data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)){ toast('Email 格式看起來不對，請再檢查一下'); return; }
     const r=records.find(x=>x.id===editingId);
-    const nameChanged = r.name!==data.name, emailChanged = (r.email||'')!==(data.email||'');
+    const nameChanged = r.name!==data.name, emailChanged = (r.email||'')!==(data.email||''), refChanged = (r.referrer||'')!==(data.referrer||'');
     Object.assign(r,data); toast('已更新');
     // 姓名／Email 有改的話，同步改到雲端試算表（不然下次按「同步」會被舊資料蓋回去，也寄不了報告書）
-    if(r.code && (nameChanged||emailChanged)) syncNameEmailToCloud(r);
+    if(r.code && (nameChanged||emailChanged||refChanged)) syncNameEmailToCloud(r);
   }
   else{
     // 手動在後台新增的預約（例如臨時、非線上預約的客戶）以前沒有「預約代碼」，
@@ -4321,7 +4366,8 @@ function buildBookingSuccessText(r){
   if(r.method) lines.push(`📞 諮詢方式：${r.method}`);
   if(Number(r.price)>0) lines.push(`💰 費用：NT$${Number(r.price).toLocaleString()}`);
   lines.push('', `🔑 預約代碼：${r.code||''}`,
-    '請把這組代碼直接回覆在這裡給我，系統才會在預約前一天和前 1 小時自動提醒你，諮詢後也會有後續的關心訊息 🙏');
+    '請把這組代碼直接回覆在這裡給我，系統才會在預約前一天和前 1 小時自動提醒你，諮詢後也會有後續的關心訊息 🙏',
+    '', '🎁 之後想分享給朋友，在這裡輸入「分享」，我會給你專屬分享連結，朋友完成預約你就能領 95 折優惠券。');
   return lines.join('\n');
 }
 function copyBookingSuccess(id){
@@ -4341,7 +4387,7 @@ async function syncNameEmailToCloud(rec){
   try{
     const res = await fetch(webhookUrl, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'updateRecord', password: sessionStorage.getItem('rt_admin_pw')||'', code: rec.code, name: rec.name, email: rec.email||'' })
+      body: JSON.stringify({ type:'updateRecord', password: sessionStorage.getItem('rt_admin_pw')||'', code: rec.code, name: rec.name, email: rec.email||'', referrer: rec.referrer||'' })
     });
     const data = await res.json();
     if(data && data.ok){ toast('✅ 姓名／Email 已同步到雲端，現在可以重新寄送報告書了'); }
@@ -4362,7 +4408,7 @@ async function syncManualBookingToCloud(rec){
         type:'addManualBooking', password: sessionStorage.getItem('rt_admin_pw')||'',
         name: rec.name, email: rec.email, datetime: rec.datetime, serviceName: rec.serviceName,
         addonNames: rec.addonNames||[], price: rec.price||0, method: rec.method||'',
-        question: rec.question||'', other: rec.other||'', code: rec.code, status: rec.status||'已確認'
+        question: rec.question||'', other: rec.other||'', code: rec.code, status: rec.status||'已確認', referrer: rec.referrer||''
       })
     });
     const data = await res.json();
