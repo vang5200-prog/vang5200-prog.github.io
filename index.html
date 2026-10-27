@@ -1631,7 +1631,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-27-83';
+const SITE_VERSION = 'v2026-10-27-84';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -3372,7 +3372,7 @@ async function runReportAiSummarize(){
       if(data.advice){ const el=document.getElementById('rf_advice'); el.value = data.advice; autoGrowTextarea(el); }
       if(data.notes){ const el=document.getElementById('rf_notes'); el.value = data.notes; autoGrowTextarea(el); }
       refreshReportFormPreview();
-      toast('已產生AI草稿，記得確認後再儲存');
+      toast(data.truncated ? '已產生AI草稿，但對話太長，後面可能被截斷，請檢查結尾或改分兩次整理' : '已產生AI草稿，記得確認後再儲存');
     } else if(data && data.error==='missing_api_key'){
       toast('尚未設定AI金鑰，請到 Apps Script 指令碼屬性新增 ANTHROPIC_API_KEY（設定頁「報告書設定」有說明）');
     } else {
