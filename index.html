@@ -1631,7 +1631,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-22-82';
+const SITE_VERSION = 'v2026-10-27-83';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -2994,6 +2994,7 @@ function renderList(){
           let html = `<button onclick="openReportForm('${r.id}')">${label}</button>`;
           if(rep) html += `<button onclick="openReportCard('${r.id}')">🪧 查看／發送</button>`;
           return html; })()}
+        ${r.email?`<button onclick="copyReferralMsg('${r.id}')">🎁 複製推薦連結</button>`:''}
         ${r.status==='已確認'?`<button onclick="copyBookingSuccess('${r.id}')">📋 複製預約成功訊息</button>`:''}
         ${(r.status==='已取消'||r.status==='臨時取消'||r.status==='無故爽約')?`<button onclick="copyRebook('${r.id}')">📋 複製重新預約訊息</button>`:''}
         <button onclick="openForm('${r.id}')">編輯</button>
@@ -4289,7 +4290,7 @@ function openForm(id=null){
     <div class="field"><label>諮詢方式</label><select id="af_method">${methodOptions}</select></div>
     <div class="field"><label>狀態</label><select id="af_status">${statusOptions}</select></div>
     <div class="field full"><label>諮詢問題</label><textarea id="af_question">${esc(rec.question||'')}</textarea></div>
-    <div class="field full"><label>介紹人（選填）</label><input id="af_referrer" value="${esc(rec.referrer||'')}" placeholder="填介紹人的 Email、介紹碼或姓名都可以"><div style="font-size:12.5px; color:#999; margin-top:4px;">這位客戶標記「已完成」後，系統會自動發 95 折券給介紹人。</div>${(id&&rec.email)?`<div style="font-size:12.5px; margin-top:6px;">這位客戶自己的介紹碼：<b>${refCodeForEmail(rec.email)}</b> <a href="#" onclick="copyTextToClipboard('https://vang5200-prog.github.io/?ref=${refCodeForEmail(rec.email)}','已複製這位客戶的專屬分享連結');return false;">複製分享連結</a></div>`:''}</div>
+    <div class="field full"><label>介紹人（選填）</label><input id="af_referrer" value="${esc(rec.referrer||'')}" placeholder="填介紹人的 Email、介紹碼或姓名都可以"><div style="font-size:12.5px; color:#999; margin-top:4px;">這位客戶標記「已完成」後，系統會自動發 95 折券給介紹人。</div>${(id&&rec.email)?`<div style="font-size:12.5px; margin-top:6px;">這位客戶自己的介紹碼：<b>${refCodeForEmail(rec.email)}</b> <a href="#" onclick="copyReferralMsg('${rec.id}');return false;">複製推薦連結</a></div>`:''}</div>
     <div class="field full"><label>其他備註</label><textarea id="af_other">${esc(rec.other||'')}</textarea></div>
   `;
   if(!id) afUpdatePrice();
@@ -4412,6 +4413,16 @@ function copyBookingSuccess(id){
 function buildRebookText(r){
   const link = 'https://vang5200-prog.github.io/?prefill_name='+encodeURIComponent(r.name||'')+'&prefill_email='+encodeURIComponent(r.email||'');
   return `嗨${r.name||''}，如果想重新預約，可以直接點下面連結，重新選項目跟時間就可以了：\n${link}\n\n有任何問題也可以直接回覆我，我看到訊息會盡快回覆你 🌙`;
+}
+/* 複製「可直接轉給客戶」的推薦訊息：含這位客戶專屬的推薦碼網址（由Email自動算出，跟客戶自己在LINE輸入「分享」拿到的是同一組） */
+function buildReferralMsg(r){
+  const link = 'https://vang5200-prog.github.io/?ref=' + refCodeForEmail(r.email);
+  return `跟你推薦一位厲害的身心靈療癒者 🌙\n${link}`;
+}
+function copyReferralMsg(id){
+  const r=records.find(x=>x.id===id); if(!r) return;
+  if(!r.email){ toast('這位客戶沒有 Email，算不出推薦碼'); return; }
+  copyTextToClipboard(buildReferralMsg(r), '已複製推薦連結（含他的專屬推薦碼），貼給客戶就可以了');
 }
 function copyRebook(id){
   const r=records.find(x=>x.id===id); if(!r) return;
