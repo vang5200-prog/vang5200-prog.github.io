@@ -1631,7 +1631,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-27-86';
+const SITE_VERSION = 'v2026-10-27-87';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4356,10 +4356,13 @@ function saveAdminForm(){
     if(data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)){ toast('Email 格式看起來不對，請再檢查一下'); return; }
     const r=records.find(x=>x.id===editingId);
     const nameChanged = r.name!==data.name, emailChanged = (r.email||'')!==(data.email||''), refChanged = (r.referrer||'')!==(data.referrer||'');
+    const statusChanged = (r.status||'')!==(data.status||'');
     const otherChanged = ['datetime','serviceName','price','method','question','other'].some(k=>String(r[k]??'')!==String(data[k]??''));
     Object.assign(r,data); toast('已更新');
     // 姓名／Email 有改的話，同步改到雲端試算表（不然下次按「同步」會被舊資料蓋回去，也寄不了報告書）
     if(r.code && (nameChanged||emailChanged||refChanged||otherChanged)) syncNameEmailToCloud(r);
+    // 在編輯視窗裡改「狀態」（例如改成已確認）以前只存在這台裝置，雲端沒收到，同步後又變回待確認；現在一併寫回雲端
+    if(r.code && statusChanged) updateStatusRemote(r.code, data.status);
   }
   else{
     // 手動在後台新增的預約（例如臨時、非線上預約的客戶）以前沒有「預約代碼」，
