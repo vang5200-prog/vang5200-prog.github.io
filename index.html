@@ -1631,7 +1631,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-27-84';
+const SITE_VERSION = 'v2026-10-27-85';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4349,9 +4349,10 @@ function saveAdminForm(){
     if(data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)){ toast('Email 格式看起來不對，請再檢查一下'); return; }
     const r=records.find(x=>x.id===editingId);
     const nameChanged = r.name!==data.name, emailChanged = (r.email||'')!==(data.email||''), refChanged = (r.referrer||'')!==(data.referrer||'');
+    const otherChanged = ['datetime','serviceName','price','method','question','other'].some(k=>String(r[k]??'')!==String(data[k]??''));
     Object.assign(r,data); toast('已更新');
     // 姓名／Email 有改的話，同步改到雲端試算表（不然下次按「同步」會被舊資料蓋回去，也寄不了報告書）
-    if(r.code && (nameChanged||emailChanged||refChanged)) syncNameEmailToCloud(r);
+    if(r.code && (nameChanged||emailChanged||refChanged||otherChanged)) syncNameEmailToCloud(r);
   }
   else{
     // 手動在後台新增的預約（例如臨時、非線上預約的客戶）以前沒有「預約代碼」，
@@ -4433,10 +4434,10 @@ async function syncNameEmailToCloud(rec){
   try{
     const res = await fetch(webhookUrl, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'updateRecord', password: sessionStorage.getItem('rt_admin_pw')||'', code: rec.code, name: rec.name, email: rec.email||'', referrer: rec.referrer||'' })
+      body: JSON.stringify({ type:'updateRecord', password: sessionStorage.getItem('rt_admin_pw')||'', code: rec.code, name: rec.name, email: rec.email||'', referrer: rec.referrer||'', datetime: rec.datetime||'', serviceName: rec.serviceName||'', price: rec.price, method: rec.method||'', question: rec.question||'', other: rec.other||'' })
     });
     const data = await res.json();
-    if(data && data.ok){ toast('✅ 姓名／Email 已同步到雲端，現在可以重新寄送報告書了'); }
+    if(data && data.ok){ toast('✅ 已同步到雲端'); }
     else if(data && data.error==='bad_email'){ toast('⚠️ Email 格式不正確，雲端沒有更新'); }
     else if(data && data.error==='not_found'){ toast('⚠️ 雲端試算表找不到這筆預約，只改在這台裝置上'); }
     else { toast('⚠️ 同步到雲端失敗，請稍後再試一次'); }
