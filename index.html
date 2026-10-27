@@ -1631,7 +1631,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-27-85';
+const SITE_VERSION = 'v2026-10-27-86';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -1675,6 +1675,13 @@ function jumpToServiceCardNow(id){
 }
 /* 等雲端最新的項目設定讀完（頁面也重新畫完）之後才執行一次：選好項目、跳到預約表單，最後才把「載入中」蓋板拿掉 */
 function applyServiceDeepLink(){
+  if(isAdmin && getLinkParam('debug')==='1'){
+    const bx = document.createElement('div');
+    bx.style.cssText = 'position:fixed; left:8px; right:8px; top:8px; z-index:100000; background:#fff; border:2px solid #C0392B; border-radius:10px; padding:10px 12px; font-size:15px; line-height:1.7; color:#222;';
+    bx.innerHTML = '<b>網站版本：' + esc(SITE_VERSION) + '</b>（點一下可關閉）';
+    bx.onclick = ()=>bx.remove();
+    document.body.appendChild(bx);
+  }
   if(serviceDeepLinkDone || isAdmin){ endDeepLinkLoading(); return; }
   serviceDeepLinkDone = true;
   try{
