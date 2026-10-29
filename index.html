@@ -1632,7 +1632,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-29-88';
+const SITE_VERSION = 'v2026-10-29-89';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -3002,6 +3002,7 @@ function renderList(){
           let html = `<button onclick="openReportForm('${r.id}')">${label}</button>`;
           if(rep) html += `<button onclick="openReportCard('${r.id}')">🪧 查看／發送</button>`;
           return html; })()}
+        ${(r.status==='已確認'||r.status==='待確認')?`<button onclick="openRescheduleForm('${r.id}')">📆 改期</button>`:''}
         ${r.email?`<button onclick="copyReferralMsg('${r.id}')">🎁 複製推薦連結</button>`:''}
         ${r.status==='已確認'?`<button onclick="copyBookingSuccess('${r.id}')">📋 複製預約成功訊息</button>`:''}
         ${(r.status==='已取消'||r.status==='臨時取消'||r.status==='無故爽約')?`<button onclick="copyRebook('${r.id}')">📋 複製重新預約訊息</button>`:''}
@@ -4335,9 +4336,51 @@ function openFollowupForm(sourceId){
   `;
   document.getElementById('modalOverlay').classList.add('open');
 }
+/* 改期：客戶在官方LINE直接跟你說要換日期時使用。只改「預約時間」，狀態維持不變（不會被記成取消或爽約），
+   存好後同步到雲端（前一天／前1小時提醒會依新時間重新計算），並自動複製一則「已改期」訊息，讓你貼給客戶。 */
+let reschedulingId = null;
+function openRescheduleForm(id){
+  const r = records.find(x=>x.id===id); if(!r) return;
+  reschedulingId = id; editingId = null;
+  document.getElementById('modalTitle').textContent = '改期｜' + (r.name||'');
+  document.getElementById('adminFormFields').innerHTML = `
+    <div class="field full"><label>目前的預約時間</label><div style="padding:6px 0; color:#999;">${esc(fmtDt(r.datetime))}（${esc(r.serviceName||'')}）</div></div>
+    <div class="field full"><label>改到新的時間 *</label><input id="rs_datetime" type="datetime-local" value="${esc(r.datetime||'')}"><div style="font-size:12.5px; color:#999; margin-top:4px;">儲存後會自動複製「已改期」訊息，貼給客戶就可以了。狀態不變，不會記成取消或爽約。</div></div>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function saveReschedule(){
+  const r = records.find(x=>x.id===reschedulingId); if(!r){ closeForm(); return; }
+  const nv = (document.getElementById('rs_datetime')||{}).value;
+  if(!nv){ toast('請選擇新的預約時間'); return; }
+  if(nv===r.datetime){ toast('新的時間跟原本一樣，沒有變更'); return; }
+  const clash = records.find(x=>x.id!==r.id && x.datetime===nv && (x.status==='已確認'||x.status==='待確認'));
+  if(clash && !confirm('這個時間已經有「'+(clash.name||'')+'」的預約，確定還是要改到這個時間嗎？')) return;
+  const oldDt = r.datetime;
+  r.datetime = nv;
+  saveRecords(records);
+  const msg = buildRescheduleText(r);
+  closeForm(); renderList(); renderDashboard();
+  if(r.code) syncNameEmailToCloud(r);
+  setTimeout(()=>copyTextToClipboard(msg, '已改期，並已複製「已改期」訊息，貼給客戶就可以了'), 50);
+}
+function buildRescheduleText(r){
+  const addons = (r.addonNames&&r.addonNames.length) ? '＋'+r.addonNames.join('、') : '';
+  const lines = [
+    `嗨${r.name||''}，已經幫你改期囉 🌙`,
+    '',
+    `🕒 新的預約時間：${fmtDt(r.datetime)}`,
+    `💬 項目：${r.serviceName||''}${addons}`
+  ];
+  if(r.method) lines.push(`📞 諮詢方式：${r.method}`);
+  lines.push('', '我會在預約前一天與前 1 小時再提醒你，期待與你見面！');
+  if(r.code) lines.push('', `🔑 預約代碼：${r.code}`);
+  return lines.join('\n');
+}
 function afUpdatePrice(){ const svc=services.find(s=>s.id===document.getElementById('af_service').value); if(svc) document.getElementById('af_price').value=svc.price; }
-function closeForm(){ document.getElementById('modalOverlay').classList.remove('open'); editingId=null; }
+function closeForm(){ document.getElementById('modalOverlay').classList.remove('open'); editingId=null; reschedulingId=null; }
 function saveAdminForm(){
+  if(reschedulingId){ saveReschedule(); return; }
   const name=document.getElementById('af_name').value.trim();
   const datetime=document.getElementById('af_datetime').value;
   if(!name||!datetime){ toast('請填寫姓名與預約時間'); return; }
