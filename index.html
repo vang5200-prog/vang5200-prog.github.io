@@ -23,6 +23,10 @@
 <meta property="og:description" content="一對一能量訊息解讀，點進來看看適合你的方案，線上預約。">
 <meta property="og:url" content="https://vang5200-prog.github.io/">
 <meta property="og:image" content="https://vang5200-prog.github.io/share-image.jpg">
+<meta property="og:image:secure_url" content="https://vang5200-prog.github.io/share-image.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:alt" content="關係眼｜笑笑">
+<link rel="image_src" href="https://vang5200-prog.github.io/share-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -1632,7 +1636,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-10-29-89';
+const SITE_VERSION = 'v2026-11-02-90';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -3340,7 +3344,7 @@ function openReportForm(id){
 let reportPreviewDebounceTimer = null;
 function scheduleReportPreviewRefresh(){
   clearTimeout(reportPreviewDebounceTimer);
-  reportPreviewDebounceTimer = setTimeout(refreshReportFormPreview, 250);
+  reportPreviewDebounceTimer = setTimeout(refreshReportFormPreview, 900);
 }
 function refreshReportFormPreview(){
   const previewHost = document.getElementById('rfLivePreview');
@@ -3354,12 +3358,14 @@ function refreshReportFormPreview(){
     chakraIssue: document.getElementById('rf_chakraIssue')?.value || '',
     notes: document.getElementById('rf_notes')?.value || '',
   };
+  keepScrollPositions(()=>{
   previewHost.innerHTML = reportCardHtml(rec, rep);
   // 產生報告書內容後一定要接著呼叫這個，把文字框延伸到祝福語附近的位置量出來、直接寫死成px數字，
   // 這裡是「填寫報告書」畫面下方的即時預覽，跟正式開卡（openReportCard）是各自獨立的兩個地方，
   // 少了這一行，這個預覽畫面看到的文字框延伸效果就會不見（回到還沒延伸之前的樣子）
   rptAlignAllCalloutTails(previewHost);
   fitReportCardScale(previewHost);
+  });
 }
 function closeReportForm(){ document.getElementById('reportModalOverlay').classList.remove('open'); editingReportId=null; }
 async function runReportAiSummarize(){
@@ -3557,10 +3563,30 @@ function chakraInfoBlocksHtml(selectedList){
   }).join('');
 }
 /* 輸入框自動長高，不用再一直滑動小視窗才能看到完整內容 */
+/* 手機上改一個字就跳到最前面的原因：文字框每次都先縮成 auto 再撐開，畫面高度瞬間縮短，
+   瀏覽器就把捲動位置重設回最上面。這裡改成：先記住「視窗和所有往上的捲動容器」目前捲到哪裡，改完高度再放回去。 */
+function keepScrollPositions(fn){
+  const saved = [];
+  let n = document.activeElement || null;
+  while(n && n !== document.body && n !== document.documentElement){
+    if(n.scrollTop) saved.push([n, n.scrollTop]);
+    n = n.parentElement;
+  }
+  const sy = window.pageYOffset, sx = window.pageXOffset;
+  fn();
+  saved.forEach(([e,t])=>{ e.scrollTop = t; });
+  if(window.pageYOffset !== sy) window.scrollTo(sx, sy);
+}
 function autoGrowTextarea(el){
   if(!el) return;
-  el.style.height = 'auto';
-  el.style.height = (el.scrollHeight + 2) + 'px';
+  const target = el.scrollHeight + 2;
+  keepScrollPositions(()=>{
+    // 高度本來就夠，就不要動它（打字時大部分情況不需要變高，少了縮小再撐開的步驟，也比較不卡）
+    if(el.clientHeight >= el.scrollHeight && el.offsetHeight >= target - 4 && el.value.length >= (el._lastLen||0)){ el._lastLen = el.value.length; return; }
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight + 2) + 'px';
+    el._lastLen = el.value.length;
+  });
 }
 /* 給客戶看的報告書固定用這個「內文區塊」高度，每一頁都一樣大小，內容多就自動換下一頁，
    絕對不會有的頁面高、有的頁面矮的情況，浮水印字級也因此可以固定同一個大小，不會每頁忽大忽小。 */
