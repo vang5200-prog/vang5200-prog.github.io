@@ -87,6 +87,26 @@ p {
   background: linear-gradient(to bottom, transparent, #F5EFE6);
 }
 
+/* ===== 免費教學影片入口（放在大照片下方；刻意做得比主視覺小、比服務區塊醒目一點點） ===== */
+#freeVideoWrap{ margin: 6px 20px 14px; }
+.fv-card{ background:#fff; border:1px solid rgba(212,175,55,.55); border-radius:16px; padding:11px 12px 12px; box-shadow:0 4px 14px rgba(74,55,40,.08); }
+.fv-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
+.fv-label{ font-size:14.5px; font-weight:700; color:var(--brown); }
+.fv-badge{ font-size:11.5px; font-weight:800; letter-spacing:.06em; color:#1E7A46; background:#E4F3E9; border-radius:999px; padding:2px 9px; }
+.fv-open{ display:flex; align-items:center; gap:12px; width:100%; background:none; border:none; padding:0; margin:0; text-align:left; cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent; }
+.fv-thumb{ position:relative; flex:0 0 84px; width:84px; height:84px; border-radius:13px; overflow:hidden; background:linear-gradient(135deg,#EFE3C8,#DCC891); }
+.fv-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.fv-play{ position:absolute; right:6px; bottom:6px; width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,.92); color:var(--brown); font-size:11px; display:flex; align-items:center; justify-content:center; padding-left:2px; box-shadow:0 1px 4px rgba(0,0,0,.25); }
+.fv-text{ min-width:0; }
+.fv-title{ font-size:16px; font-weight:800; color:var(--brown); line-height:1.4; }
+.fv-desc{ font-size:13.5px; color:#8a7a6a; line-height:1.55; margin-top:2px; }
+.fv-cta{ font-size:13.5px; font-weight:700; color:var(--gold-text); margin-top:5px; }
+.fv-player{ margin-top:10px; border-radius:12px; overflow:hidden; background:#000; }
+.fv-player.fv-v{ max-width:260px; margin-left:auto; margin-right:auto; }
+.fv-player iframe, .fv-player video{ display:block; width:100%; height:100%; border:0; background:#000; }
+.fv-box{ position:relative; width:100%; aspect-ratio:16/9; }
+.fv-player.fv-v .fv-box{ aspect-ratio:9/16; }
+
 /* ===== 金色按鈕（最終版） ===== */
 .btn {
   display: block;
@@ -693,6 +713,18 @@ function getLinkParam(name){
     <img src="https://raw.githubusercontent.com/vang5200-prog/vang5200-prog.github.io/main/photo.jpg" alt="笑笑｜情感讀心師">
   </div>
 
+  <!-- 免費教學影片入口：預設只放一張封面圖，點了才載入影片，所以不會拖慢首頁 -->
+  <div id="freeVideoWrap" style="display:none;">
+    <div class="fv-card">
+      <div class="fv-head"><span class="fv-label" id="fvLabel"></span><span class="fv-badge" id="fvBadge"></span></div>
+      <button type="button" class="fv-open" id="fvOpen" onclick="toggleFreeVideo()">
+        <span class="fv-thumb"><img id="fvThumb" alt="" loading="lazy" decoding="async"><span class="fv-play">▶</span></span>
+        <span class="fv-text"><div class="fv-title" id="fvTitle"></div><div class="fv-desc" id="fvDesc"></div><div class="fv-cta" id="fvCta"></div></span>
+      </button>
+      <div class="fv-player" id="fvPlayer" style="display:none;"></div>
+    </div>
+  </div>
+
   <h1 id="heroTitle"></h1>
   <p id="heroSubtitle"></p>
 
@@ -929,6 +961,21 @@ function getLinkParam(name){
           <div class="field"><label>「服務方案」標題下方的說明（選填，要換行按 Enter，留空就不顯示）</label><textarea id="setServicesIntro" style="min-height:70px;" placeholder="例如：每一種方式的做法與適合的情況不同，可以先看看哪一種比較符合你現在的狀態。"></textarea></div>
           <div class="field"><label>「追蹤 Instagram」連結的文字（網頁最上方跟下方兩個地方都會一起換，留空會用預設文字）</label><input id="setIgLinkText" placeholder="追蹤Instagram看更多影片 →"></div>
           <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveHeroContent()">儲存文案</button>
+        </div>
+
+        <div class="panel">
+          <h3>🎬 免費教學影片入口</h3>
+          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">會顯示在前台大照片的正下方。一開始只放一張封面圖，客人點了才會展開影片，所以不會拖慢首頁。取消勾選就不會顯示。</p>
+          <div class="field"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="setFvEnabled" style="width:auto; margin:0;"> 在前台顯示這個入口</label></div>
+          <div class="field"><label>影片網址（YouTube、Vimeo、Google 雲端硬碟分享連結，或 .mp4 檔案網址都可以）</label><input id="setFvVideo" placeholder="例如：https://youtu.be/xxxxxxxxxxx"></div>
+          <div class="field"><label>封面圖片網址（選填：放一張漂亮的成品照。留空且是 YouTube 影片，會自動用影片縮圖）</label><input id="setFvPoster" placeholder="例如：https://raw.githubusercontent.com/vang5200-prog/vang5200-prog.github.io/main/zhaocai.jpg"></div>
+          <div class="field"><label>小標題（框框左上角）</label><input id="setFvLabel" placeholder="🎁 免費招財小秘訣"></div>
+          <div class="field"><label>右上角標籤（留空就不顯示）</label><input id="setFvBadge" placeholder="FREE"></div>
+          <div class="field"><label>影片標題</label><input id="setFvTitle" placeholder="招財水製作教學"></div>
+          <div class="field"><label>一句話說明</label><input id="setFvDesc" placeholder="想知道招財水怎麼製作？跟著影片一步步完成。"></div>
+          <div class="field"><label>按鈕文字</label><input id="setFvCta" placeholder="觀看完整教學"></div>
+          <div class="field"><label>影片比例</label><select id="setFvRatio"><option value="wide">橫式（一般影片 16:9）</option><option value="vertical">直式（手機拍的、Shorts 9:16）</option></select></div>
+          <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveFreeVideo()">儲存影片入口</button>
         </div>
 
         <div class="panel">
@@ -1408,7 +1455,8 @@ function saveHeroContent(){
     preServicesNote: document.getElementById('setPreServicesNote').value.trim(),
     servicesIntro: document.getElementById('setServicesIntro').value.trim(),
     igLinkText: document.getElementById('setIgLinkText').value.trim() || defaultHeroContent().igLinkText,
-    hideAddons: document.getElementById('setHideAddons').checked
+    hideAddons: document.getElementById('setHideAddons').checked,
+    freeVideo: heroContent.freeVideo
   };
   // 每一項獨立卡片：標題＋說明；同時也存一份「標題：說明」的舊格式，之後想退回舊版也不會遺失內容
   heroContent.benefitCards = collectBenefitRows();
@@ -1419,6 +1467,30 @@ function saveHeroContent(){
   if(!isAdmin) resetPublicForm();
   pushRemoteSettings();
   toast('文案已儲存');
+}
+
+function saveFreeVideo(){
+  const v = id=>document.getElementById(id).value.trim();
+  const videoUrl = v('setFvVideo');
+  if(document.getElementById('setFvEnabled').checked && !parseVideoUrl(videoUrl)){ toast('請先貼上影片網址，才能顯示入口'); return; }
+  heroContent = { ...heroContent, freeVideo: {
+    enabled: document.getElementById('setFvEnabled').checked,
+    videoUrl, posterUrl: v('setFvPoster'),
+    label: v('setFvLabel') || '🎁 免費招財小秘訣', badge: v('setFvBadge'),
+    title: v('setFvTitle'), desc: v('setFvDesc'), ctaText: v('setFvCta') || '觀看完整教學',
+    ratio: document.getElementById('setFvRatio').value
+  }};
+  saveHeroContentLocal(heroContent);
+  renderFreeVideo();
+  pushRemoteSettings();
+  toast('影片入口已儲存');
+}
+function fillFreeVideoSettings(){
+  const f = (heroContent && heroContent.freeVideo) || {};
+  const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.value = val||''; };
+  const en = document.getElementById('setFvEnabled'); if(en) en.checked = !!f.enabled;
+  set('setFvVideo',f.videoUrl); set('setFvPoster',f.posterUrl); set('setFvLabel',f.label); set('setFvBadge',f.badge);
+  set('setFvTitle',f.title); set('setFvDesc',f.desc); set('setFvCta',f.ctaText); set('setFvRatio',f.ratio||'wide');
 }
 
 const K_WEBHOOK='rt_booking_webhook';
@@ -1592,6 +1664,60 @@ function collectBenefitRows(){
     desc: r.querySelector('.bc-desc-input').value.trim()
   })).filter(c=>c.title||c.desc);
 }
+/* ---- 免費教學影片入口 ---- */
+function parseVideoUrl(u){
+  u = String(u||'').trim(); if(!u) return null;
+  let m;
+  if((m = u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/))([A-Za-z0-9_-]{11})/))){
+    return { type:'youtube', id:m[1], embed:'https://www.youtube-nocookie.com/embed/'+m[1]+'?autoplay=1&rel=0&playsinline=1', thumb:'https://i.ytimg.com/vi/'+m[1]+'/hqdefault.jpg', shorts:/shorts\//.test(u) };
+  }
+  if((m = u.match(/vimeo\.com\/(?:video\/)?(\d+)/))){
+    return { type:'vimeo', embed:'https://player.vimeo.com/video/'+m[1]+'?autoplay=1' };
+  }
+  if((m = u.match(/drive\.google\.com\/file\/d\/([^\/]+)/))){
+    return { type:'drive', embed:'https://drive.google.com/file/d/'+m[1]+'/preview' };
+  }
+  if(/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(u)) return { type:'file', src:u };
+  return { type:'link', href:u };
+}
+function renderFreeVideo(){
+  const fv = heroContent && heroContent.freeVideo;
+  const wrap = document.getElementById('freeVideoWrap');
+  if(!wrap) return;
+  const info = fv && fv.enabled ? parseVideoUrl(fv.videoUrl) : null;
+  if(!info){ wrap.style.display='none'; return; }
+  wrap.style.display='';
+  document.getElementById('fvLabel').textContent = fv.label || '🎁 免費教學';
+  const badge = document.getElementById('fvBadge'); badge.textContent = fv.badge || ''; badge.style.display = fv.badge ? '' : 'none';
+  document.getElementById('fvTitle').textContent = fv.title || '';
+  document.getElementById('fvDesc').textContent = fv.desc || '';
+  document.getElementById('fvCta').textContent = '▶ ' + (fv.ctaText || '觀看完整教學');
+  const poster = (fv.posterUrl||'').trim() || info.thumb || '';
+  const img = document.getElementById('fvThumb');
+  if(poster){ if(img.getAttribute('src')!==poster) img.src = poster; img.style.display=''; } else { img.removeAttribute('src'); img.style.display='none'; }
+  closeFreeVideo();
+}
+function closeFreeVideo(){
+  const p = document.getElementById('fvPlayer'); if(!p) return;
+  p.innerHTML=''; p.style.display='none';
+}
+function toggleFreeVideo(){
+  const fv = heroContent && heroContent.freeVideo; if(!fv) return;
+  const info = parseVideoUrl(fv.videoUrl); if(!info) return;
+  const p = document.getElementById('fvPlayer');
+  if(p.style.display !== 'none'){ closeFreeVideo(); return; }   // 再點一次＝收合，影片也跟著停止
+  if(info.type==='link'){ window.open(info.href, '_blank', 'noopener'); return; }
+  const vertical = fv.ratio==='vertical' || info.shorts;
+  p.className = 'fv-player' + (vertical ? ' fv-v' : '');
+  if(info.type==='file'){
+    const poster = (fv.posterUrl||'').trim();
+    p.innerHTML = '<div class="fv-box"><video controls autoplay playsinline preload="metadata"' + (poster?' poster="'+esc(poster)+'"':'') + ' src="'+esc(info.src)+'"></video></div>';
+  } else {
+    p.innerHTML = '<div class="fv-box"><iframe src="'+esc(info.embed)+'" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>';
+  }
+  p.style.display='';
+  try{ p.scrollIntoView({behavior:'smooth', block:'nearest'}); }catch(e){}
+}
 function renderHeroContent(){
   document.getElementById('heroTitle').innerHTML = esc(heroContent.title).replace(/\n/g,'<br>');
   document.getElementById('heroSubtitle').innerHTML = esc(heroContent.subtitle).replace(/\n/g,'<br>');
@@ -1610,6 +1736,7 @@ function renderHeroContent(){
   const igText = (heroContent.igLinkText||'').trim() || defaultHeroContent().igLinkText;
   document.getElementById('igLinkTopText').textContent = igText;
   document.getElementById('igLinkBtnText').textContent = igText;
+  renderFreeVideo();
   document.getElementById('heroCta').textContent = heroContent.ctaText || '想聽聽真正的答案';
   document.getElementById('heroCta').href = lineLink;
   document.getElementById('quietLineBtn').href = lineLink;
@@ -1636,7 +1763,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-02-92';
+const SITE_VERSION = 'v2026-11-10-94';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -2993,6 +3120,7 @@ function renderList(){
       </div>
       ${r.question?`<div class="rec-note">諮詢問題：${esc(r.question)}</div>`:''}
       ${r.other?`<div class="rec-note">其他備註：${esc(r.other)}</div>`:''}
+      ${(!r.lineUserId && (r.status==='待確認'||r.status==='已確認') && r.code)?`<div class="rec-note" style="background:#FFF4E5;color:#9A5B00;">⚠️ 尚未綁定 LINE：客戶還沒把預約代碼 <b>${esc(r.code)}</b> 傳到官方 LINE（或系統沒讀到），所以不會收到自動提醒。可以請他再傳一次代碼。</div>`:''}
       ${r.referrer?`<div class="rec-note">🤝 介紹人：${esc(r.referrer)}${r.status==='已完成'?'（已完成，95折券已處理）':'（標記完成後，系統會發 95 折券給介紹人）'}</div>`:''}
       <div class="rec-actions">
         ${r.status==='待確認'?`<button class="primary" onclick="quickStatus('${r.id}','已確認')">確認預約</button>`:''}
@@ -3006,6 +3134,7 @@ function renderList(){
           let html = `<button onclick="openReportForm('${r.id}')">${label}</button>`;
           if(rep) html += `<button onclick="openReportCard('${r.id}')">🪧 查看／發送</button>`;
           return html; })()}
+        ${(r.status==='待確認' && Number(r.price)>0)?`<button onclick="copyVerifyMsg('${r.id}')">📋 複製核對訊息</button>`:''}
         ${(r.status==='已確認'||r.status==='待確認')?`<button onclick="openRescheduleForm('${r.id}')">📆 改期</button>`:''}
         ${r.email?`<button onclick="copyReferralMsg('${r.id}')">🎁 複製推薦連結</button>`:''}
         ${r.status==='已確認'?`<button onclick="copyBookingSuccess('${r.id}')">📋 複製預約成功訊息</button>`:''}
@@ -4487,6 +4616,17 @@ function buildBookingSuccessText(r){
     '', '🎁 之後想分享給朋友，在這裡輸入「分享」，我會給你專屬分享連結，朋友完成預約你就能領 95 折優惠券。');
   return lines.join('\n');
 }
+/* 客戶傳代碼但系統沒讀到時，你可以自己複製這則「核對成功＋匯款資訊」貼給客戶（內容跟系統自動回覆的一樣） */
+function buildVerifyMsg(r){
+  const lines = ['已收到，你的預約代碼已核對成功 🌙', '', `💰 應付金額：NT$${Number(r.price||0)}`];
+  if((paymentInfo||'').trim()){ lines.push('', paymentInfo.trim()); }
+  lines.push('', '完成匯款後請直接回覆這裡告知，若同一時段有多人登記，將以完成匯款的先後順序為準。', '', `🔑 代碼：${r.code||''}`);
+  return lines.join('\n');
+}
+function copyVerifyMsg(id){
+  const r=records.find(x=>x.id===id); if(!r) return;
+  copyTextToClipboard(buildVerifyMsg(r), '已複製核對訊息（含匯款資訊），貼給客戶就可以了');
+}
 function copyBookingSuccess(id){
   const r=records.find(x=>x.id===id); if(!r) return;
   copyTextToClipboard(buildBookingSuccessText(r), '已複製預約成功訊息，貼到客戶的 LINE 聊天室就可以了');
@@ -4579,6 +4719,7 @@ function renderSettings(){
   document.getElementById('setServicesIntro').value = heroContent.servicesIntro || '';
   document.getElementById('setHideAddons').checked = !!heroContent.hideAddons;
   document.getElementById('setIgLinkText').value = heroContent.igLinkText || '';
+  fillFreeVideoSettings();
   renderBenefitRows(getBenefitCards(heroContent));
   renderServiceSettings(); renderAddonSettings(); renderMethodSettings();
   renderAvailabilitySettings();
