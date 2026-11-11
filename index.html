@@ -1846,7 +1846,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-11-95';
+const SITE_VERSION = 'v2026-11-11-96';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4852,7 +4852,21 @@ function removeAddon(id){ if(!confirm('確定刪除這個加購選項？')) retu
 
 /* ---------- 諮詢方式管理 ---------- */
 const WEEKDAY_LABELS = ['日','一','二','三','四','五','六'];
+/* 過了月份的封鎖（整天／單一時段）自動清掉：只留「本月和之後」的，後台清單才不會越拉越長。
+   只有後台會執行；有刪掉東西時會一併存回雲端。 */
+function purgeOldBlocks(){
+  if(!isAdmin) return;
+  const d = new Date();
+  const thisMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  const keep = s => String(s).slice(0,7) >= thisMonth;
+  const before = availability.blockedDates.length + availability.blockedSlots.length;
+  availability.blockedDates = availability.blockedDates.filter(keep).sort();
+  availability.blockedSlots = availability.blockedSlots.filter(keep).sort();
+  const after = availability.blockedDates.length + availability.blockedSlots.length;
+  if(after !== before){ saveAvailabilityLocal(availability); try{ pushRemoteSettings(); }catch(e){} }
+}
 function renderAvailabilitySettings(){
+  purgeOldBlocks();
   document.getElementById('availDaysWrap').innerHTML = WEEKDAY_LABELS.map((label,i)=>`
     <label style="display:flex; align-items:center; gap:5px; font-size:15.5px; cursor:pointer;">
       <input type="checkbox" value="${i}" ${availability.days.includes(i)?'checked':''} onchange="toggleAvailDay(${i}, this.checked)" style="accent-color:var(--gold-border); width:16px; height:16px;">
