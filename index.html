@@ -836,6 +836,11 @@ function getLinkParam(name){
     <input type="password" id="gatePassword" placeholder="密碼" onkeydown="if(event.key==='Enter') checkAdminPassword()">
     <div class="gate-error" id="gateError">密碼錯誤，請再試一次</div>
     <button class="btn" style="margin:0; width:100%;" onclick="checkAdminPassword()">進入後台</button>
+    <button class="btn btn-outline" id="gateBioBtn" style="display:none; margin:10px 0 0; width:100%;" onclick="unlockWithBiometric()">🔓 用臉部辨識／指紋進入</button>
+    <div style="text-align:left; margin-top:14px; font-size:14.5px; color:#8a7a6a; line-height:1.8;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="gateRemember" style="width:auto; margin:0;" checked> 記住這台裝置（下次不用再輸入密碼）</label>
+      <label id="gateBioWrap" style="display:none; align-items:center; gap:8px; cursor:pointer; margin-top:4px;"><input type="checkbox" id="gateUseBio" style="width:auto; margin:0;" checked> 進入時要先通過臉部辨識／指紋</label>
+    </div>
   </div>
 </div>
 
@@ -961,6 +966,12 @@ function getLinkParam(name){
           <div class="field"><label>「服務方案」標題下方的說明（選填，要換行按 Enter，留空就不顯示）</label><textarea id="setServicesIntro" style="min-height:70px;" placeholder="例如：每一種方式的做法與適合的情況不同，可以先看看哪一種比較符合你現在的狀態。"></textarea></div>
           <div class="field"><label>「追蹤 Instagram」連結的文字（網頁最上方跟下方兩個地方都會一起換，留空會用預設文字）</label><input id="setIgLinkText" placeholder="追蹤Instagram看更多影片 →"></div>
           <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveHeroContent()">儲存文案</button>
+        </div>
+
+        <div class="panel">
+          <h3>🔐 這台裝置的登入記憶</h3>
+          <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">在登入畫面勾選「記住這台裝置」後，下次打開後台就不用再輸入密碼。手機借給別人或遺失時，請按下面的按鈕清除。</p>
+          <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 16px; font-size:15px;" onclick="forgetThisDevice()">忘記這台裝置</button>
         </div>
 
         <div class="panel">
@@ -1413,34 +1424,106 @@ async function fetchWebhookJson(url, options, retries){
   throw lastErr;
 }
 /* ---------- 後台密碼鎖（改由 Apps Script 伺服器端驗證，密碼不存在網站程式碼裡） ---------- */
-async function checkAdminPassword(){
-  const input = document.getElementById('gatePassword').value;
+/* ---------- 記住這台裝置／臉部辨識解鎖 ----------
+   密碼會存在「這支手機的這個瀏覽器」裡（localStorage），下次打開自動帶入。
+   如果勾選臉部辨識／指紋，打開後台時要先通過手機的生物辨識，才會取出密碼登入。
+   注意：這是方便用的機制，請只在自己的手機、有設定螢幕鎖的情況下使用；手機借人或遺失時，請到後台「設定」按「忘記這台裝置」，或直接改 Apps Script 的密碼。 */
+const K_REMEMBER = 'rt_admin_remember';
+function loadRemember(){ try{ return JSON.parse(localStorage.getItem(K_REMEMBER)||'null'); }catch(e){ return null; } }
+function clearRemember(){ try{ localStorage.removeItem(K_REMEMBER); }catch(e){} }
+function b64u(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function b64uToBuf(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; const bin=atob(s); const a=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i); return a.buffer; }
+async function bioAvailable(){
+  try{ return !!(window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); }catch(e){ return false; }
+}
+async function registerBiometric(){
+  try{
+    const cred = await navigator.credentials.create({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rp: { name: '笑笑後台', id: location.hostname },
+      user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'admin', displayName: '笑笑後台' },
+      pubKeyCredParams: [{type:'public-key', alg:-7},{type:'public-key', alg:-257}],
+      authenticatorSelection: { authenticatorAttachment:'platform', userVerification:'required', residentKey:'discouraged' },
+      timeout: 60000
+    }});
+    return cred ? b64u(cred.rawId) : null;
+  }catch(e){ return null; }
+}
+async function verifyBiometric(credId){
+  try{
+    const r = await navigator.credentials.get({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rpId: location.hostname,
+      allowCredentials: [{ type:'public-key', id: b64uToBuf(credId), transports:['internal'] }],
+      userVerification: 'required', timeout: 60000
+    }});
+    return !!r;
+  }catch(e){ return false; }
+}
+async function unlockWithBiometric(){
+  const rm = loadRemember(); if(!rm || !rm.pw) return;
+  if(rm.credId && !(await verifyBiometric(rm.credId))){ return; }
+  await adminLoginWith(rm.pw, true);
+}
+async function initGate(){
+  if(!isAdmin) return;
+  if(document.body.classList.contains('admin-locked')){
+    const wrap = document.getElementById('gateBioWrap');
+    if(wrap && await bioAvailable()) wrap.style.display='flex';
+    const rm = loadRemember();
+    if(rm && rm.pw){
+      if(rm.credId){
+        const b = document.getElementById('gateBioBtn'); if(b) b.style.display='block';
+        unlockWithBiometric();            // 一打開就直接跳出臉部辨識
+      } else {
+        adminLoginWith(rm.pw, true);      // 只記住密碼：自動登入
+      }
+    }
+  }
+}
+async function adminLoginWith(pw, auto){
   const errEl = document.getElementById('gateError');
   errEl.style.display='none';
-  if(!webhookUrl){ errEl.textContent='尚未設定雲端網址，無法驗證密碼'; errEl.style.display='block'; return; }
-  if(!input){ return; }
+  if(!webhookUrl){ errEl.textContent='尚未設定雲端網址，無法驗證密碼'; errEl.style.display='block'; return false; }
   try{
-    const data = await fetchWebhookJson(webhookUrl, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'auth', password: input })
-    });
+    const data = await fetchWebhookJson(webhookUrl, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ type:'auth', password: pw }) });
     if(data && data.ok){
       sessionStorage.setItem('rt_admin_unlocked','1');
-      sessionStorage.setItem('rt_admin_pw', input); // 暫存在這次瀏覽器分頁的記憶體中，供後續設定儲存時驗證用，關閉分頁即消失
+      sessionStorage.setItem('rt_admin_pw', pw);
+      if(!auto){
+        const remember = document.getElementById('gateRemember');
+        if(remember && remember.checked){
+          let credId = null;
+          const useBio = document.getElementById('gateUseBio');
+          if(useBio && useBio.checked && document.getElementById('gateBioWrap').style.display!=='none') credId = await registerBiometric();
+          try{ localStorage.setItem(K_REMEMBER, JSON.stringify({ pw, credId })); }catch(e){}
+        } else { clearRemember(); }
+      }
       document.body.classList.remove('admin-locked');
       renderDashboard();
       syncRecordsFromCloud();
+      return true;
     } else {
-      errEl.textContent='密碼錯誤，請再試一次';
+      if(auto){ clearRemember(); errEl.textContent='記住的密碼已經失效（可能密碼改過了），請重新輸入'; }
+      else errEl.textContent='密碼錯誤，請再試一次';
       errEl.style.display='block';
+      return false;
     }
   }catch(err){
     errEl.textContent='連線失敗，請確認網路後再試一次';
     errEl.style.display='block';
+    return false;
   }
 }
-
+function forgetThisDevice(){
+  clearRemember();
+  toast('已忘記這台裝置，下次需要重新輸入密碼');
+}
+async function checkAdminPassword(){
+  const input = document.getElementById('gatePassword').value;
+  if(!input){ return; }
+  await adminLoginWith(input, false);
+}
 function saveHeroContent(){
   heroContent = {
     title: document.getElementById('setHeroTitle').value.trim() || defaultHeroContent().title,
@@ -1763,7 +1846,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-10-94';
+const SITE_VERSION = 'v2026-11-11-95';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -5050,6 +5133,7 @@ if(isAdmin){
   resetPublicForm();
 }
 pullRemoteSettings();
+initGate();
 </script>
 </body>
 </html>
