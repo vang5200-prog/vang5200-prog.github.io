@@ -93,7 +93,12 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
 .reiki-list-item.dragging{opacity:.55}
 .reiki-sort-mode .reiki-list-card{pointer-events:none}
 
-.yc-merge{text-align:left;margin-top:14px;padding-top:6px;border-top:2px solid var(--soft-blue)}
+.ym-list{margin-top:10px;text-align:left}.ym-item{padding:8px 4px;border-top:1px solid var(--line)}.ym-item:first-child{border-top:0}
+.ym-row{display:grid;grid-template-columns:50px 46px 14px 1fr 52px auto;align-items:center;column-gap:4px;font-size:16px;color:var(--dark)}
+.ym-bar-cell .ym-bar{width:46px;gap:6px}.ym-bar-cell .ym-bar .s1{width:46px}.ym-bar-cell .ym-bar .s2{width:20px}.ym-bar-cell{display:flex;align-items:center}
+.ym-label{white-space:nowrap}.ym-sub{margin-top:4px;line-height:1.7;word-break:break-word;padding-left:2px}
+.ym-item.yc-move{border-radius:10px;border-top-color:transparent}
+.yc-merge{text-align:left;margin-top:10px;padding-top:6px;border-top:2px solid var(--soft-blue)}
 .yc-gua{margin-top:8px;line-height:1.7}.yc-yao{color:#1f5fa6}
 .yc-list{margin-top:10px}.yc-row{display:flex;gap:12px;align-items:flex-start;padding:10px 6px;border-top:1px solid var(--line)}
 .yc-barcell{flex:0 0 58px;padding-top:7px}.yc-bar{display:flex;gap:10px;width:58px}.yc-bar .s1{display:block;width:58px;height:10px;background:#b8403a;border-radius:2px}.yc-bar .s2{display:block;width:24px;height:10px;background:#b8403a;border-radius:2px}
@@ -934,6 +939,30 @@ function yaociBody(hexNo,upper,lower,moveIdx){
  }
  return `<div class="yc-gua"><b class="yc-yao">卦辭</b>：${esc(guaci)}</div><div class="yc-gua"><b class="yc-yao">大象</b>：${esc(t[1])}</div><div class="yc-list">${rowsHtml.join('')}</div>`;
 }
+function hexMergedHtml(hexNo,upper,lower,moveIdx){
+ const t=HEX_TEXT[hexNo-1];
+ const rows=hexLineDetails(upper,lower);
+ if(!t||!rows.length)return hexLinesHtml(upper,lower);
+ const posIdx={'初爻':0,'二爻':1,'三爻':2,'四爻':3,'五爻':4,'上爻':5};
+ const bar=y=>y?'<span class="yc-bar ym-bar"><span class="s1"></span></span>':'<span class="yc-bar ym-bar"><span class="s2"></span><span class="s2"></span></span>';
+ const split=(str)=>{const k=str.indexOf('：');return k>=0?[str.slice(0,k),str.slice(k+1)]:['',str]};
+ const item=(label,txt,xiao,barHtml,mid,isMove)=>`<div class="ym-item${isMove?' yc-move':''}"><div class="ym-row"><span class="ym-bar-cell">${barHtml}</span><b class="yc-yao ym-label">${esc(label)}</b>${mid}</div><div class="ym-sub"><span>${esc(txt)}</span>${isMove?'<span class="yc-badge">動爻</span>':''}<div class="yc-xiang">《象》曰：${esc(xiao)}</div></div></div>`;
+ let html='';
+ if(t[2].length>6){ // 乾「用九」、坤「用六」
+  const [lb,tx]=split(t[2][6]);
+  html+=item(lb,tx,t[3][6]||'','','<span></span><span></span><span></span><span></span>',false);
+ }
+ rows.forEach(r=>{
+  const i=posIdx[r.pos];
+  const [lb,tx]=split(t[2][i]||'');
+  const marker=r.isShi?'<span class="yao-marker">⬅️【世】</span>':r.isYing?'<span class="yao-marker">⬅️【應】</span>':'<span></span>';
+  const relText=r.relative==='妻財'?'<span class="rel-wealth">妻財</span>':(r.relative||'');
+  const rel=r.relative?`<span class="yao-rel">（身分：${relText}）</span>`:'<span class="yao-rel"></span>';
+  html+=item(lb,tx,t[3][i]||'',bar(r.isYang),`<span class="yao-dash">•</span><span class="yao-branch">${r.branch}${r.element}</span>${marker}${rel}`,i===moveIdx);
+ });
+ const guaci=t[0].replace(/^[^：]*：/,'');
+ return `<div class="ym-list">${html}</div><div class="yc-merge"><div class="yc-gua"><b class="yc-yao">卦辭</b>：${esc(guaci)}</div><div class="yc-gua"><b class="yc-yao">大象</b>：${esc(t[1])}</div></div>`;
+}
 function yaociHtml(hexNo,upper,lower,moveIdx,title){
  const hx=HEXAGRAMS[hexNo-1];if(!hx||!HEX_TEXT[hexNo-1])return'';
  return `<div class="card yc-card" style="margin-top:10px"><h2 style="margin:0 0 6px">${esc(title)}爻辭解析</h2><div style="font-size:1.1rem"><b>第 ${hexNo} 卦｜${esc(hx[0])}</b><span class="muted">　下${esc(lower)}上${esc(upper)}</span></div>${yaociBody(hexNo,upper,lower,moveIdx)}</div>`;
@@ -1161,7 +1190,7 @@ function calc(){
  const moveLineName=posAll[moveIdx];
  const rows=hexLineDetails(upper,lower);
  window.lastIchingCalc={hexNo,hexName,upper,lower,h,rem,moveLineName,change,rows};
- document.getElementById('result').innerHTML=`<div class="gua-result"><div>${u} ＋ ${d} ＋ ${h} ＝ <b>${total}</b></div><div>${total} ÷ 6 → 餘 <b>${rem}</b></div><div class="big">${names[rem]}</div><div style="margin-top:12px;font-size:1.15rem"><b>第 ${hexNo} 卦｜${hexName}</b></div><div class="muted" style="margin-top:5px">上卦：${upper}　下卦：${lower}</div>${hexPalaceHtml(upper,lower)}${hexLinesHtml(upper,lower)}<div class="yc-merge">${yaociBody(hexNo,upper,lower,moveIdx)}</div></div>${change?yaociHtml(change.hexNo,change.upper,change.lower,-1,'變卦'):''}${wuxingCycleHtml()}${hexChakraHtml(upper,lower,h)}<div class="card" style="margin-top:10px"><table><tr><th>餘數</th><th>結果</th><th>代表意義</th></tr><tr><td>1</td><td>初爻（潛伏期）</td><td>不宜輕舉妄動</td></tr><tr><td>2</td><td>二爻（成長期）</td><td>可發展，多有吉利</td></tr><tr><td>3</td><td>三爻（危機期）</td><td>格外謹慎</td></tr><tr><td>4</td><td>四爻（進取期）</td><td>等待、配合</td></tr><tr><td>5</td><td>五爻（全盛期）</td><td>「九五之尊」、完美</td></tr><tr><td>0</td><td>上爻（衰退期）</td><td>物極必反、易自滿而走下坡</td></tr></table></div><div class="card" style="margin-top:10px"><button type="button" class="primary" id="copyAiJudgeBtn" style="width:100%">📋 一鍵複製 AI 判讀</button><div class="muted" style="margin-top:6px">複製後，貼到新開的 ChatGPT 對話視窗送出即可</div></div>`;
+ document.getElementById('result').innerHTML=`<div class="gua-result"><div>${u} ＋ ${d} ＋ ${h} ＝ <b>${total}</b></div><div>${total} ÷ 6 → 餘 <b>${rem}</b></div><div class="big">${names[rem]}</div><div style="margin-top:12px;font-size:1.15rem"><b>第 ${hexNo} 卦｜${hexName}</b></div><div class="muted" style="margin-top:5px">上卦：${upper}　下卦：${lower}</div>${hexPalaceHtml(upper,lower)}${hexMergedHtml(hexNo,upper,lower,moveIdx)}</div>${change?yaociHtml(change.hexNo,change.upper,change.lower,-1,'變卦'):''}${wuxingCycleHtml()}${hexChakraHtml(upper,lower,h)}<div class="card" style="margin-top:10px"><table><tr><th>餘數</th><th>結果</th><th>代表意義</th></tr><tr><td>1</td><td>初爻（潛伏期）</td><td>不宜輕舉妄動</td></tr><tr><td>2</td><td>二爻（成長期）</td><td>可發展，多有吉利</td></tr><tr><td>3</td><td>三爻（危機期）</td><td>格外謹慎</td></tr><tr><td>4</td><td>四爻（進取期）</td><td>等待、配合</td></tr><tr><td>5</td><td>五爻（全盛期）</td><td>「九五之尊」、完美</td></tr><tr><td>0</td><td>上爻（衰退期）</td><td>物極必反、易自滿而走下坡</td></tr></table></div><div class="card" style="margin-top:10px"><button type="button" class="primary" id="copyAiJudgeBtn" style="width:100%">📋 一鍵複製 AI 判讀</button><div class="muted" style="margin-top:6px">複製後，貼到新開的 ChatGPT 對話視窗送出即可</div></div>`;
  document.getElementById('copyAiJudgeBtn').onclick=copyAiJudge;
 }
 function buildAiJudgeText(){
