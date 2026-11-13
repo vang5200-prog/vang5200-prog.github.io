@@ -1846,7 +1846,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-11-96';
+const SITE_VERSION = 'v2026-11-13-97';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -3540,21 +3540,31 @@ function openReportForm(id){
       <textarea id="rf_notes" rows="3" oninput="autoGrowTextarea(this); scheduleReportPreviewRefresh();" placeholder="想提醒客戶留意、練習或後續追蹤的事情…">${esc(rep.notes||'')}</textarea>
     </div>
 
-    <div class="rf-preview-label">📄 以下是客戶實際會看到的樣子（跟著上面輸入即時更新，包含會分成幾頁）</div>
+    <div class="rf-preview-label">📄 以下是客戶實際會看到的樣子（${reportPreviewIsManual() ? '手機上為了不卡，改成按下面按鈕才更新' : '跟著上面輸入即時更新'}，包含會分成幾頁）</div>
+    ${reportPreviewIsManual() ? '<button type="button" id="rfPreviewBtn" class="btn btn-outline" style="margin:0 0 10px; width:100%;" onclick="manualRefreshReportPreview()">🔄 更新預覽</button>' : ''}
     <div id="rfLivePreview"></div>
   `;
   // 一定要先把視窗打開（讓內容真的顯示出來）之後，再去量測文字框需要多高，
   // 不然視窗還沒打開時量到的高度都是0，框框就會維持原本很小的高度，只能用鍵盤按鍵慢慢往下捲
   document.getElementById('reportModalOverlay').classList.add('open');
   ['rf_advice','rf_notes','rf_chakraIssue'].forEach(fid=>autoGrowTextarea(document.getElementById(fid)));
-  refreshReportFormPreview();
+  if(!reportPreviewIsManual()) refreshReportFormPreview();
 }
 /* 編輯報告書時下面的「客戶實際會看到的樣子」預覽，直接呼叫跟正式報告書完全相同的
    reportCardHtml()，用目前輸入框裡「還沒儲存」的最新內容即時產生，這樣才能保證編輯時看到的
    跟儲存後客戶看到的一模一樣（浮水印大小、脈輪排序、文字框顏色、分頁位置全部相同），
    不會發生「儲存完才發現跟預覽不一樣」的情況。打字時用短暫防抖動，避免每敲一個字就整個重算一次。 */
 let reportPreviewDebounceTimer = null;
+/* 手機上這個預覽很吃力（整張報告卡含多頁、縮放、浮水印，每次重算都會讓畫面卡住、甚至捲不動），
+   所以手機（窄螢幕）改成「不即時更新」：打字時完全不重算，要看預覽時按「🔄 更新預覽」才會畫一次。
+   電腦（寬螢幕）維持原本的即時預覽。 */
+function reportPreviewIsManual(){ return window.innerWidth < 700; }
+function manualRefreshReportPreview(){
+  const b = document.getElementById('rfPreviewBtn'); if(b) b.textContent = '更新中…';
+  setTimeout(()=>{ refreshReportFormPreview(); const b2=document.getElementById('rfPreviewBtn'); if(b2) b2.textContent='🔄 更新預覽'; }, 30);
+}
 function scheduleReportPreviewRefresh(){
+  if(reportPreviewIsManual()) return;
   clearTimeout(reportPreviewDebounceTimer);
   reportPreviewDebounceTimer = setTimeout(refreshReportFormPreview, 900);
 }
