@@ -644,6 +644,7 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
 .rf-chakra-check input{ width:16px; height:16px; margin:0; flex:none; }
 .rf-chakra-check-sm{ display:flex; align-items:center; gap:6px; padding:5px 10px; border:1px solid #EADFC8; border-radius:999px; cursor:pointer; font-size:13px; background:#fff; color:#777; }
 .rf-chakra-check-sm input{ width:14px; height:14px; margin:0; flex:none; }
+.wp-l{display:block;font-size:14px;color:#777;margin:12px 0 4px;}
 </style>
 <style>
 /* 從官方LINE卡片點進來（網址帶 ?service=）時，先蓋住頁面顯示「載入中」，等讀完最新設定、選好項目並跳到預約表單後再顯示，
@@ -855,6 +856,7 @@ function getLinkParam(name){
   <div class="admin-nav" id="adminNav">
     <button data-tab="dashboard" class="active">儀表板</button>
     <button data-tab="list">預約清單</button>
+    <button data-tab="wallpaper">桌布資料</button>
     <button data-tab="settings">設定</button>
   </div>
 
@@ -883,6 +885,31 @@ function getLinkParam(name){
         <button class="btn btn-outline" style="margin:0; width:auto; padding:9px 16px; font-size:15px;" onclick="openForm()">＋ 新增</button>
       </div>
       <div id="listContainer"></div>
+    </div>
+
+    <div class="admin-section" id="tab-wallpaper">
+      <div class="panel">
+        <h3>🖼️ 桌布資料整理（給 AI 繪圖第 3 步）</h3>
+        <p style="font-size:14px;color:#888;margin:0 0 12px;">貼上報告書內容，按一個鍵，就會整理成「本次客戶專屬資料」，複製後直接貼給 AI 繪圖。</p>
+        <label class="wp-l">客戶 Email（有存過報告書的話，輸入後可自動帶入內容）</label>
+        <div style="display:flex;gap:8px;"><input type="text" id="wp_email" placeholder="client@gmail.com" style="flex:1;" autocomplete="off"><button class="btn btn-outline" style="margin:0;width:auto;padding:9px 14px;font-size:15px;" onclick="wpLoadByEmail()">帶入</button></div>
+        <label class="wp-l">客戶姓名</label><input type="text" id="wp_name" autocomplete="off">
+        <label class="wp-l">人物版本</label>
+        <select id="wp_gender"><option value="女生">女生</option><option value="男生">男生</option></select>
+        <label class="wp-l">報告書內容（可直接貼上；從 Email 帶入的會自動填在這裡）</label>
+        <textarea id="wp_content" rows="8" style="width:100%;"></textarea>
+        <label class="wp-l">人物外觀要求（選填）</label><input type="text" id="wp_look" autocomplete="off">
+        <label class="wp-l">指定水晶／動物／植物／場景／其他（選填，沒有就留空，會寫「無」）</label>
+        <input type="text" id="wp_crystal" placeholder="指定水晶" autocomplete="off" style="margin-bottom:6px;">
+        <input type="text" id="wp_animal" placeholder="指定動物" autocomplete="off" style="margin-bottom:6px;">
+        <input type="text" id="wp_plant" placeholder="指定植物" autocomplete="off" style="margin-bottom:6px;">
+        <input type="text" id="wp_scene" placeholder="指定場景" autocomplete="off" style="margin-bottom:6px;">
+        <input type="text" id="wp_other" placeholder="其他特殊要求" autocomplete="off">
+        <button class="btn" id="wp_btn" style="margin-top:14px;" onclick="wpGenerate()">✨ AI 整理成第 3 步資料</button>
+        <label class="wp-l" style="margin-top:14px;">整理結果（可以直接修改，再複製）</label>
+        <textarea id="wp_out" rows="16" style="width:100%;"></textarea>
+        <button class="btn btn-outline" style="margin-top:8px;" onclick="copyTextToClipboard(document.getElementById('wp_out').value,'已複製，貼給 AI 繪圖即可')">📋 複製</button>
+      </div>
     </div>
 
     <div class="admin-section" id="tab-settings">
@@ -1846,7 +1873,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-13-97';
+const SITE_VERSION = 'v2026-11-14-98';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4682,6 +4709,54 @@ function saveAdminForm(){
   saveRecords(records); closeForm(); renderList(); renderDashboard();
 }
 /* ---- 複製給客戶的訊息（貼到LINE聊天室用） ---- */
+
+/* ============================================================
+   桌布資料整理：報告書 → AI繪圖第3步資料
+============================================================ */
+function wpLoadByEmail(){
+  const em=(document.getElementById('wp_email').value||'').trim().toLowerCase();
+  if(!em){ toast('請先輸入 Email'); return; }
+  const list=(reports||[]).filter(x=>String(x.email||'').trim().toLowerCase()===em);
+  if(!list.length){ toast('找不到這個 Email 的報告書，可直接貼上內容'); return; }
+  const rep=list[list.length-1];
+  document.getElementById('wp_name').value=rep.name||'';
+  document.getElementById('wp_content').value=[
+    rep.chakra?('【脈輪】'+rep.chakra):'',
+    rep.advice?('【諮詢問題與建議】\n'+rep.advice):'',
+    rep.chakraIssue?('【脈輪狀況】\n'+rep.chakraIssue):'',
+    rep.notes?('【注意事項】\n'+rep.notes):''
+  ].filter(Boolean).join('\n\n');
+  toast('已帶入報告書內容');
+}
+async function wpGenerate(){
+  const content=document.getElementById('wp_content').value.trim();
+  const name=document.getElementById('wp_name').value.trim();
+  const gender=document.getElementById('wp_gender').value;
+  if(!content){ toast('請先貼上報告書內容'); return; }
+  if(!webhookUrl){ toast('尚未設定雲端網址'); return; }
+  const btn=document.getElementById('wp_btn'); const old=btn.innerHTML; btn.disabled=true; btn.innerHTML='整理中...';
+  try{
+    const res=await fetch(webhookUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({type:'aiWallpaperData',password:sessionStorage.getItem('rt_admin_pw')||'',content,name,gender})});
+    const r=await res.json();
+    if(r&&r.ok){
+      const d=r.data, v=id=>document.getElementById(id).value.trim()||'無';
+      const t=[];
+      t.push('本次客戶專屬資料','','【基本資料】','客戶姓名：'+name,'人物版本：'+gender,'人物外觀要求：'+v('wp_look'),'',
+        '【事業財庫】','本次財庫解讀：'+(d.wealth||'（報告未提及）'),'','【人生主題】');
+      (d.themes||[]).forEach((x,i)=>{ t.push('主題'+(i+1)+'：'+x.title,'解讀內容：'+x.text); });
+      t.push('','【個人能量洞穴】','能量狀態：'+(d.state||'（報告未提及）'),'能量特徵：'+(d.traits||'（報告未提及）'),
+        '脈輪或特殊能量象徵：'+(d.chakra||'（報告未提及）'),'需要留意的地方：'+(d.watch||'（報告未提及）'),'',
+        '【核心提醒】','本次核心提醒：'+(d.core||'（報告未提及）'),'',
+        '【特殊象徵】','指定水晶：'+v('wp_crystal'),'指定動物：'+v('wp_animal'),'指定植物：'+v('wp_plant'),'指定場景：'+v('wp_scene'),'其他特殊要求：'+v('wp_other'),'',
+        '【文字規範】','所有解讀以提供的原始資料為準。','不新增未經提供的解讀。','不擅自刪除重要內容。','如果文字太多，先提出排版調整建議。');
+      document.getElementById('wp_out').value=t.join('\n');
+      toast(r.truncated?'內容太長可能被截斷，請檢查結尾':'已整理完成，請確認後複製');
+    } else if(r&&r.error==='missing_api_key'){ toast('尚未設定AI金鑰（ANTHROPIC_API_KEY）');
+    } else { toast((r&&r.error)||'AI整理失敗，請稍後再試'); }
+  }catch(err){ toast('AI整理失敗，請檢查網路連線'); }
+  finally{ btn.disabled=false; btn.innerHTML=old; }
+}
 function copyTextToClipboard(text, okMsg){
   const done = ()=>toast(okMsg || '已複製，可以直接貼給客戶');
   const fallback = ()=>{
