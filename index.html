@@ -1878,7 +1878,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-14-100';
+const SITE_VERSION = 'v2026-11-15-101';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4754,7 +4754,7 @@ async function wpGenerate(){
         '脈輪或特殊能量象徵：'+(d.chakra||'（報告未提及）'),'需要留意的地方：'+(d.watch||'（報告未提及）'),'',
         '【核心提醒】','本次核心提醒：'+(d.core||'（報告未提及）'),'',
         '【特殊象徵】','指定水晶：'+v('wp_crystal'),'指定動物：'+v('wp_animal'),'指定植物：'+v('wp_plant'),'指定場景：'+v('wp_scene'),'其他特殊要求：'+v('wp_other'),'',
-        '【文字規範】','所有解讀以提供的原始資料為準。','不新增未經提供的解讀。','不擅自刪除重要內容。','如果文字太多，先提出排版調整建議。');
+        '【文字規範】','所有解讀以提供的原始資料為準。','不新增未經提供的解讀。','以上文字已精簡為重點短句，請勿自行增加文字。','畫面以圖像為主，文字要大而清楚、保留留白。','如果文字太多，先提出排版調整建議。');
       document.getElementById('wp_out').value=t.join('\n');
       toast(r.truncated?'內容太長可能被截斷，請檢查結尾':'已整理完成，請確認後複製');
     } else if(r&&r.error==='missing_api_key'){ toast('尚未設定AI金鑰（ANTHROPIC_API_KEY）');
