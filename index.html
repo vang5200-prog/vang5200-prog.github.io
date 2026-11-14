@@ -898,7 +898,7 @@ function getLinkParam(name){
         <select id="wp_gender"><option value="女生">女生</option><option value="男生">男生</option></select>
         <label class="wp-l">報告書內容（可直接貼上；從 Email 帶入的會自動填在這裡）</label>
         <textarea id="wp_content" rows="8" style="width:100%;"></textarea>
-        <label class="wp-l">人物外觀要求（選填）</label><input type="text" id="wp_look" autocomplete="off">
+        <label class="wp-l">人物外觀要求（已預設好，有特別要求再修改）</label><input type="text" id="wp_look" autocomplete="off" value="請參考我附上的客戶照片，畫成 Q 版可愛人物，保留髮型、髮色、眼鏡、飾品等特徵；若無照片則採預設資料">
         <label class="wp-l">指定水晶／動物／植物／場景／其他（選填，沒有就留空，會寫「無」）</label>
         <input type="text" id="wp_crystal" placeholder="指定水晶" autocomplete="off" style="margin-bottom:6px;">
         <input type="text" id="wp_animal" placeholder="指定動物" autocomplete="off" style="margin-bottom:6px;">
@@ -1873,7 +1873,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-14-98';
+const SITE_VERSION = 'v2026-11-14-99';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4742,7 +4742,7 @@ async function wpGenerate(){
     if(r&&r.ok){
       const d=r.data, v=id=>document.getElementById(id).value.trim()||'無';
       const t=[];
-      t.push('本次客戶專屬資料','','【基本資料】','客戶姓名：'+name,'人物版本：'+gender,'人物外觀要求：'+v('wp_look'),'',
+      t.push('本次客戶專屬資料','','【基本資料】','客戶姓名：'+name,'人物版本：'+gender,'人物外觀要求：'+(document.getElementById('wp_look').value.trim()||'請參考我附上的客戶照片，畫成 Q 版可愛人物，保留髮型、髮色、眼鏡、飾品等特徵；若無照片則採預設資料'),'',
         '【事業財庫】','本次財庫解讀：'+(d.wealth||'（報告未提及）'),'','【人生主題】');
       (d.themes||[]).forEach((x,i)=>{ t.push('主題'+(i+1)+'：'+x.title,'解讀內容：'+x.text); });
       t.push('','【個人能量洞穴】','能量狀態：'+(d.state||'（報告未提及）'),'能量特徵：'+(d.traits||'（報告未提及）'),
