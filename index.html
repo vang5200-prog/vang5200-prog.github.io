@@ -909,6 +909,11 @@ function getLinkParam(name){
         <label class="wp-l" style="margin-top:14px;">整理結果（可以直接修改，再複製）</label>
         <textarea id="wp_out" rows="16" style="width:100%;"></textarea>
         <button class="btn btn-outline" style="margin-top:8px;" onclick="copyTextToClipboard(document.getElementById('wp_out').value,'已複製，貼給 AI 繪圖即可')">📋 複製</button>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn btn-outline" style="margin:0;flex:1;" onclick="wpSaveDraft(true)">💾 暫存</button>
+          <button class="btn" style="margin:0;flex:1;" onclick="wpFinish()">✅ 完成，離開</button>
+        </div>
+        <p style="font-size:13px;color:#999;margin:8px 0 0;">暫存只存在這支手機／這台電腦；下次回到這頁會自動帶回。按「完成，離開」會清空畫面並回到預約清單。</p>
       </div>
     </div>
 
@@ -1873,7 +1878,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-14-99';
+const SITE_VERSION = 'v2026-11-14-100';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4757,6 +4762,24 @@ async function wpGenerate(){
   }catch(err){ toast('AI整理失敗，請檢查網路連線'); }
   finally{ btn.disabled=false; btn.innerHTML=old; }
 }
+
+const WP_IDS=['wp_email','wp_name','wp_gender','wp_content','wp_look','wp_crystal','wp_animal','wp_plant','wp_scene','wp_other','wp_out'];
+const WP_DEFAULT_LOOK=document.getElementById('wp_look')?document.getElementById('wp_look').value:'';
+function wpSaveDraft(showToast){
+  try{ const o={}; WP_IDS.forEach(id=>o[id]=document.getElementById(id).value); localStorage.setItem('rt_wp_draft',JSON.stringify(o)); if(showToast) toast('已暫存，下次回到這頁會自動帶回'); }catch(e){ if(showToast) toast('暫存失敗'); }
+}
+function wpRestoreDraft(){
+  try{ const o=JSON.parse(localStorage.getItem('rt_wp_draft')||'null'); if(!o) return; WP_IDS.forEach(id=>{ if(o[id]!=null) document.getElementById(id).value=o[id]; }); }catch(e){}
+}
+function wpFinish(){
+  const out=document.getElementById('wp_out').value.trim();
+  if(out && !confirm('完成後會清空這個畫面，確定已經複製好了嗎？')) return;
+  WP_IDS.forEach(id=>{ const el=document.getElementById(id); el.value = (id==='wp_look')?WP_DEFAULT_LOOK:(id==='wp_gender'?'女生':''); });
+  try{ localStorage.removeItem('rt_wp_draft'); }catch(e){}
+  switchAdminTab('list'); toast('已完成並清空');
+}
+wpRestoreDraft();
+WP_IDS.forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',()=>wpSaveDraft(false)); });
 function copyTextToClipboard(text, okMsg){
   const done = ()=>toast(okMsg || '已複製，可以直接貼給客戶');
   const fallback = ()=>{
