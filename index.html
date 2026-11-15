@@ -1878,7 +1878,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-15-101';
+const SITE_VERSION = 'v2026-11-15-102';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4747,13 +4747,14 @@ async function wpGenerate(){
     if(r&&r.ok){
       const d=r.data, v=id=>document.getElementById(id).value.trim()||'無';
       const t=[];
-      t.push('本次客戶專屬資料','','【基本資料】','客戶姓名：'+name,'人物版本：'+gender,'人物外觀要求：'+(document.getElementById('wp_look').value.trim()||'請參考我附上的客戶照片，畫成 Q 版可愛人物，保留髮型、髮色、眼鏡、飾品等特徵；若無照片則採預設資料'),'',
+      t.push('本次客戶專屬資料','','【基本資料】','客戶姓名：'+name,'圖片標題：關係眼 | 能量訊息解讀','標題下方旗幟文字：'+name+'的能量招財桌布','人物版本：'+gender,'人物外觀要求：'+(document.getElementById('wp_look').value.trim()||'請參考我附上的客戶照片，畫成 Q 版可愛人物，保留髮型、髮色、眼鏡、飾品等特徵；若無照片則採預設資料'),'',
         '【事業財庫】','本次財庫解讀：'+(d.wealth||'（報告未提及）'),'','【人生主題】');
       (d.themes||[]).forEach((x,i)=>{ t.push('主題'+(i+1)+'：'+x.title,'解讀內容：'+x.text); });
       t.push('','【個人能量洞穴】','能量狀態：'+(d.state||'（報告未提及）'),'能量特徵：'+(d.traits||'（報告未提及）'),
         '脈輪或特殊能量象徵：'+(d.chakra||'（報告未提及）'),'需要留意的地方：'+(d.watch||'（報告未提及）'),'',
         '【核心提醒】','本次核心提醒：'+(d.core||'（報告未提及）'),'',
         '【特殊象徵】','指定水晶：'+v('wp_crystal'),'指定動物：'+v('wp_animal'),'指定植物：'+v('wp_plant'),'指定場景：'+v('wp_scene'),'其他特殊要求：'+v('wp_other'),'',
+        '【圖片固定文字】','主標題：關係眼 | 能量訊息解讀','旗幟文字：'+(name||'客戶')+'的能量招財桌布','最下方文字：笑笑 | 關係眼 看見你還沒看見的','',
         '【文字規範】','所有解讀以提供的原始資料為準。','不新增未經提供的解讀。','以上文字已精簡為重點短句，請勿自行增加文字。','畫面以圖像為主，文字要大而清楚、保留留白。','如果文字太多，先提出排版調整建議。');
       document.getElementById('wp_out').value=t.join('\n');
       toast(r.truncated?'內容太長可能被截斷，請檢查結尾':'已整理完成，請確認後複製');
