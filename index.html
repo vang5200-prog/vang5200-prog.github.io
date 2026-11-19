@@ -1721,8 +1721,11 @@ let editingReportId = null; // 目前正在編輯報告書的那筆「預約」i
 /* ============================================================
    客戶前台：服務卡片 / 加購卡片（讀 localStorage 動態渲染）
 ============================================================ */
+/* 客戶看得到的服務項目：後台把某項目設為「暫時隱藏」後，前台（卡片、預約下拉選單、連結）都不會出現，
+   但資料完整保留，之後取消隱藏就恢復原樣。後台的設定清單、手動新增預約仍然看得到全部項目。 */
+function visibleServices(){ return services.filter(s=>!s.hidden); }
 function renderServiceCards(){
-  document.getElementById('serviceCardsWrap').innerHTML = services.map((s,i)=>`
+  document.getElementById('serviceCardsWrap').innerHTML = visibleServices().map((s,i)=>`
     <div class="service-card" data-sid="${esc(s.id)}" style="cursor:pointer;" onclick="selectServiceAndScroll('${s.id}')">
       <div class="card-title-row"><span class="card-number">${String(i+1).padStart(2,'0')}</span><span class="card-title">${esc(s.name)}</span></div>
       ${servicePriceLabel(s)?`<div class="card-price">${servicePriceLabel(s)}</div>`:''}
@@ -1889,16 +1892,17 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-19-108';
+const SITE_VERSION = 'v2026-11-19-110';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
   key = String(key||'').trim();
   if(!key) return null;
-  let svc = services.find(s=>s.id===key);
+  const vs = visibleServices();
+  let svc = vs.find(s=>s.id===key);
   if(svc) return svc;
-  if(/^\d{1,2}$/.test(key)){ svc = services[Number(key)-1]; if(svc) return svc; }
-  return services.find(s=>String(s.name||'').includes(key)) || null;
+  if(/^\d{1,2}$/.test(key)){ svc = vs[Number(key)-1]; if(svc) return svc; }
+  return vs.find(s=>String(s.name||'').includes(key)) || null;
 }
 function endDeepLinkLoading(){ document.documentElement.classList.remove('dl-loading'); }
 /* 手機（尤其是LINE內建瀏覽器）用平滑捲動常常捲不過去，所以改成直接跳到預約表單，
@@ -1991,7 +1995,7 @@ function selectServiceAndScroll(id){
 }
 
 function publicFieldsHTML(){
-  const svcOptions = services.map(s=>{ const pl=servicePriceLabel(s); return `<option value="${s.id}">${esc(s.name)}${pl?`（${pl}）`:''}</option>`; }).join('');
+  const svcOptions = visibleServices().map(s=>{ const pl=servicePriceLabel(s); return `<option value="${s.id}">${esc(s.name)}${pl?`（${pl}）`:''}</option>`; }).join('');
   const methodOptions = methods.map(m=>`<option value="${m}">${m}</option>`).join('');
   const addonChecks = addons.map(a=>`
     <label class="addon-item"><input type="checkbox" class="pf-addon" value="${a.id}" onchange="updatePricePreview(); if(document.getElementById('pf_date').value) loadSlotsForDate();"> ${esc(a.name)}｜${a.isFree?'免費':'NT$'+Number(a.price).toLocaleString()}</label>
@@ -2492,7 +2496,7 @@ async function onServiceChange(){
   if(svc && svc.isCharity){
     const proceed = await showStyledConfirm(svc.name.split('/')[0].trim(), svc.charityNotice || defaultCharityNotice());
     if(!proceed){
-      sel.value = lastNonCharityServiceId || (services.find(s=>!s.isCharity)||{}).id || sel.value;
+      sel.value = lastNonCharityServiceId || (services.find(s=>!s.isCharity && !s.hidden)||{}).id || sel.value;
     }
   }
   const finalSvc = services.find(s=>s.id===sel.value);
@@ -5020,10 +5024,13 @@ function renderSettings(){
   renderAvailabilitySettings();
 }
 function renderServiceSettings(){
-  document.getElementById('serviceSettingsList').innerHTML = services.map(s=>`
-    <div class="settings-item"><div><b>${esc(s.name)}</b><div class="d">${s.isFree?'免費':'NT$'+Number(s.price).toLocaleString()}${s.subtitle?' · '+esc(s.subtitle):''} · ${esc(s.desc||'')}${s.locationNote?' · 地點說明：'+esc(s.locationNote):''}</div></div>
-      <div style="display:flex; gap:6px;">
+  document.getElementById('serviceSettingsList').innerHTML = services.map((s,idx)=>`
+    <div class="settings-item"${s.hidden?' style="opacity:.55;"':''}><div><b>${s.hidden?'🙈 ':''}${esc(s.name)}</b>${s.hidden?'<span style="margin-left:8px; font-size:13px; color:#b25;">（暫時隱藏中，客戶看不到）</span>':''}<div class="d">${s.isFree?'免費':'NT$'+Number(s.price).toLocaleString()}${s.subtitle?' · '+esc(s.subtitle):''} · ${esc(s.desc||'')}${s.locationNote?' · 地點說明：'+esc(s.locationNote):''}</div></div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button ${idx===0?'disabled style="opacity:.3;"':''} onclick="moveService('${s.id}',-1)" title="往前移">⬆ 上移</button>
+        <button ${idx===services.length-1?'disabled style="opacity:.3;"':''} onclick="moveService('${s.id}',1)" title="往後移">⬇ 下移</button>
         <button style="color:var(--gold-text); border-color:var(--gold-border);" onclick="openServiceEdit('${s.id}')">編輯</button>
+        <button onclick="toggleServiceHidden('${s.id}')">${s.hidden?'👁 恢復顯示':'🙈 暫時隱藏'}</button>
         <button onclick="copyServiceLink('${s.id}')">複製LINE卡片連結</button>
         <button onclick="removeService('${s.id}')">刪除</button>
       </div>
@@ -5049,6 +5056,20 @@ function addService(){
   services.push({id:uid(),name,price,subtitle,desc}); saveServices(services); pushRemoteSettings();
   document.getElementById('newSvcName').value=''; document.getElementById('newSvcPrice').value=''; document.getElementById('newSvcSubtitle').value=''; document.getElementById('newSvcDesc').value='';
   renderServiceSettings(); renderServiceCards(); toast('已新增服務項目');
+}
+/* 調整服務項目的前後順序：客戶前台的卡片編號、預約下拉選單，都照這裡的順序排列 */
+function moveService(id, dir){
+  const i = services.findIndex(x=>x.id===id); if(i<0) return;
+  const j = i + dir; if(j<0 || j>=services.length) return;
+  const tmp = services[i]; services[i] = services[j]; services[j] = tmp;
+  saveServices(services); pushRemoteSettings(); renderServiceSettings(); renderServiceCards();
+  toast('已調整順序，客戶前台已同步更新');
+}
+function toggleServiceHidden(id){
+  const s = services.find(x=>x.id===id); if(!s) return;
+  s.hidden = !s.hidden;
+  saveServices(services); pushRemoteSettings(); renderServiceSettings(); renderServiceCards();
+  toast(s.hidden ? '已暫時隱藏，客戶前台看不到（資料還在，隨時可恢復）' : '已恢復顯示，客戶前台看得到了');
 }
 function removeService(id){ if(!confirm('確定刪除這個服務項目？')) return; services=services.filter(s=>s.id!==id); saveServices(services); pushRemoteSettings(); renderServiceSettings(); renderServiceCards(); toast('已刪除'); }
 function addAddon(){
@@ -5203,6 +5224,12 @@ function openServiceEdit(id){
     <div class="field full"><label>此服務專屬的預約問題提示文字（選填）</label><input id="svc_questionPlaceholder" value="${esc(s.questionPlaceholder||'')}" placeholder="例如：簡單告訴我目前想處理的是什麼事情。"></div>
     <div class="field full"><label>限定諮詢方式（選填，若指定則客戶只能選這些方式，用逗號分隔，需與下方「諮詢方式管理」的名稱完全一致，例如：視訊通話）</label><input id="svc_allowedMethods" value="${esc((s.allowedMethods||[]).join('、'))}" placeholder="留空表示不限制"></div>
     <div class="field full">
+      <label style="display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; color:#b25; cursor:pointer;">
+        <input type="checkbox" id="svc_hidden" ${s.hidden?'checked':''} style="width:16px; height:16px; accent-color:var(--gold-border);">
+        🙈 暫時隱藏這個項目（客戶前台看不到，資料不會刪除，之後取消勾選就恢復）
+      </label>
+    </div>
+    <div class="field full">
       <label style="display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; color:var(--brown); cursor:pointer;">
         <input type="checkbox" id="svc_allowAddons" ${s.allowAddons===false?'':'checked'} style="width:16px; height:16px; accent-color:var(--gold-border);">
         ＋ 開放加購選項（取消勾選代表客戶預約這個服務時，看不到、也不能選任何加購項目）
@@ -5271,6 +5298,8 @@ function saveSvcModal(){
     if(qpEl) s.questionPlaceholder = qpEl.value.trim();
     const amEl = document.getElementById('svc_allowedMethods');
     if(amEl) s.allowedMethods = amEl.value.split(/[、,，]/).map(m=>m.trim()).filter(Boolean);
+    const hiddenEl = document.getElementById('svc_hidden');
+    if(hiddenEl) s.hidden = hiddenEl.checked;
     const allowAddonsEl = document.getElementById('svc_allowAddons');
     if(allowAddonsEl) s.allowAddons = allowAddonsEl.checked;
     const charityEl = document.getElementById('svc_isCharity');
