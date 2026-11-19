@@ -923,16 +923,16 @@ function getLinkParam(name){
 
     <div class="admin-section" id="tab-settings">
       <div class="admin-nav" id="settingsSubNav" style="background:var(--cream); margin:-20px -20px 20px; padding:14px 16px;">
-        <button data-subtab="avail" onclick="switchSettingsSubTab('avail')">🗓️ 開放預約時間</button>
-        <button data-subtab="frontend" class="active" onclick="switchSettingsSubTab('frontend')">前台設定</button>
-        <button data-subtab="backend" onclick="switchSettingsSubTab('backend')">後台設定</button>
-        <button data-subtab="line" onclick="switchSettingsSubTab('line')">官方LINE設定</button>
+        <button data-subtab="avail" class="active" onclick="switchSettingsSubTab('avail')">🗓️ 開放預約時間</button>
+        <button data-subtab="services" onclick="switchSettingsSubTab('services')">服務方案管理</button>
         <button data-subtab="report" onclick="switchSettingsSubTab('report')">報告書設定</button>
+        <button data-subtab="frontend" onclick="switchSettingsSubTab('frontend')">後台設定</button>
+        <button data-subtab="line" onclick="switchSettingsSubTab('line')">官方LINE設定</button>
         <button data-subtab="oldclient" onclick="switchSettingsSubTab('oldclient')">老客戶999</button>
       </div>
 
       <!-- ========== 開放預約時間：獨立一頁，開放星期／時段／緩衝／手動封鎖 ========== -->
-      <div class="settings-subsection" id="settings-avail" style="display:none;">
+      <div class="settings-subsection active" id="settings-avail">
         <div class="panel">
           <h3>🗓️ 開放預約時間設定</h3>
           <div class="field">
@@ -970,8 +970,43 @@ function getLinkParam(name){
         </div>
       </div>
 
-      <!-- ========== 前台設定：預約設定／開頭介紹文字／服務方案／加購／諮詢方式 ========== -->
-      <div class="settings-subsection active" id="settings-frontend">
+      <!-- ========== 服務方案管理：服務方案／加購選項／諮詢方式 ========== -->
+      <div class="settings-subsection" id="settings-services" style="display:none;">
+        <div class="panel">
+          <h3>服務方案管理</h3>
+          <div id="serviceSettingsList"></div>
+          <div class="admin-field-grid" style="margin-top:12px;">
+            <div class="field"><label>服務名稱（含時長）</label><input id="newSvcName" placeholder="例如：塔羅讀心 / 20分鐘"></div>
+            <div class="field"><label>價格 (NT$)</label><input id="newSvcPrice" type="number" placeholder="999"></div>
+            <div class="field"><label>地點／形式（選填）</label><input id="newSvcSubtitle" placeholder="例如：遠程／台南面對面"></div>
+            <div class="field full"><label>說明</label><input id="newSvcDesc" placeholder="這項服務能幫客戶解決什麼"></div>
+          </div>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="addService()">＋ 新增服務</button>
+        </div>
+
+        <div class="panel">
+          <h3>加購選項管理</h3>
+          <div id="addonSettingsList"></div>
+          <div class="admin-field-grid" style="margin-top:12px;">
+            <div class="field"><label>加購名稱</label><input id="newAddonName" placeholder="例如：加購深入分析 10分鐘"></div>
+            <div class="field"><label>價格 (NT$)</label><input id="newAddonPrice" type="number" placeholder="599"></div>
+            <div class="field full"><label>說明</label><input id="newAddonDesc" placeholder="這個加購能多幫客戶做什麼"></div>
+          </div>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="addAddon()">＋ 新增加購</button>
+        </div>
+
+        <div class="panel">
+          <h3>諮詢方式管理</h3>
+          <div id="methodSettingsList"></div>
+          <div class="admin-field-grid" style="margin-top:12px;">
+            <div class="field full"><label>諮詢方式名稱</label><input id="newMethodName" placeholder="例如：視訊通話"></div>
+          </div>
+          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="addMethod()">＋ 新增諮詢方式</button>
+        </div>
+      </div>
+
+      <!-- ========== 後台設定（原前台設定＋後台設定合併）：預約注意事項／免責聲明／開頭介紹文字／登入記憶／影片／IG／後台密碼／資料備份 ========== -->
+      <div class="settings-subsection" id="settings-frontend" style="display:none;">
         <div class="panel">
           <h3>⚠️ 預約注意事項（顯示在確認畫面）</h3>
           <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">客戶按「送出預約」後、看到的「請確認你的預約內容」畫面上，會用粉色小字顯示這段文字，例如取消與爽約規範。</p>
@@ -1037,41 +1072,7 @@ function getLinkParam(name){
           <button class="btn btn-outline" style="margin:12px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveIGLink()">儲存</button>
         </div>
 
-        <div class="panel">
-          <h3>服務方案管理</h3>
-          <div id="serviceSettingsList"></div>
-          <div class="admin-field-grid" style="margin-top:12px;">
-            <div class="field"><label>服務名稱（含時長）</label><input id="newSvcName" placeholder="例如：塔羅讀心 / 20分鐘"></div>
-            <div class="field"><label>價格 (NT$)</label><input id="newSvcPrice" type="number" placeholder="999"></div>
-            <div class="field"><label>地點／形式（選填）</label><input id="newSvcSubtitle" placeholder="例如：遠程／台南面對面"></div>
-            <div class="field full"><label>說明</label><input id="newSvcDesc" placeholder="這項服務能幫客戶解決什麼"></div>
-          </div>
-          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="addService()">＋ 新增服務</button>
-        </div>
 
-        <div class="panel">
-          <h3>加購選項管理</h3>
-          <div id="addonSettingsList"></div>
-          <div class="admin-field-grid" style="margin-top:12px;">
-            <div class="field"><label>加購名稱</label><input id="newAddonName" placeholder="例如：加購深入分析 10分鐘"></div>
-            <div class="field"><label>價格 (NT$)</label><input id="newAddonPrice" type="number" placeholder="599"></div>
-            <div class="field full"><label>說明</label><input id="newAddonDesc" placeholder="這個加購能多幫客戶做什麼"></div>
-          </div>
-          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="addAddon()">＋ 新增加購</button>
-        </div>
-
-        <div class="panel">
-          <h3>諮詢方式管理</h3>
-          <div id="methodSettingsList"></div>
-          <div class="admin-field-grid" style="margin-top:12px;">
-            <div class="field full"><label>諮詢方式名稱</label><input id="newMethodName" placeholder="例如：視訊通話"></div>
-          </div>
-          <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="addMethod()">＋ 新增諮詢方式</button>
-        </div>
-      </div>
-
-      <!-- ========== 後台設定：密碼提示／資料備份 ========== -->
-      <div class="settings-subsection" id="settings-backend" style="display:none;">
         <div class="panel">
           <h3>🔒 後台密碼</h3>
           <p style="font-size:14.5px; color:#999; line-height:1.7;">密碼已經改成由 Google Apps Script 驗證，不再存在網站程式碼裡，更安全。想更改密碼，請到 Apps Script 編輯器左側「專案設定」→「指令碼屬性」，修改 ADMIN_PASSWORD 這筆的值即可，不需要重新部署。</p>
@@ -1901,7 +1902,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-19-114';
+const SITE_VERSION = 'v2026-11-19-115';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
