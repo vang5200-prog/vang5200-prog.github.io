@@ -923,6 +923,7 @@ function getLinkParam(name){
 
     <div class="admin-section" id="tab-settings">
       <div class="admin-nav" id="settingsSubNav" style="background:var(--cream); margin:-20px -20px 20px; padding:14px 16px;">
+        <button data-subtab="avail" onclick="switchSettingsSubTab('avail')">🗓️ 開放預約時間</button>
         <button data-subtab="frontend" class="active" onclick="switchSettingsSubTab('frontend')">前台設定</button>
         <button data-subtab="backend" onclick="switchSettingsSubTab('backend')">後台設定</button>
         <button data-subtab="line" onclick="switchSettingsSubTab('line')">官方LINE設定</button>
@@ -930,8 +931,8 @@ function getLinkParam(name){
         <button data-subtab="oldclient" onclick="switchSettingsSubTab('oldclient')">老客戶999</button>
       </div>
 
-      <!-- ========== 前台設定：預約設定／開頭介紹文字／服務方案／加購／諮詢方式 ========== -->
-      <div class="settings-subsection active" id="settings-frontend">
+      <!-- ========== 開放預約時間：獨立一頁，開放星期／時段／緩衝／手動封鎖 ========== -->
+      <div class="settings-subsection" id="settings-avail" style="display:none;">
         <div class="panel">
           <h3>🗓️ 開放預約時間設定</h3>
           <div class="field">
@@ -967,7 +968,10 @@ function getLinkParam(name){
             <button class="btn btn-outline" style="margin:10px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="addBlockedSlot()">＋ 封鎖這個時段</button>
           </div>
         </div>
+      </div>
 
+      <!-- ========== 前台設定：預約設定／開頭介紹文字／服務方案／加購／諮詢方式 ========== -->
+      <div class="settings-subsection active" id="settings-frontend">
         <div class="panel">
           <h3>⚠️ 預約注意事項（顯示在確認畫面）</h3>
           <p style="font-size:14.5px; color:#999; margin-bottom:12px; line-height:1.7;">客戶按「送出預約」後、看到的「請確認你的預約內容」畫面上，會用粉色小字顯示這段文字，例如取消與爽約規範。</p>
@@ -1897,7 +1901,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-19-112';
+const SITE_VERSION = 'v2026-11-19-114';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -3627,6 +3631,10 @@ function openReportForm(id){
             <option value="detailed" selected>詳細（預設）</option>
             <option value="full">盡量完整保留（適合長對話）</option>
           </select>
+          <select id="rf_ai_lang" style="padding:6px 8px; font-size:13px; border:1px solid #EADFC8; border-radius:8px; background:#fff;" title="AI整理出來的文字要用繁體還是簡體">
+            <option value="zh-TW" selected>繁體（預設）</option>
+            <option value="zh-CN">簡體</option>
+          </select>
           <button type="button" id="reportAiBtn" class="btn btn-outline" style="margin:0; width:auto; padding:6px 13px; font-size:13.5px;" onclick="runReportAiSummarize()">✨ AI 整理重點</button>
         </div>
       </div>
@@ -3710,9 +3718,10 @@ async function runReportAiSummarize(){
   btn.disabled = true; btn.innerHTML = '整理中...';
   try{
     const detailLevel = document.getElementById('rf_ai_detail')?.value || 'detailed';
+    const lang = document.getElementById('rf_ai_lang')?.value === 'zh-CN' ? 'zh-CN' : 'zh-TW';
     const res = await fetch(webhookUrl, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ type:'aiSummarizeReport', password: sessionStorage.getItem('rt_admin_pw')||'', transcript:text, detailLevel })
+      body: JSON.stringify({ type:'aiSummarizeReport', password: sessionStorage.getItem('rt_admin_pw')||'', transcript:text, detailLevel, lang })
     });
     const data = await res.json();
     if(data && data.ok){
