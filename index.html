@@ -270,6 +270,10 @@ p {
 .tier-row{ font-size:17px; color:#4A3728; padding:6px 0; border-bottom:1px solid #F5EFE6; }
 .tier-row:last-child{ border-bottom:none; }
 .tier-row.recommended{ font-weight:700; color:#A67C2E; background:#FFF8E8; margin:0 -8px; padding:6px 8px; border-radius:8px; border-bottom:none; }
+.card-benefits{ margin-top:12px; background:#FBF1F3; border:1px solid #EBD3CE; border-radius:12px; padding:12px 14px; }
+.card-benefits .cb-title{ font-size:15.5px; font-weight:700; color:#B4756A; margin-bottom:6px; }
+.card-benefits .cb-row{ font-size:16.5px; color:#4A3728; line-height:1.65; padding:3px 0 3px 22px; position:relative; }
+.card-benefits .cb-row::before{ content:'✔'; position:absolute; left:0; color:#B4756A; font-weight:700; }
 .card-note{ font-size:16.5px; color:var(--ink); line-height:1.7; margin-top:12px; padding-top:10px; border-top:1px dashed #EADFC8; }
 
 /* ===== 加購區 ===== */
@@ -1732,6 +1736,7 @@ function renderServiceCards(){
       ${s.subtitle?`<div class="card-subtitle">${esc(s.subtitle)}</div>`:''}
       <p class="card-desc">${richText(s.desc||'')}</p>
       ${s.locationNote?`<p class="card-desc" style="margin-top:6px; opacity:.8;">${richText(s.locationNote)}</p>`:''}
+      ${(s.benefits&&s.benefits.length)?`<div class="card-benefits"><div class="cb-title">${esc(s.benefitsTitle||'你會獲得')}</div>${s.benefits.map(b=>`<div class="cb-row">${esc(b)}</div>`).join('')}</div>`:''}
       ${(s.tiers&&s.tiers.length)?`<div class="tier-list">${parseTiers(s.tiers).map(t=>`<div class="tier-row${t.label.includes('⭐')?' recommended':''}">${protectStrikePairs(protectStarPairs(esc(t.label)))}</div>`).join('')}</div>`:''}
       ${s.note?`<p class="card-note">${richText(s.note)}</p>`:''}
     </div>`).join('');
@@ -1892,7 +1897,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-19-110';
+const SITE_VERSION = 'v2026-11-19-112';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -5218,6 +5223,8 @@ function openServiceEdit(id){
     <div class="field"><label>地點／形式（選填，例如：遠程／台南面對面）</label><input id="svc_subtitle" value="${esc(s.subtitle||'')}"></div>
     <div class="field full"><label>服務說明（可按 Enter 換行，手動控制斷行位置）</label><textarea id="svc_desc" style="min-height:80px;">${esc(s.desc||'')}</textarea></div>
     <div class="field full"><label>地點說明（選填，可寫更詳細的地點/形式補充）</label><textarea id="svc_locationNote" style="min-height:60px;">${esc(s.locationNote||'')}</textarea></div>
+    <div class="field full"><label>🎁 你會獲得（選填，每一行一項，前台會顯示成淺色框＋✔，不用自己打✔）</label><textarea id="svc_benefits" style="min-height:90px;" placeholder="例如：&#10;找到你最關鍵的問題，並告訴你怎麼解決&#10;針對問題進行脈輪療癒&#10;能量訊息解讀報告書一份&#10;專屬招財能量圖">${esc((s.benefits||[]).join('\n'))}</textarea></div>
+    <div class="field full"><label>淺色框的標題（選填，留空就顯示「你會獲得」）</label><input id="svc_benefitsTitle" value="${esc(s.benefitsTitle||'')}" placeholder="你會獲得"></div>
     <div class="field full"><label>展開選項（選填，每一行一項，例如：單一脈輪療癒｜15分鐘｜NT$900，想標示推薦選項可加上 ⭐。若想讓這個方案顯示專屬的預約問題，在同一行後面加上 → 問題標題 → 提示文字，例如：三脈輪組合療癒｜30分鐘｜NT$1,500 → 目前想進行療癒的原因（選填） → 可以簡單告訴我目前的狀況或想調整的方向。）</label><textarea id="svc_tiers" style="min-height:100px;">${esc((s.tiers||[]).join('\n'))}</textarea></div>
     <div class="field full"><label>結尾補充說明（選填，顯示在展開選項下方）</label><textarea id="svc_note" style="min-height:70px;">${esc(s.note||'')}</textarea></div>
     <div class="field full"><label>此服務專屬的預約問題標題（選填，沒有子選項時使用）</label><input id="svc_questionLabel" value="${esc(s.questionLabel||'')}" placeholder="例如：想諮詢的問題"></div>
@@ -5288,6 +5295,10 @@ function saveSvcModal(){
     s.name = name; s.price = price; s.isFree = isFree; s.subtitle = document.getElementById('svc_subtitle').value.trim(); s.desc = document.getElementById('svc_desc').value.trim();
     const locEl = document.getElementById('svc_locationNote');
     if(locEl) s.locationNote = locEl.value.trim();
+    const bnEl = document.getElementById('svc_benefits');
+    if(bnEl) s.benefits = bnEl.value.split('\n').map(t=>t.replace(/^\s*[✔✓•\-]\s*/,'').trim()).filter(Boolean);
+    const bnTEl = document.getElementById('svc_benefitsTitle');
+    if(bnTEl) s.benefitsTitle = bnTEl.value.trim();
     const tiersEl = document.getElementById('svc_tiers');
     if(tiersEl) s.tiers = tiersEl.value.split('\n').map(t=>t.trim()).filter(Boolean);
     const noteEl = document.getElementById('svc_note');
