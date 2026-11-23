@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;800&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet">
 <!-- 這三行是為了避免瀏覽器把舊版頁面留在快取裡，明明已經上傳新版本，重新整理卻還是看到
      舊的樣子——加上這幾行請瀏覽器每次都重新跟伺服器要最新的檔案，不要用存起來的舊版本。
      不是每種瀏覽器都完全遵守這幾行設定，如果之後又遇到「明明是新版本，畫面卻還是舊的」，
@@ -567,8 +570,10 @@ body.admin-mode.admin-locked #adminView{ display:none !important; }
   position:relative; width:520px; margin:0 auto;
   background:#F8EEF6; border:1px solid var(--gold-border);
   border-radius:20px; padding:40px 30px 28px; box-shadow:0 14px 34px rgba(122,59,82,0.14);
-  font-family:-apple-system, BlinkMacSystemFont, sans-serif; box-sizing:border-box; overflow:hidden;
+  font-family:'Noto Sans TC','Noto Sans SC','PingFang TC','Microsoft JhengHei',sans-serif; box-sizing:border-box; overflow:hidden;
 }
+/* 報告書全文（繁體、簡體都一樣）統一使用「思源黑體（Noto Sans）」，字型從網路載入，電腦、手機、Mac 看到、產生的圖片都是同一個字型 */
+.rpt-card, .rpt-card *{ font-family:'Noto Sans TC','Noto Sans SC','PingFang TC','Microsoft JhengHei',sans-serif !important; }
 .rpt-card::before{ content:''; position:absolute; inset:11px; border:1px solid rgba(198,168,90,0.4); border-radius:11px; pointer-events:none; }
 /* 報告書拆成多頁時，每一頁都是獨立完整的一張卡片，疊在一起預覽時中間留一點間距 */
 .rpt-page-card + .rpt-page-card{ margin-top:22px; }
@@ -900,6 +905,8 @@ function getLinkParam(name){
         <label class="wp-l">客戶姓名</label><input type="text" id="wp_name" autocomplete="off">
         <label class="wp-l">人物版本</label>
         <select id="wp_gender"><option value="女生">女生</option><option value="男生">男生</option></select>
+        <label class="wp-l">桌布文字字體</label>
+        <select id="wp_lang"><option value="zh-TW" selected>繁體（預設）</option><option value="zh-CN">簡體</option></select>
         <label class="wp-l">報告書內容（可直接貼上；從 Email 帶入的會自動填在這裡）</label>
         <textarea id="wp_content" rows="8" style="width:100%;"></textarea>
         <label class="wp-l">人物外觀要求（已預設好，有特別要求再修改）</label><input type="text" id="wp_look" autocomplete="off" value="請參考我附上的客戶照片，畫成 Q 版可愛人物，保留髮型、髮色、眼鏡、飾品等特徵；若無照片則採預設資料">
@@ -1902,7 +1909,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-23-117';
+const SITE_VERSION = 'v2026-11-23-119';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4348,7 +4355,21 @@ function reportCardEmailHtml(rec, rep){
 </body>
 </html>`;
 }
-function openReportCard(id){
+/* 確保報告書用的思源黑體（繁、簡兩套）已經載入完成，再量版面、再截圖，
+   這樣不管電腦、手機、Mac，量到的換行位置和產生的圖片都一樣。最多等3秒，網路太慢就照目前字型繼續。 */
+async function rptEnsureFonts(sampleText){
+  try{
+    if(!document.fonts || !document.fonts.load) return;
+    const txt=String(sampleText||'報告書').slice(0,3000);
+    const loads=[];
+    ['400','700','800'].forEach(w=>{
+      loads.push(document.fonts.load(w+' 15px "Noto Sans TC"',txt));
+      loads.push(document.fonts.load(w+' 15px "Noto Sans SC"',txt));
+    });
+    await Promise.race([Promise.all(loads).then(()=>document.fonts.ready), new Promise(r=>setTimeout(r,3000))]);
+  }catch(e){}
+}
+async function openReportCard(id){
   const rec = records.find(x=>x.id===id); if(!rec) return;
   const rep = reports.find(x=>x.bookingCode===rec.code);
   if(!rep){ toast('請先填寫報告書內容'); return; }
@@ -4360,6 +4381,7 @@ function openReportCard(id){
   imgResult.style.display = 'none';
   imgResult.innerHTML = '';
   document.getElementById('reportCardModalOverlay').classList.add('open');
+  await rptEnsureFonts(cardHost.innerText);
   // 卡片要先真的「顯示出來」(modal打開後)才量得到正確位置，量完直接把px數字寫死在每一頁上，
   // 之後不管是預覽還是截圖抓圖，都是直接複製這個已經量好、寫死數字的版本，不用重新再量一次
   rptAlignAllCalloutTails(cardHost);
@@ -4530,6 +4552,7 @@ async function captureReportCardPageBlobs(){
   const container = cardHost ? cardHost.querySelector('#rptCardInner') : null;
   const pages = container ? Array.from(container.querySelectorAll('.rpt-page-card')) : [];
   if(!pages.length || !window.html2canvas) return [];
+  await rptEnsureFonts(container.innerText);
   const blobs = [];
   for(let i=0;i<pages.length;i++){
     let blob = null;
@@ -4852,25 +4875,27 @@ async function wpGenerate(){
   const content=document.getElementById('wp_content').value.trim();
   const name=document.getElementById('wp_name').value.trim();
   const gender=document.getElementById('wp_gender').value;
+  const lang=document.getElementById('wp_lang').value==='zh-CN'?'zh-CN':'zh-TW';
   if(!content){ toast('請先貼上報告書內容'); return; }
   if(!webhookUrl){ toast('尚未設定雲端網址'); return; }
   const btn=document.getElementById('wp_btn'); const old=btn.innerHTML; btn.disabled=true; btn.innerHTML='整理中...';
   try{
     const res=await fetch(webhookUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({type:'aiWallpaperData',password:sessionStorage.getItem('rt_admin_pw')||'',content,name,gender})});
+      body:JSON.stringify({type:'aiWallpaperData',password:sessionStorage.getItem('rt_admin_pw')||'',content,name,gender,lang})});
     const r=await res.json();
     if(r&&r.ok){
       const d=r.data, v=id=>document.getElementById(id).value.trim()||'無';
+      const S=(lang==='zh-CN');
       const t=[];
-      t.push('本次客戶專屬資料','','【基本資料】','客戶姓名：'+name,'圖片標題：關係眼 | 能量訊息解讀','標題下方旗幟文字：'+name+'的能量招財桌布','人物版本：'+gender,'人物外觀要求：'+(document.getElementById('wp_look').value.trim()||'請參考我附上的客戶照片，畫成 Q 版可愛人物，保留髮型、髮色、眼鏡、飾品等特徵；若無照片則採預設資料'),'人物表情／方向／動作（坐在正中間洞穴前的角色，請照這一組畫，每張桌布都要不一樣）：'+wpPickPose(),'',
+      t.push('本次客戶專屬資料','','【基本資料】','客戶姓名：'+name,'圖片標題：'+(S?'关系眼 | 能量讯息解读':'關係眼 | 能量訊息解讀'),'標題下方旗幟文字：'+name+(S?'的能量招财桌布':'的能量招財桌布'),'人物版本：'+gender,'人物外觀要求：'+(document.getElementById('wp_look').value.trim()||'請參考我附上的客戶照片，畫成 Q 版可愛人物，保留髮型、髮色、眼鏡、飾品等特徵；若無照片則採預設資料'),'人物表情／方向／動作（坐在正中間洞穴前的角色，請照這一組畫，每張桌布都要不一樣）：'+wpPickPose(),'',
         '【事業財庫】','本次財庫解讀：'+(d.wealth||'（報告未提及）'),'','【人生主題】');
       (d.themes||[]).forEach((x,i)=>{ t.push('主題'+(i+1)+'：'+x.title,'解讀內容：'+x.text); });
       t.push('','【個人能量洞穴】','能量狀態：'+(d.state||'（報告未提及）'),'能量特徵：'+(d.traits||'（報告未提及）'),
         '脈輪或特殊能量象徵：'+(d.chakra||'（報告未提及）'),'可以多關照的方向：'+(d.watch||'（報告未提及）'),'',
         '【核心提醒】','本次核心提醒：'+(d.core||'（報告未提及）'),'',
         '【特殊象徵】','指定水晶：'+v('wp_crystal'),'指定動物：'+v('wp_animal'),'指定植物：'+v('wp_plant'),'指定場景：'+v('wp_scene'),'其他特殊要求：'+v('wp_other'),'',
-        '【圖片固定文字】','主標題：關係眼 | 能量訊息解讀','旗幟文字：'+(name||'客戶')+'的能量招財桌布','最下方文字：笑笑 | 關係眼 看見你還沒看見的','',
-        '【文字規範】','所有解讀以提供的原始資料為準。','不新增未經提供的解讀。','以上文字已精簡為重點短句，請勿自行增加文字。','畫面以圖像為主，文字要大而清楚、保留留白。','如果文字太多，先提出排版調整建議。');
+        '【圖片固定文字】','主標題：'+(S?'关系眼 | 能量讯息解读':'關係眼 | 能量訊息解讀'),'旗幟文字：'+(name||'客戶')+(S?'的能量招财桌布':'的能量招財桌布'),'最下方文字：'+(S?'笑笑 | 关系眼 看见你还没看见的':'笑笑 | 關係眼 看見你還沒看見的'),'',
+        '【文字規範】','所有解讀以提供的原始資料為準。','不新增未經提供的解讀。','以上文字已精簡為重點短句，請勿自行增加文字。','畫面以圖像為主，文字要大而清楚、保留留白。','如果文字太多，先提出排版調整建議。',S?'圖上所有文字一律使用簡體中文（上面的資料已是簡體，請照原樣使用，不要轉成繁體）。':'圖上所有文字一律使用繁體中文。');
       document.getElementById('wp_out').value=t.join('\n');
       toast(r.truncated?'內容太長可能被截斷，請檢查結尾':'已整理完成，請確認後複製');
     } else if(r&&r.error==='missing_api_key'){ toast('尚未設定AI金鑰（ANTHROPIC_API_KEY）');
@@ -4879,7 +4904,7 @@ async function wpGenerate(){
   finally{ btn.disabled=false; btn.innerHTML=old; }
 }
 
-const WP_IDS=['wp_email','wp_name','wp_gender','wp_content','wp_look','wp_crystal','wp_animal','wp_plant','wp_scene','wp_other','wp_out'];
+const WP_IDS=['wp_email','wp_name','wp_gender','wp_lang','wp_content','wp_look','wp_crystal','wp_animal','wp_plant','wp_scene','wp_other','wp_out'];
 const WP_DEFAULT_LOOK=document.getElementById('wp_look')?document.getElementById('wp_look').value:'';
 function wpSaveDraft(showToast){
   try{ const o={}; WP_IDS.forEach(id=>o[id]=document.getElementById(id).value); localStorage.setItem('rt_wp_draft',JSON.stringify(o)); if(showToast) toast('已暫存，下次回到這頁會自動帶回'); }catch(e){ if(showToast) toast('暫存失敗'); }
@@ -4890,7 +4915,7 @@ function wpRestoreDraft(){
 function wpFinish(){
   const out=document.getElementById('wp_out').value.trim();
   if(out && !confirm('完成後會清空這個畫面，確定已經複製好了嗎？')) return;
-  WP_IDS.forEach(id=>{ const el=document.getElementById(id); el.value = (id==='wp_look')?WP_DEFAULT_LOOK:(id==='wp_gender'?'女生':''); });
+  WP_IDS.forEach(id=>{ const el=document.getElementById(id); el.value = (id==='wp_look')?WP_DEFAULT_LOOK:(id==='wp_gender'?'女生':(id==='wp_lang'?'zh-TW':'')); });
   try{ localStorage.removeItem('rt_wp_draft'); }catch(e){}
   switchAdminTab('list'); toast('已完成並清空');
 }
