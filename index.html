@@ -896,7 +896,7 @@ function getLinkParam(name){
         <h3>🖼️ 桌布資料整理（給 AI 繪圖第 3 步）</h3>
         <p style="font-size:14px;color:#888;margin:0 0 12px;">貼上報告書內容，按一個鍵，就會整理成「本次客戶專屬資料」，複製後直接貼給 AI 繪圖。</p>
         <label class="wp-l">客戶 Email（有存過報告書的話，輸入後可自動帶入內容）</label>
-        <div style="display:flex;gap:8px;"><input type="text" id="wp_email" placeholder="client@gmail.com" style="flex:1;" autocomplete="off"><button class="btn btn-outline" style="margin:0;width:auto;padding:9px 14px;font-size:15px;" onclick="wpLoadByEmail()">帶入</button></div>
+        <div style="display:flex;gap:8px;"><input type="text" id="wp_email" placeholder="client@gmail.com" style="flex:1;" autocomplete="off"><button class="btn btn-outline" style="margin:0;width:auto;padding:9px 14px;font-size:15px;" onclick="wpLoadByEmail()">帶入</button><button class="btn btn-outline" style="margin:0;width:auto;padding:9px 14px;font-size:15px;" onclick="wpClearEmail()">✕ 清除</button></div>
         <label class="wp-l">客戶姓名</label><input type="text" id="wp_name" autocomplete="off">
         <label class="wp-l">人物版本</label>
         <select id="wp_gender"><option value="女生">女生</option><option value="男生">男生</option></select>
@@ -1902,7 +1902,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-19-115';
+const SITE_VERSION = 'v2026-11-23-117';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4814,6 +4814,25 @@ function saveAdminForm(){
 /* ============================================================
    桌布資料整理：報告書 → AI繪圖第3步資料
 ============================================================ */
+/* 每次整理都從表情、面向、動作各挑一個，組成不一樣的姿勢；而且不會跟上一次完全一樣 */
+const WP_POSE_FACE=['溫柔微笑','開心燦爛的笑','閉上眼睛安詳微笑','好奇地微微歪頭','害羞的淺淺微笑','自信從容的微笑','平靜放鬆','眼神明亮、充滿期待'];
+const WP_POSE_DIR=['正面看向前方','身體微微向左側','身體微微向右側','四分之三側面、回頭看向畫面','側身望向洞穴裡的光'];
+const WP_POSE_ACT=['雙手輕輕合十','雙手捧著一顆發光的水晶','輕輕把手放在胸口','盤腿坐著靜心冥想','張開雙臂迎接光芒','一手向前輕觸洞穴的光','抱著小水晶靠在身前','蹲坐著開心地看著光','一手揮手打招呼'];
+function wpPickPose(){
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  let last=''; try{ last=localStorage.getItem('rt_wp_last_pose')||''; }catch(e){}
+  let p='';
+  for(let i=0;i<10;i++){
+    p='表情：'+pick(WP_POSE_FACE)+'；面向：'+pick(WP_POSE_DIR)+'；動作：'+pick(WP_POSE_ACT);
+    if(p!==last) break;
+  }
+  try{ localStorage.setItem('rt_wp_last_pose',p); }catch(e){}
+  return p;
+}
+function wpClearEmail(){
+  const el=document.getElementById('wp_email'); el.value=''; wpSaveDraft(false); el.focus();
+  toast('已清除 Email');
+}
 function wpLoadByEmail(){
   const em=(document.getElementById('wp_email').value||'').trim().toLowerCase();
   if(!em){ toast('請先輸入 Email'); return; }
@@ -4843,11 +4862,11 @@ async function wpGenerate(){
     if(r&&r.ok){
       const d=r.data, v=id=>document.getElementById(id).value.trim()||'無';
       const t=[];
-      t.push('本次客戶專屬資料','','【基本資料】','客戶姓名：'+name,'圖片標題：關係眼 | 能量訊息解讀','標題下方旗幟文字：'+name+'的能量招財桌布','人物版本：'+gender,'人物外觀要求：'+(document.getElementById('wp_look').value.trim()||'請參考我附上的客戶照片，畫成 Q 版可愛人物，保留髮型、髮色、眼鏡、飾品等特徵；若無照片則採預設資料'),'',
+      t.push('本次客戶專屬資料','','【基本資料】','客戶姓名：'+name,'圖片標題：關係眼 | 能量訊息解讀','標題下方旗幟文字：'+name+'的能量招財桌布','人物版本：'+gender,'人物外觀要求：'+(document.getElementById('wp_look').value.trim()||'請參考我附上的客戶照片，畫成 Q 版可愛人物，保留髮型、髮色、眼鏡、飾品等特徵；若無照片則採預設資料'),'人物表情／方向／動作（坐在正中間洞穴前的角色，請照這一組畫，每張桌布都要不一樣）：'+wpPickPose(),'',
         '【事業財庫】','本次財庫解讀：'+(d.wealth||'（報告未提及）'),'','【人生主題】');
       (d.themes||[]).forEach((x,i)=>{ t.push('主題'+(i+1)+'：'+x.title,'解讀內容：'+x.text); });
       t.push('','【個人能量洞穴】','能量狀態：'+(d.state||'（報告未提及）'),'能量特徵：'+(d.traits||'（報告未提及）'),
-        '脈輪或特殊能量象徵：'+(d.chakra||'（報告未提及）'),'需要留意的地方：'+(d.watch||'（報告未提及）'),'',
+        '脈輪或特殊能量象徵：'+(d.chakra||'（報告未提及）'),'可以多關照的方向：'+(d.watch||'（報告未提及）'),'',
         '【核心提醒】','本次核心提醒：'+(d.core||'（報告未提及）'),'',
         '【特殊象徵】','指定水晶：'+v('wp_crystal'),'指定動物：'+v('wp_animal'),'指定植物：'+v('wp_plant'),'指定場景：'+v('wp_scene'),'其他特殊要求：'+v('wp_other'),'',
         '【圖片固定文字】','主標題：關係眼 | 能量訊息解讀','旗幟文字：'+(name||'客戶')+'的能量招財桌布','最下方文字：笑笑 | 關係眼 看見你還沒看見的','',
@@ -4866,7 +4885,7 @@ function wpSaveDraft(showToast){
   try{ const o={}; WP_IDS.forEach(id=>o[id]=document.getElementById(id).value); localStorage.setItem('rt_wp_draft',JSON.stringify(o)); if(showToast) toast('已暫存，下次回到這頁會自動帶回'); }catch(e){ if(showToast) toast('暫存失敗'); }
 }
 function wpRestoreDraft(){
-  try{ const o=JSON.parse(localStorage.getItem('rt_wp_draft')||'null'); if(!o) return; WP_IDS.forEach(id=>{ if(o[id]!=null) document.getElementById(id).value=o[id]; }); }catch(e){}
+  try{ const o=JSON.parse(localStorage.getItem('rt_wp_draft')||'null'); if(!o) return; WP_IDS.forEach(id=>{ if(id==='wp_email') return; /* 上一位客戶的 Email 不自動帶回 */ if(o[id]!=null) document.getElementById(id).value=o[id]; }); }catch(e){}
 }
 function wpFinish(){
   const out=document.getElementById('wp_out').value.trim();
