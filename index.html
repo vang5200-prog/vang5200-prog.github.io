@@ -1068,6 +1068,7 @@ function getLinkParam(name){
           <div class="field"><label>影片標題</label><input id="setFvTitle" placeholder="招財水製作教學"></div>
           <div class="field"><label>一句話說明</label><input id="setFvDesc" placeholder="想知道招財水怎麼製作？跟著影片一步步完成。"></div>
           <div class="field"><label>按鈕文字</label><input id="setFvCta" placeholder="觀看完整教學"></div>
+          <div class="field"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="setFvAutoplay" style="width:auto; margin:0;"> 打開網頁就自動靜音播放、循環（只有 .mp4 檔案網址有效；建議影片 5～10MB 內，其他影片網址無法自動播放）</label></div>
           <div class="field"><label>影片比例</label><select id="setFvRatio"><option value="wide">橫式（一般影片 16:9）</option><option value="vertical">直式（手機拍的、Shorts 9:16）</option></select></div>
           <button class="btn btn-outline" style="margin:4px 0 0; width:auto; padding:9px 16px; font-size:15px;" onclick="saveFreeVideo()">儲存影片入口</button>
         </div>
@@ -1620,7 +1621,8 @@ function saveFreeVideo(){
     videoUrl, posterUrl: v('setFvPoster'),
     label: v('setFvLabel') || '🎁 免費招財小秘訣', badge: v('setFvBadge'),
     title: v('setFvTitle'), desc: v('setFvDesc'), ctaText: v('setFvCta') || '觀看完整教學',
-    ratio: document.getElementById('setFvRatio').value
+    ratio: document.getElementById('setFvRatio').value,
+    autoplay: document.getElementById('setFvAutoplay').checked
   }};
   saveHeroContentLocal(heroContent);
   renderFreeVideo();
@@ -1631,6 +1633,7 @@ function fillFreeVideoSettings(){
   const f = (heroContent && heroContent.freeVideo) || {};
   const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.value = val||''; };
   const en = document.getElementById('setFvEnabled'); if(en) en.checked = !!f.enabled;
+  const ap = document.getElementById('setFvAutoplay'); if(ap) ap.checked = !!f.autoplay;
   set('setFvVideo',f.videoUrl); set('setFvPoster',f.posterUrl); set('setFvLabel',f.label); set('setFvBadge',f.badge);
   set('setFvTitle',f.title); set('setFvDesc',f.desc); set('setFvCta',f.ctaText); set('setFvRatio',f.ratio||'wide');
 }
@@ -1841,6 +1844,29 @@ function renderFreeVideo(){
   const poster = (fv.posterUrl||'').trim() || info.thumb || '';
   const img = document.getElementById('fvThumb');
   if(poster){ if(img.getAttribute('src')!==poster) img.src = poster; img.style.display=''; } else { img.removeAttribute('src'); img.style.display='none'; }
+  const openBtn = document.getElementById('fvOpen');
+  if(fv.autoplay && info.type==='file'){
+    // 自動播放模式：打開網頁就靜音自動播放、循環（手機規定一定要靜音才允許自動播放）；封面圖當作影片載入前的畫面
+    openBtn.style.display='none';
+    const p = document.getElementById('fvPlayer');
+    const vertical = fv.ratio==='vertical';
+    p.className = 'fv-player' + (vertical ? ' fv-v' : '');
+    const cap = (fv.title||fv.desc) ? '<div style="background:#fff; padding:9px 2px 0;">'+(fv.title?'<div class="fv-title">'+esc(fv.title)+'</div>':'')+(fv.desc?'<div class="fv-desc">'+esc(fv.desc)+'</div>':'')+'</div>' : '';
+    const wasPlaying = p.getAttribute('data-auto')===info.src && p.querySelector('video');
+    if(!wasPlaying){
+      p.innerHTML = '<div class="fv-box"><video autoplay muted loop playsinline webkit-playsinline preload="auto" disablepictureinpicture'+(poster?' poster="'+esc(poster)+'"':'')+' src="'+esc(info.src)+'"></video></div>';
+      p.setAttribute('data-auto', info.src);
+      const vd = p.querySelector('video'); if(vd){ vd.muted = true; const pr = vd.play(); if(pr && pr.catch) pr.catch(()=>{}); }
+    }
+    p.style.display='';
+    let capEl = document.getElementById('fvAutoCap');
+    if(!capEl){ capEl = document.createElement('div'); capEl.id='fvAutoCap'; p.parentNode.insertBefore(capEl, p.nextSibling); }
+    capEl.innerHTML = cap;
+    return;
+  }
+  openBtn.style.display='';
+  const oldCap = document.getElementById('fvAutoCap'); if(oldCap) oldCap.innerHTML='';
+  const pp = document.getElementById('fvPlayer'); if(pp) pp.removeAttribute('data-auto');
   closeFreeVideo();
 }
 function closeFreeVideo(){
@@ -1909,7 +1935,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-23-119';
+const SITE_VERSION = 'v2026-11-26-120';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
