@@ -102,7 +102,7 @@ p {
 .fv-play{ position:absolute; right:6px; bottom:6px; width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,.92); color:var(--brown); font-size:11px; display:flex; align-items:center; justify-content:center; padding-left:2px; box-shadow:0 1px 4px rgba(0,0,0,.25); }
 .fv-text{ min-width:0; }
 .fv-title{ font-size:16px; font-weight:800; color:var(--brown); line-height:1.4; }
-.fv-desc{ font-size:13.5px; color:#8a7a6a; line-height:1.55; margin-top:2px; }
+.fv-desc{ white-space:pre-line; font-size:13.5px; color:#8a7a6a; line-height:1.55; margin-top:2px; }
 .fv-cta{ font-size:13.5px; font-weight:700; color:var(--gold-text); margin-top:5px; }
 .fv-player{ margin-top:10px; border-radius:12px; overflow:hidden; background:#000; }
 .fv-player.fv-v{ max-width:260px; margin-left:auto; margin-right:auto; }
@@ -110,7 +110,7 @@ p {
 .fv-box{ position:relative; width:100%; aspect-ratio:16/9; }
 /* 自動播放模式：拿掉卡片框和標籤，影片直接融入頁面（圓角＋柔和陰影），底下只留一句說明 */
 .fv-card.fv-bare{ background:none; border:none; box-shadow:none; padding:0; }
-.fv-card.fv-bare .fv-head{ display:none; }
+.fv-card.fv-bare .fv-head{ justify-content:center; gap:8px; margin-bottom:10px; }
 .fv-card.fv-bare .fv-player{ margin-top:0; border-radius:18px; box-shadow:0 8px 22px rgba(74,55,40,.16); }
 .fv-card.fv-bare .fv-player.fv-v{ max-width:300px; }
 .fv-card.fv-bare #fvAutoCap{ text-align:center; }
@@ -1074,7 +1074,7 @@ function getLinkParam(name){
           <div class="field"><label>小標題（框框左上角）</label><input id="setFvLabel" placeholder="🎁 免費招財小秘訣"></div>
           <div class="field"><label>右上角標籤（留空就不顯示）</label><input id="setFvBadge" placeholder="FREE"></div>
           <div class="field"><label>影片標題</label><input id="setFvTitle" placeholder="招財水製作教學"></div>
-          <div class="field"><label>一句話說明</label><input id="setFvDesc" placeholder="想知道招財水怎麼製作？跟著影片一步步完成。"></div>
+          <div class="field"><label>一句話說明</label><textarea id="setFvDesc" rows="3" placeholder="想知道招財水怎麼製作？跟著影片一步步完成。（按 Enter 可以換行）" style="width:100%; box-sizing:border-box; font-family:inherit; font-size:inherit;"></textarea></div>
           <div class="field"><label>按鈕文字</label><input id="setFvCta" placeholder="觀看完整教學"></div>
           <div class="field"><label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="setFvAutoplay" style="width:auto; margin:0;"> 打開網頁就自動靜音播放、循環（只有 .mp4 檔案網址有效；建議影片 5～10MB 內，其他影片網址無法自動播放）</label></div>
           <div class="field"><label>影片比例</label><select id="setFvRatio"><option value="wide">橫式（一般影片 16:9）</option><option value="vertical">直式（手機拍的、Shorts 9:16）</option></select></div>
@@ -1945,7 +1945,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-26-121';
+const SITE_VERSION = 'v2026-11-26-122';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
