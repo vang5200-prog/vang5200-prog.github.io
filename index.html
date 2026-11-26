@@ -108,6 +108,14 @@ p {
 .fv-player.fv-v{ max-width:260px; margin-left:auto; margin-right:auto; }
 .fv-player iframe, .fv-player video{ display:block; width:100%; height:100%; border:0; background:#000; }
 .fv-box{ position:relative; width:100%; aspect-ratio:16/9; }
+/* 自動播放模式：拿掉卡片框和標籤，影片直接融入頁面（圓角＋柔和陰影），底下只留一句說明 */
+.fv-card.fv-bare{ background:none; border:none; box-shadow:none; padding:0; }
+.fv-card.fv-bare .fv-head{ display:none; }
+.fv-card.fv-bare .fv-player{ margin-top:0; border-radius:18px; box-shadow:0 8px 22px rgba(74,55,40,.16); }
+.fv-card.fv-bare .fv-player.fv-v{ max-width:300px; }
+.fv-card.fv-bare #fvAutoCap{ text-align:center; }
+.fv-card.fv-bare #fvAutoCap .fv-title{ margin-top:12px; }
+.fv-card.fv-bare #fvAutoCap .fv-desc{ margin-top:6px; }
 .fv-player.fv-v .fv-box{ aspect-ratio:9/16; }
 
 /* ===== 金色按鈕（最終版） ===== */
@@ -1848,10 +1856,11 @@ function renderFreeVideo(){
   if(fv.autoplay && info.type==='file'){
     // 自動播放模式：打開網頁就靜音自動播放、循環（手機規定一定要靜音才允許自動播放）；封面圖當作影片載入前的畫面
     openBtn.style.display='none';
+    wrap.querySelector('.fv-card').classList.add('fv-bare');
     const p = document.getElementById('fvPlayer');
     const vertical = fv.ratio==='vertical';
     p.className = 'fv-player' + (vertical ? ' fv-v' : '');
-    const cap = (fv.title||fv.desc) ? '<div style="background:#fff; padding:9px 2px 0;">'+(fv.title?'<div class="fv-title">'+esc(fv.title)+'</div>':'')+(fv.desc?'<div class="fv-desc">'+esc(fv.desc)+'</div>':'')+'</div>' : '';
+    const cap = (fv.title||fv.desc) ? '<div style="padding:0 6px;">'+(fv.title?'<div class="fv-title">'+esc(fv.title)+'</div>':'')+(fv.desc?'<div class="fv-desc">'+esc(fv.desc)+'</div>':'')+'</div>' : '';
     const wasPlaying = p.getAttribute('data-auto')===info.src && p.querySelector('video');
     if(!wasPlaying){
       p.innerHTML = '<div class="fv-box"><video autoplay muted loop playsinline webkit-playsinline preload="auto" disablepictureinpicture'+(poster?' poster="'+esc(poster)+'"':'')+' src="'+esc(info.src)+'"></video></div>';
@@ -1865,6 +1874,7 @@ function renderFreeVideo(){
     return;
   }
   openBtn.style.display='';
+  wrap.querySelector('.fv-card').classList.remove('fv-bare');
   const oldCap = document.getElementById('fvAutoCap'); if(oldCap) oldCap.innerHTML='';
   const pp = document.getElementById('fvPlayer'); if(pp) pp.removeAttribute('data-auto');
   closeFreeVideo();
@@ -1935,7 +1945,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-26-120';
+const SITE_VERSION = 'v2026-11-26-121';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
