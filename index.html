@@ -919,9 +919,9 @@ function getLinkParam(name){
         <textarea id="wp_content" rows="8" style="width:100%;"></textarea>
         <label class="wp-l">人物外觀要求（已預設好，有特別要求再修改）</label><input type="text" id="wp_look" autocomplete="off" value="請參考我附上的客戶照片，畫成 Q 版可愛人物，保留髮型、髮色、眼鏡、飾品等特徵；若無照片則採預設資料">
         <label class="wp-l">指定水晶／動物／植物／場景／其他（選填，沒有就留空，會寫「無」）</label>
-        <input type="text" id="wp_crystal" placeholder="指定水晶" autocomplete="off" style="margin-bottom:6px;">
+        <input type="text" id="wp_crystal" placeholder="指定飾品" autocomplete="off" style="margin-bottom:6px;">
         <input type="text" id="wp_animal" placeholder="指定動物" autocomplete="off" style="margin-bottom:6px;">
-        <input type="text" id="wp_plant" placeholder="指定植物" autocomplete="off" style="margin-bottom:6px;">
+        <input type="text" id="wp_plant" placeholder="指定人物（用；分隔不同組，例如：老公；弟弟、妹妹）" autocomplete="off" style="margin-bottom:6px;">
         <input type="text" id="wp_scene" placeholder="指定場景" autocomplete="off" style="margin-bottom:6px;">
         <input type="text" id="wp_other" placeholder="其他特殊要求" autocomplete="off">
         <button class="btn" id="wp_btn" style="margin-top:14px;" onclick="wpGenerate()">✨ AI 整理成第 3 步資料</button>
@@ -1945,7 +1945,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-26-123';
+const SITE_VERSION = 'v2026-11-26-124';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4888,6 +4888,15 @@ function wpPickPose(){
   try{ localStorage.setItem('rt_wp_last_pose',p); }catch(e){}
   return p;
 }
+/* 指定人物：用「；」分隔不同組，每一組各自與主角成為獨立的小場景，不同組的人不可畫在一起。
+   例如「老公；弟弟、妹妹」→ 主角＋老公、主角＋弟弟＋妹妹 兩個場景，老公不會和弟弟妹妹同框 */
+function wpPeopleGroupLines(txt){
+  const groups=String(txt||'').split(/[;；]/).map(s=>s.trim()).filter(s=>s&&s!=='無');
+  if(groups.length<2) return groups.length===1?['人物畫法：這些人物與主角同框，各自有專屬的互動與姿勢。']:[];
+  const out=['人物分組規則：以「；」分隔的是不同組。每一組各自與主角成為一個獨立的小場景，不同組的人物不可畫在同一個場景、也不可同框。'];
+  groups.forEach((g,i)=>out.push('第'+(i+1)+'組（只與主角同框）：'+g));
+  return out;
+}
 /* 清除上一位客戶的全部資料：Email、姓名、報告書內容、特殊象徵、AI整理結果都一起清掉，
    人物外觀、桌布字體維持預設，不會再有上一位客戶的內容殘留 */
 function wpResetCustomerData(){
@@ -4944,7 +4953,7 @@ async function wpGenerate(){
       t.push('','【個人能量洞穴】','能量狀態：'+(d.state||'（報告未提及）'),'能量特徵：'+(d.traits||'（報告未提及）'),
         '脈輪或特殊能量象徵：'+(d.chakra||'（報告未提及）'),'可以多關照的方向：'+(d.watch||'（報告未提及）'),'',
         '【核心提醒】','本次核心提醒：'+(d.core||'（報告未提及）'),'',
-        '【特殊象徵】','指定水晶：'+v('wp_crystal'),'指定動物：'+v('wp_animal'),'指定植物：'+v('wp_plant'),'指定場景：'+v('wp_scene'),'其他特殊要求：'+v('wp_other'),'',
+        '【特殊象徵】','指定飾品：'+v('wp_crystal'),'指定動物：'+v('wp_animal'),'指定人物：'+v('wp_plant'),'指定場景：'+v('wp_scene'),'其他特殊要求：'+v('wp_other'),...wpPeopleGroupLines(v('wp_plant')),'',
         '【圖片固定文字】','主標題：'+(S?'关系眼 | 能量讯息解读':'關係眼 | 能量訊息解讀'),'旗幟文字：'+(name||'客戶')+(S?'的能量招财桌布':'的能量招財桌布'),'最下方文字：'+(S?'笑笑 | 关系眼 看见你还没看见的':'笑笑 | 關係眼 看見你還沒看見的'),'',
         '【文字規範】','所有解讀以提供的原始資料為準。','不新增未經提供的解讀。','以上文字已精簡為重點短句，請勿自行增加文字。','畫面以圖像為主，文字要大而清楚、保留留白。','如果文字太多，先提出排版調整建議。',S?'圖上所有文字一律使用簡體中文（上面的資料已是簡體，請照原樣使用，不要轉成繁體）。':'圖上所有文字一律使用繁體中文。');
       document.getElementById('wp_out').value=t.join('\n');
