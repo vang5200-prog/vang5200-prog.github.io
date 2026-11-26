@@ -909,7 +909,7 @@ function getLinkParam(name){
         <h3>🖼️ 桌布資料整理（給 AI 繪圖第 3 步）</h3>
         <p style="font-size:14px;color:#888;margin:0 0 12px;">貼上報告書內容，按一個鍵，就會整理成「本次客戶專屬資料」，複製後直接貼給 AI 繪圖。</p>
         <label class="wp-l">客戶 Email（有存過報告書的話，輸入後可自動帶入內容）</label>
-        <div style="display:flex;gap:8px;"><input type="text" id="wp_email" placeholder="client@gmail.com" style="flex:1;" autocomplete="off"><button class="btn btn-outline" style="margin:0;width:auto;padding:9px 14px;font-size:15px;" onclick="wpLoadByEmail()">帶入</button><button class="btn btn-outline" style="margin:0;width:auto;padding:9px 14px;font-size:15px;" onclick="wpClearEmail()">✕ 清除</button></div>
+        <div style="display:flex;gap:8px;"><input type="text" id="wp_email" placeholder="client@gmail.com" style="flex:1;" autocomplete="off"><button class="btn btn-outline" style="margin:0;width:auto;padding:9px 14px;font-size:15px;" onclick="wpLoadByEmail()">帶入</button><button class="btn btn-outline" style="margin:0;width:auto;padding:9px 14px;font-size:15px;" onclick="wpClearEmail()">✕ 清除全部</button></div>
         <label class="wp-l">客戶姓名</label><input type="text" id="wp_name" autocomplete="off">
         <label class="wp-l">人物版本</label>
         <select id="wp_gender"><option value="女生">女生</option><option value="男生">男生</option></select>
@@ -1945,7 +1945,7 @@ function scrollToBooking(){ document.getElementById('bookingAnchor').scrollIntoV
    XXX 可以是：①服務項目的代碼（後台「服務方案管理」每個項目底下有現成的連結可以複製，
    改名字、調順序都不會失效）②卡片上的編號（例如 2 就是第二個項目）③項目名稱裡的關鍵字
 ============================================================ */
-const SITE_VERSION = 'v2026-11-26-122';
+const SITE_VERSION = 'v2026-11-26-123';
 let cloudStatus = '尚未讀取';
 let serviceDeepLinkDone = false;
 function findServiceByDeepLink(key){
@@ -4888,16 +4888,30 @@ function wpPickPose(){
   try{ localStorage.setItem('rt_wp_last_pose',p); }catch(e){}
   return p;
 }
+/* 清除上一位客戶的全部資料：Email、姓名、報告書內容、特殊象徵、AI整理結果都一起清掉，
+   人物外觀、桌布字體維持預設，不會再有上一位客戶的內容殘留 */
+function wpResetCustomerData(){
+  ['wp_email','wp_name','wp_content','wp_crystal','wp_animal','wp_plant','wp_scene','wp_other','wp_out'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const g=document.getElementById('wp_gender'); if(g) g.value='女生';
+  const lk=document.getElementById('wp_look'); if(lk) lk.value=WP_DEFAULT_LOOK;
+}
 function wpClearEmail(){
-  const el=document.getElementById('wp_email'); el.value=''; wpSaveDraft(false); el.focus();
-  toast('已清除 Email');
+  wpResetCustomerData(); wpSaveDraft(false);
+  const el=document.getElementById('wp_email'); if(el) el.focus();
+  toast('已清除上一位客戶的全部資料');
 }
 function wpLoadByEmail(){
   const em=(document.getElementById('wp_email').value||'').trim().toLowerCase();
   if(!em){ toast('請先輸入 Email'); return; }
   const list=(reports||[]).filter(x=>String(x.email||'').trim().toLowerCase()===em);
-  if(!list.length){ toast('找不到這個 Email 的報告書，可直接貼上內容'); return; }
+  if(!list.length){
+    ['wp_name','wp_content','wp_crystal','wp_animal','wp_plant','wp_scene','wp_other','wp_out'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    wpSaveDraft(false);
+    toast('找不到這個 Email 的報告書，已清空上一位的內容，可直接貼上新的內容'); return;
+  }
   const rep=list[list.length-1];
+  // 換新客戶時，上一位的特殊象徵與AI整理結果一起清掉
+  ['wp_crystal','wp_animal','wp_plant','wp_scene','wp_other','wp_out'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('wp_name').value=rep.name||'';
   document.getElementById('wp_content').value=[
     rep.chakra?('【脈輪】'+rep.chakra):'',
@@ -4905,6 +4919,7 @@ function wpLoadByEmail(){
     rep.chakraIssue?('【脈輪狀況】\n'+rep.chakraIssue):'',
     rep.notes?('【注意事項】\n'+rep.notes):''
   ].filter(Boolean).join('\n\n');
+  wpSaveDraft(false);
   toast('已帶入報告書內容');
 }
 async function wpGenerate(){
